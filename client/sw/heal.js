@@ -1,5 +1,5 @@
 /* Runs inside the generated service worker via workbox `importScripts`.
- * CACHE_BUST=2026-09-18-ui-attach-icons-automations-v3
+ * CACHE_BUST=sidebar-icons-contrast-20260918
  *
  * When a new build activates, ALWAYS reload every top-level window client.
  * The ping/pong strategy left responsive tabs on an old in-memory router

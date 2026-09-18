@@ -110,12 +110,12 @@ const NavIconButton = memo(function NavIconButton({
           disabled={link.disabled}
           data-testid={`nav-panel-${link.id}`}
           className={cn(
-            'h-9 w-9 rounded-lg',
-            isActive ? 'bg-surface-active-alt text-text-primary' : 'text-text-secondary',
+            'h-9 w-9 rounded-lg text-text-primary',
+            isActive && 'bg-surface-active-alt',
           )}
           onClick={handleClick}
         >
-          <link.icon className="h-5 w-5" aria-hidden="true" />
+          <link.icon className="h-5 w-5 text-text-primary" aria-hidden="true" />
         </Button>
       }
     />

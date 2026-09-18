@@ -44,7 +44,8 @@ function staticCache(staticPath, options = {}) {
       fileName.endsWith('.webmanifest') ||
       fileName === 'manifest.json' ||
       fileName === 'sw.js' ||
-      fileName === 'sw-heal.js'
+      fileName === 'sw-heal.js' ||
+      fileName === 'registerSW.js'
     ) {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     } else {
