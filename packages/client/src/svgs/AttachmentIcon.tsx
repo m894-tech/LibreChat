@@ -1,7 +1,12 @@
 import { JSX } from 'react/jsx-runtime';
 
+/**
+ * LibreChat custom attach glyph (filled paperclip) — not lucide `Paperclip`.
+ * `data-lc-attach="pre-meili-clip"` marks the pre–composer-density fork chrome
+ * so live QA can verify the custom SVG shipped in `@librechat/client` dist.
+ */
 export default function AttachmentIcon({
-  className = '',
+  className = 'size-5',
 }: {
   className?: string | undefined;
 }): JSX.Element {
@@ -14,6 +19,7 @@ export default function AttachmentIcon({
       xmlns="http://www.w3.org/2000/svg"
       className={className}
       aria-hidden="true"
+      data-lc-attach="pre-meili-clip"
     >
       <path
         fillRule="evenodd"

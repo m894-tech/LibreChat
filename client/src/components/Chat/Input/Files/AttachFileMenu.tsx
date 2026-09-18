@@ -353,14 +353,15 @@ const AttachFileMenu = ({
           id="attach-file-menu-button"
           aria-label="Attach File Options"
           aria-keyshortcuts={uploadFileAriaKey}
+          data-testid="composer-attach-file"
           className={cn(
-            'flex size-theme-control items-center justify-center rounded-theme-control-round p-1 transition-colors duration-theme-fast hover:bg-surface-composer-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary focus-visible:ring-opacity-50',
-            isPopoverActive && 'bg-surface-composer-hover',
+            /* Pre-meili / densify custom attach chrome — not theme-control default. */
+            'flex size-9 items-center justify-center rounded-full border border-border-light bg-surface-secondary p-1 text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary focus-visible:ring-opacity-50',
+            isPopoverActive && 'bg-surface-hover text-text-primary',
+            isUploadDisabled && 'pointer-events-none opacity-50',
           )}
         >
-          <div className="flex w-full items-center justify-center gap-2">
-            <AttachmentIcon />
-          </div>
+          <AttachmentIcon />
         </Ariakit.MenuButton>
       }
       id="attach-file-menu-button"
@@ -404,14 +405,16 @@ const AttachFileMenu = ({
               render={
                 <IconButton
                   type="button"
-                  size="theme"
-                  shape="theme"
+                  size="md"
+                  shape="round"
+                  variant="secondary"
                   disabled={isUploadDisabled}
                   id="attach-file-button"
                   label={localize('com_sidepanel_attach_files')}
                   onClick={handleUnifiedUpload}
                   aria-keyshortcuts={uploadFileAriaKey}
-                  className="p-1 hover:bg-surface-composer-hover"
+                  data-testid="composer-attach-file"
+                  className="border-border-light p-1 text-text-secondary hover:bg-surface-hover hover:text-text-primary"
                 >
                   <AttachmentIcon />
                 </IconButton>
