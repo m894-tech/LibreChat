@@ -651,33 +651,6 @@ describe('AclEntry Model Tests', () => {
       expect(editableResources).toHaveLength(1);
       expect(editableResources[0].toString()).toBe(resourceId2.toString());
     });
-
-    test('should handle inherited permissions', async () => {
-      const projectId = new mongoose.Types.ObjectId();
-      const childResourceId = new mongoose.Types.ObjectId();
-
-      /** Grant inherited permission on child resource */
-      await AclEntry.create({
-        principalType: PrincipalType.USER,
-        principalId: userId,
-        principalModel: PrincipalModel.USER,
-        resourceType: ResourceType.AGENT,
-        resourceId: childResourceId,
-        permBits: PermissionBits.VIEW,
-        grantedBy: grantedById,
-        inheritedFrom: projectId,
-      });
-
-      /** Get effective permissions */
-      const effective = await methods.getEffectivePermissions(
-        [{ principalType: PrincipalType.USER, principalId: userId }],
-        ResourceType.AGENT,
-        childResourceId,
-      );
-
-      /** Should have VIEW permission from inherited entry */
-      expect(effective).toBe(PermissionBits.VIEW);
-    });
   });
 
   describe('Batch Permission Queries', () => {

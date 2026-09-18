@@ -136,7 +136,6 @@ export const permissionEntrySchema = z.object({
   role: accessRoleSchema,
   grantedBy: z.string(),
   grantedAt: z.string(), // ISO date string
-  inheritedFrom: z.string().optional(), // for project-level inheritance
   source: z.enum(['local', 'entra']).optional(),
 });
 
