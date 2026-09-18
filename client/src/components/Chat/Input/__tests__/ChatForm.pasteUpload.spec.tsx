@@ -7,8 +7,8 @@ import userEvent from '@testing-library/user-event';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { QueryKeys, FileSources, EModelEndpoint } from 'librechat-data-provider';
+import { render, screen, waitFor, fireEvent, cleanup } from '@testing-library/react';
 import type { TFile, TFileUpload, TConversation } from 'librechat-data-provider';
 import type { ChatFormValues } from '~/common';
 import { ChatContext, ChatFormProvider } from '~/Providers';
@@ -31,6 +31,16 @@ jest.mock('librechat-data-provider', () => {
     },
   };
 });
+
+/** Session chrome ToolsDropdown loads native knobs via fetch; stub for jsdom. */
+jest.mock('~/hooks/Input/useNativeModelControls', () => ({
+  useNativeModelControls: () => ({
+    family: null,
+    values: {},
+    payload: undefined,
+    applyChip: jest.fn(),
+  }),
+}));
 
 const conversation = {
   conversationId: 'new',
@@ -183,6 +193,11 @@ describe('composer focus after a pasted upload', () => {
     );
   });
 
+  afterEach(async () => {
+    cleanup();
+    await Promise.resolve();
+  });
+
   test('returns focus to the composer when the upload dialog closes', async () => {
     renderComposer({ legacyUploadUX: true });
 
@@ -239,6 +254,11 @@ describe('composer focus after a pasted upload in unified mode', () => {
     mockUpload.mockImplementation((body: FormData) =>
       Promise.resolve({ ...uploadResponse, temp_file_id: body.get('file_id') as string }),
     );
+  });
+
+  afterEach(async () => {
+    cleanup();
+    await Promise.resolve();
   });
 
   test('uploads without a destination dialog and leaves focus in the composer', async () => {

@@ -144,87 +144,55 @@ export async function selectModelSpec(page: Page, label: string) {
   await expect(trigger).toContainText(label);
 }
 
-/** Enable Skills from Session → Skills (dense v5); fall back to Tools Options. */
+/** Enable Skills from Session → Skills (dense Session chrome). */
 export async function enableSkills(page: Page) {
-  const sessionPill = page.getByTestId('session-summary-pill');
-  if (await sessionPill.isVisible().catch(() => false)) {
-    await openSessionSheet(page);
-    await page.getByRole('button', { name: 'Skills' }).click();
-    const sheet = page.getByTestId('session-sheet');
-    const toggle = sheet.getByRole('switch').first();
-    if (await toggle.isVisible().catch(() => false)) {
-      const checked = await toggle.getAttribute('aria-checked');
-      if (checked !== 'true') {
-        await toggle.click();
-      }
+  await openSessionSheet(page);
+  await page.getByRole('button', { name: 'Skills' }).click();
+  const sheet = page.getByTestId('session-sheet');
+  const toggle = sheet.getByRole('switch').first();
+  if (await toggle.isVisible().catch(() => false)) {
+    const checked = await toggle.getAttribute('aria-checked');
+    if (checked !== 'true') {
+      await toggle.click();
     }
-    await closeSessionSheet(page);
-    return;
   }
-  await page.getByRole('button', { name: 'Tools Options' }).click();
-  await page.getByTestId('tools-menu-skills').click();
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('button', { name: 'Skills' })).toBeVisible();
+  await closeSessionSheet(page);
 }
 
-/** Enable Memory from Session → Tools (dense v5); fall back to Tools Options. */
+/** Enable Memory from Session → Tools (dense Session chrome). */
 export async function enableMemory(page: Page) {
-  const sessionPill = page.getByTestId('session-summary-pill');
-  if (await sessionPill.isVisible().catch(() => false)) {
-    await openSessionSheet(page);
-    const toggle = page.getByTestId('session-sheet').getByRole('switch', { name: 'Memory' });
-    await expect(toggle).toBeVisible();
-    if ((await toggle.getAttribute('aria-checked')) !== 'true') {
-      await toggle.click();
-    }
-    await expect(toggle).toHaveAttribute('aria-checked', 'true');
-    await closeSessionSheet(page);
-    return;
+  await openSessionSheet(page);
+  const toggle = page.getByTestId('session-sheet').getByRole('switch', { name: 'Memory' });
+  await expect(toggle).toBeVisible();
+  if ((await toggle.getAttribute('aria-checked')) !== 'true') {
+    await toggle.click();
   }
-  await page.getByRole('button', { name: 'Tools Options' }).click();
-  await page.getByTestId('tools-menu-memory').click();
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('checkbox', { name: 'Memory' })).toBeVisible();
+  await expect(toggle).toHaveAttribute('aria-checked', 'true');
+  await closeSessionSheet(page);
 }
 
-/** Enable Code Interpreter from Session → Tools (dense v5); fall back to Tools Options. */
+/** Enable Code Interpreter from Session → Tools (dense Session chrome). */
 export async function enableCodeInterpreter(page: Page) {
-  const sessionPill = page.getByTestId('session-summary-pill');
-  if (await sessionPill.isVisible().catch(() => false)) {
-    await openSessionSheet(page);
-    const toggle = page.getByTestId('session-sheet').getByRole('switch', { name: 'Run Code' });
-    await expect(toggle).toBeVisible();
-    if ((await toggle.getAttribute('aria-checked')) !== 'true') {
-      await toggle.click();
-    }
-    await expect(toggle).toHaveAttribute('aria-checked', 'true');
-    await closeSessionSheet(page);
-    return;
+  await openSessionSheet(page);
+  const toggle = page.getByTestId('session-sheet').getByRole('switch', { name: 'Run Code' });
+  await expect(toggle).toBeVisible();
+  if ((await toggle.getAttribute('aria-checked')) !== 'true') {
+    await toggle.click();
   }
-  await page.getByRole('button', { name: 'Tools Options' }).click();
-  await page.getByTestId('tools-menu-run-code').click();
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('checkbox', { name: 'Run Code' })).toBeVisible();
+  await expect(toggle).toHaveAttribute('aria-checked', 'true');
+  await closeSessionSheet(page);
 }
 
-/** Enable File Search from Session → Tools (dense v5); fall back to Tools Options. */
+/** Enable File Search from Session → Tools (dense Session chrome). */
 export async function enableFileSearch(page: Page) {
-  const sessionPill = page.getByTestId('session-summary-pill');
-  if (await sessionPill.isVisible().catch(() => false)) {
-    await openSessionSheet(page);
-    const toggle = page.getByTestId('session-sheet').getByRole('switch', { name: 'File Search' });
-    await expect(toggle).toBeVisible();
-    if ((await toggle.getAttribute('aria-checked')) !== 'true') {
-      await toggle.click();
-    }
-    await expect(toggle).toHaveAttribute('aria-checked', 'true');
-    await closeSessionSheet(page);
-    return;
+  await openSessionSheet(page);
+  const toggle = page.getByTestId('session-sheet').getByRole('switch', { name: 'File Search' });
+  await expect(toggle).toBeVisible();
+  if ((await toggle.getAttribute('aria-checked')) !== 'true') {
+    await toggle.click();
   }
-  await page.getByRole('button', { name: 'Tools Options' }).click();
-  await page.getByTestId('tools-menu-file-search').click();
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('checkbox', { name: 'File Search' })).toBeVisible();
+  await expect(toggle).toHaveAttribute('aria-checked', 'true');
+  await closeSessionSheet(page);
 }
 
 /** The conversation messages container. */

@@ -30,20 +30,25 @@ const ToolsDropdown = ({
   const localize = useLocalize();
   const { data: startupConfig } = useGetStartupConfig();
   const sessionMenuEnabled = startupConfig?.interface?.sessionMenu !== false;
-  const modelControls = useNativeModelControls(conversation);
+  const modelControls = useNativeModelControls(conversation, { enabled: sessionMenuEnabled });
   const uiKey = store.conversationUiStateKey(conversation?.conversationId, index);
   const setNativeKnobs = useSetRecoilState(store.nativeKnobsByIndex(uiKey));
+  const [sheetOpen, setSheetOpen] = useRecoilState(store.sessionSheetOpenByIndex(index));
 
   useLayoutEffect(() => {
+    if (!sessionMenuEnabled) {
+      setNativeKnobs(null);
+      setSheetOpen(false);
+      return;
+    }
     setNativeKnobs(modelControls.payload ?? null);
-  }, [modelControls.payload, setNativeKnobs]);
+  }, [sessionMenuEnabled, modelControls.payload, setNativeKnobs, setSheetOpen]);
 
   const canUseAgents = useHasAccess({
     permissionType: PermissionTypes.AGENTS,
     permission: Permissions.USE,
   });
 
-  const [sheetOpen, setSheetOpen] = useRecoilState(store.sessionSheetOpenByIndex(index));
   const isDisabled = disabled ?? false;
 
   if (!sessionMenuEnabled) {
@@ -65,7 +70,7 @@ const ToolsDropdown = ({
             aria-haspopup="dialog"
             aria-expanded={sheetOpen}
             className={cn(
-              'focus-visible:ring-primary flex size-9 items-center justify-center rounded-full p-1 hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-opacity-50',
+              'focus-visible:ring-primary flex size-theme-control items-center justify-center rounded-theme-control-round p-1 hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-opacity-50',
             )}
             onClick={() => setSheetOpen(true)}
           >

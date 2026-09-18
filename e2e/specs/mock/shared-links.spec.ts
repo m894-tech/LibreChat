@@ -209,8 +209,8 @@ test.describe('shared links', () => {
       throw new Error('Expected shared-link URL to be rendered after creating a link');
     }
 
-    /** The header trigger flips to the "link active" label once a share exists. */
-    await expect(page.getByTestId('header-shared-link-indicator')).toBeVisible();
+    /** The Export/Share control flips to the "link active" indicator once a share exists. */
+    await expect(page.getByTestId('shared-link-indicator')).toBeVisible();
 
     const publicSharePath = new URL(sharedLinkUrl, baseURL).pathname;
     const optedOutPayload = await openPublicSharedLink(page, publicSharePath, sharePayload.shareId);
@@ -378,6 +378,6 @@ test.describe('shared links', () => {
     await expect(shareDialog).toBeVisible();
     await expect(shareDialog.getByRole('button', { name: 'Create a shared link' })).toBeVisible();
     await expect(sharedLinkInput).toHaveCount(0);
-    await expect(page.getByTestId('header-shared-link-indicator')).toHaveCount(0);
+    await expect(page.getByTestId('shared-link-indicator')).toHaveCount(0);
   });
 });

@@ -43,11 +43,23 @@ export type NativeModelControls = {
   applyChip: (chip: NativeKnobChip) => void;
 };
 
-export function useNativeModelControls(conversation?: TConversation | null): NativeModelControls {
+type UseNativeModelControlsOptions = {
+  /** When false, skip the manifest fetch (sessionMenu off-path). */
+  enabled?: boolean;
+};
+
+export function useNativeModelControls(
+  conversation?: TConversation | null,
+  options?: UseNativeModelControlsOptions,
+): NativeModelControls {
+  const enabled = options?.enabled !== false;
   const { data: startupConfig } = useGetStartupConfig();
   const [manifest, setManifest] = useState<NativeKnobManifest>({ version: 1, families: [] });
 
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
     let active = true;
     getManifest()
       .then((next) => active && setManifest(next))
@@ -58,7 +70,7 @@ export function useNativeModelControls(conversation?: TConversation | null): Nat
     return () => {
       active = false;
     };
-  }, []);
+  }, [enabled]);
 
   const modelSpec = useMemo(
     () =>

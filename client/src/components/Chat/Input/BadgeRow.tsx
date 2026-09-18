@@ -346,7 +346,6 @@ function BadgeRow({
             isSubmitting={isSubmitting}
           />
         )}
-        {showEphemeralBadges === true && showSessionMenu !== true && <ToolsDropdown />}
         {tempBadges.map((badge, index) => (
           <React.Fragment key={badge.id}>
             {dragState.draggedBadge && dragState.insertIndex === index && ghostBadge && (
