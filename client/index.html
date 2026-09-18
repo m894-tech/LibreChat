@@ -184,6 +184,16 @@
             }
           });
         }
+        /* Force one reload when a new SW takes control so in-memory routers
+         * (missing newly registered paths like /automations/new) are discarded. */
+        if (navigator.serviceWorker) {
+          var __lcSwReloaded = false;
+          navigator.serviceWorker.addEventListener('controllerchange', function () {
+            if (__lcSwReloaded) return;
+            __lcSwReloaded = true;
+            window.location.reload();
+          });
+        }
         window.addEventListener(
           'error',
           function (event) {

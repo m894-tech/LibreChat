@@ -184,17 +184,24 @@ export const router = createBrowserRouter(
               path: 'skills/:skillId/edit',
               lazy: loadSkillsView,
             },
+            /* Automations: list / create / detail — nested so RR ranks
+             * /automations/new above :automationId (CACHE_BUST=automations-v2). */
             {
               path: 'automations',
-              lazy: loadAutomationsView,
-            },
-            {
-              path: 'automations/new',
-              lazy: loadAutomationCreateView,
-            },
-            {
-              path: 'automations/:automationId',
-              lazy: loadAutomationsView,
+              children: [
+                {
+                  index: true,
+                  lazy: loadAutomationsView,
+                },
+                {
+                  path: 'new',
+                  lazy: loadAutomationCreateView,
+                },
+                {
+                  path: ':automationId',
+                  lazy: loadAutomationsView,
+                },
+              ],
             },
             {
               path: 'projects',
