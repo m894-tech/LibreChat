@@ -63,6 +63,10 @@ export async function openSessionSheet(page: Page) {
  * When `sessionMenu` is off, it is the standalone `session-model-chip`.
  * Nested endpoint→model Ariakit flyouts do not stay open under Session's OGDialog
  * (same class of bug as MCPSubMenu) — callers should pick via root `#model-search`.
+ *
+ * SessionSheet uses `modal={false}` so the body-portaled ComboboxList stays in the
+ * a11y tree (modal dialogs aria-hide siblings, which hides `role=option` from
+ * getByRole even when `#model-search` is CSS-visible).
  */
 async function openModelSelector(page: Page) {
   const chipTrigger = page.getByTestId('session-model-chip').getByTestId('model-selector-button');
@@ -79,6 +83,33 @@ async function openModelSelector(page: Page) {
   await sheetTrigger.scrollIntoViewIfNeeded();
   await sheetTrigger.click({ timeout: 10000 });
   return sheetTrigger;
+}
+
+/** Flat search option for a model id / spec label once `#model-search` is open. */
+async function selectModelSearchOption(
+  page: Page,
+  query: string,
+  optionName: string | RegExp = query,
+) {
+  const search = page.locator('#model-search');
+  await expect(search).toBeVisible({ timeout: 10000 });
+  await search.click({ timeout: 5000 });
+  await expect(page.getByRole('listbox')).toBeVisible({ timeout: 10000 });
+
+  const option =
+    typeof optionName === 'string'
+      ? page.getByRole('option', { name: optionName, exact: true })
+      : page.getByRole('option', { name: optionName });
+
+  /** Search is debounced 200ms; remounts on each committed query. */
+  await expect(async () => {
+    await search.fill('');
+    await search.pressSequentially(query, { delay: 15 });
+    await expect(option).toBeVisible({ timeout: 2500 });
+  }).toPass({ timeout: 15000 });
+
+  await option.scrollIntoViewIfNeeded();
+  await option.click({ timeout: 10000 });
 }
 
 async function assertModelSelection(page: Page, expectedText: string) {
@@ -191,16 +222,7 @@ export async function selectMockEndpoint(page: Page, endpoint: MockEndpoint) {
   }
 
   await openModelSelector(page);
-  const search = page.locator('#model-search');
-  await expect(search).toBeVisible({ timeout: 10000 });
-  const modelOption = page.getByRole('option', { name: endpoint.model, exact: true });
-  /** Search is debounced 200ms; retry fill until the flat result row mounts. */
-  await expect(async () => {
-    await search.fill(endpoint.model);
-    await expect(modelOption).toBeVisible({ timeout: 2000 });
-  }).toPass({ timeout: 10000 });
-  await modelOption.scrollIntoViewIfNeeded();
-  await modelOption.click({ timeout: 10000 });
+  await selectModelSearchOption(page, endpoint.model);
   await assertModelSelection(page, endpoint.model);
 }
 
@@ -222,17 +244,7 @@ export async function selectModelSpec(page: Page, label: string) {
   }
 
   await openModelSelector(page);
-  const search = page.locator('#model-search');
-  await expect(search).toBeVisible({ timeout: 10000 });
-  const option = page.getByRole('option', {
-    name: new RegExp(`(^|\\s)${escapeRegExp(label)}\\b`),
-  });
-  await expect(async () => {
-    await search.fill(label);
-    await expect(option).toBeVisible({ timeout: 2000 });
-  }).toPass({ timeout: 10000 });
-  await option.scrollIntoViewIfNeeded();
-  await option.click({ timeout: 10000 });
+  await selectModelSearchOption(page, label, new RegExp(`(^|\\s)${escapeRegExp(label)}\\b`));
   await assertModelSelection(page, label);
 }
 

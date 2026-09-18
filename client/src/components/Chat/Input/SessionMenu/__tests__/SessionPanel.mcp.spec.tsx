@@ -15,6 +15,7 @@ jest.mock('~/hooks', () => ({
   useLocalize: () => (key: string) => key,
   useHasAccess: () => true,
   useHasMemoryAccess: () => false,
+  activateCatalog: jest.fn(),
   useAgentCapabilities: () => ({
     codeEnabled: false,
     webSearchEnabled: false,

@@ -70,7 +70,7 @@ const ToolsDropdown = ({
             aria-haspopup="dialog"
             aria-expanded={sheetOpen}
             className={cn(
-              'focus-visible:ring-primary flex size-theme-control items-center justify-center rounded-theme-control-round border p-1 hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-opacity-50',
+              'focus-visible:ring-primary flex size-theme-control items-center justify-center rounded-[9px] border p-1 hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-opacity-50',
               sheetOpen
                 ? 'border-violet-400/60 bg-violet-500/15 text-violet-200'
                 : 'border-border-light bg-surface-secondary text-text-secondary',

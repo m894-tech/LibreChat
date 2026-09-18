@@ -26,6 +26,11 @@ type SessionSheetProps = {
 /**
  * Dense Session chrome — same panel tree at every breakpoint.
  * Small screens: bottom sheet. Desktop: composer-anchored panel (no separate toolbar IA).
+ *
+ * `modal={false}`: the sheet hosts body-portaled Ariakit menus (ModelSelector
+ * ComboboxList). A modal dialog aria-hides siblings and parks pointer-events on
+ * body, so search options never reach getByRole / stay clickable — same class of
+ * failure as nested MCPSubMenu under OGDialog.
  */
 export default function SessionSheet({
   conversation,
@@ -61,7 +66,7 @@ export default function SessionSheet({
   }
 
   return (
-    <OGDialog open={open} onOpenChange={onOpenChange}>
+    <OGDialog open={open} onOpenChange={onOpenChange} modal={false}>
       <OGDialogContent
         showCloseButton={false}
         className={cn(

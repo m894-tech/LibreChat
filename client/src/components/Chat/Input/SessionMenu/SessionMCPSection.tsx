@@ -1,11 +1,11 @@
 import React, { useEffect } from 'react';
 import { PinIcon } from '@librechat/client';
 import { Permissions, PermissionTypes } from 'librechat-data-provider';
+import { activateCatalog, useHasAccess, useLocalize } from '~/hooks';
 import MCPServerMenuItem from '~/components/MCP/MCPServerMenuItem';
 import MCPConfigDialog from '~/components/MCP/MCPConfigDialog';
 import { useMCPRefresh } from '~/hooks/MCP/useMCPRefresh';
 import { useGetStartupConfig } from '~/data-provider';
-import { activateCatalog, useHasAccess, useLocalize } from '~/hooks';
 import { useBadgeRowContext } from '~/Providers';
 import { cn } from '~/utils';
 
