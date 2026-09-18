@@ -14,6 +14,7 @@ export default function AttachmentIcon({
       xmlns="http://www.w3.org/2000/svg"
       className={className}
       aria-hidden="true"
+      data-lc-attach="pre-meili-clip"
     >
       <path
         fillRule="evenodd"

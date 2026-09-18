@@ -33,6 +33,7 @@ export default function MCPIcon({ icon, onIconChange, errorId }: MCPIconProps) {
       >
         {icon ? (
           <CustomIcon
+            monochrome={false}
             src={icon}
             alt=""
             className="h-full w-full rounded-xl object-cover text-text-primary"

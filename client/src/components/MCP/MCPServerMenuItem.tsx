@@ -60,6 +60,7 @@ export default function MCPServerMenuItem({
       <div className="relative flex-shrink-0">
         {server.config?.iconPath ? (
           <CustomIcon
+            monochrome={false}
             src={server.config.iconPath}
             className="h-8 w-8 rounded-lg object-cover text-text-primary"
             alt=""

@@ -76,6 +76,7 @@ export default function StackedMCPIcons({
         >
           {icon.iconPath ? (
             <CustomIcon
+              monochrome={false}
               src={icon.iconPath}
               alt={icon.displayName}
               className={cn('rounded-full object-cover text-text-primary', sizes.icon)}

@@ -117,6 +117,7 @@ export default function ToolIcon({ type, iconUrl, isAnimating = false, className
   if (iconUrl) {
     return (
       <CustomIcon
+        monochrome={false}
         src={iconUrl}
         alt=""
         className={cn(

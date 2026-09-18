@@ -46,7 +46,6 @@ const loadInsightsView = () =>
     Component: m.default,
   }));
 
-
 const loadAutomationsView = () =>
   import('~/components/Automations').then((m) => ({
     Component: m.AutomationsPage,
@@ -56,7 +55,6 @@ const loadAutomationCreateView = () =>
   import('~/components/Automations').then((m) => ({
     Component: m.AutomationCreatePage,
   }));
-
 
 const loadProjectsView = () =>
   import('~/components/Projects').then((m) => ({
@@ -185,7 +183,7 @@ export const router = createBrowserRouter(
               lazy: loadSkillsView,
             },
             /* Automations: list / create / detail — nested so RR ranks
-             * /automations/new above :automationId (CACHE_BUST=automations-v2). */
+             * /automations/new above :automationId (CACHE_BUST=attach-icons-automations-v3). */
             {
               path: 'automations',
               children: [

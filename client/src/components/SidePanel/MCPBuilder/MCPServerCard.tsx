@@ -101,6 +101,7 @@ export default function MCPServerCard({
         <div className="relative flex-shrink-0">
           {server.config?.iconPath ? (
             <CustomIcon
+              monochrome={false}
               src={server.config.iconPath}
               className="size-8 rounded-lg object-cover text-text-primary"
               alt=""

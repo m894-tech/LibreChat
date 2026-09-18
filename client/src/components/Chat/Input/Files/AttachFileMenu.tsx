@@ -354,12 +354,13 @@ const AttachFileMenu = ({
           aria-label="Attach File Options"
           aria-keyshortcuts={uploadFileAriaKey}
           className={cn(
-            'flex size-theme-control items-center justify-center rounded-theme-control-round p-1 transition-colors duration-theme-fast hover:bg-surface-composer-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary focus-visible:ring-opacity-50',
-            isPopoverActive && 'bg-surface-composer-hover',
+            /* Pre-meili attach chrome (8d6348998). */
+            'focus-visible:ring-primary flex size-9 items-center justify-center rounded-full p-1 text-text-secondary hover:bg-surface-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-opacity-50',
+            isPopoverActive && 'bg-surface-hover text-text-primary',
           )}
         >
           <div className="flex w-full items-center justify-center gap-2">
-            <AttachmentIcon />
+            <AttachmentIcon className="size-6" />
           </div>
         </Ariakit.MenuButton>
       }
@@ -404,16 +405,16 @@ const AttachFileMenu = ({
               render={
                 <IconButton
                   type="button"
-                  size="theme"
-                  shape="theme"
+                  size="md"
+                  shape="round"
                   disabled={isUploadDisabled}
                   id="attach-file-button"
                   label={localize('com_sidepanel_attach_files')}
                   onClick={handleUnifiedUpload}
                   aria-keyshortcuts={uploadFileAriaKey}
-                  className="p-1 hover:bg-surface-composer-hover"
+                  className="p-1 text-text-secondary hover:bg-surface-hover hover:text-text-primary"
                 >
-                  <AttachmentIcon />
+                  <AttachmentIcon className="size-6" />
                 </IconButton>
               }
               id="attach-file-button"

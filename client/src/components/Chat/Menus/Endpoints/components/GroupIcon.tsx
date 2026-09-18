@@ -45,10 +45,11 @@ const GroupIcon: React.FC<GroupIconProps> = ({ iconURL, groupName }) => {
 
   return (
     <div
-      className="icon-md shrink-0 overflow-hidden rounded-full text-text-primary"
+      className="icon-md shrink-0 overflow-hidden rounded-full text-text-secondary"
       style={{ width: 20, height: 20 }}
     >
       <CustomIcon
+        monochrome={false}
         src={iconURL}
         alt={groupName}
         className="h-full w-full object-cover"

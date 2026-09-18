@@ -45,7 +45,8 @@ const AttachFile = ({
             aria-keyshortcuts={ariaKey}
             disabled={isUploadDisabled}
             className={cn(
-              'flex size-theme-control items-center justify-center rounded-theme-control-round p-1 transition-colors duration-theme-fast hover:bg-surface-composer-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary focus-visible:ring-opacity-50',
+              /* Pre-meili attach chrome (8d6348998): round 36px control, not stock theme-control. */
+              'focus-visible:ring-primary flex size-9 items-center justify-center rounded-full p-1 text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-opacity-50',
             )}
             onKeyDownCapture={(e) => {
               if (!inputRef.current) {
@@ -65,7 +66,7 @@ const AttachFile = ({
             }}
           >
             <div className="flex w-full items-center justify-center gap-2">
-              <AttachmentIcon />
+              <AttachmentIcon className="size-6" />
             </div>
           </button>
         }
