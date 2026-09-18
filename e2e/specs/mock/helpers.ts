@@ -70,21 +70,21 @@ export async function closeSessionSheet(page: Page) {
   await expect(sheet).toBeHidden();
 }
 
-/** Bookmark control inside Session → More (not the nav filter). */
+/** Bookmark control in the composer chrome cluster (dense v5.1). */
 export function sessionBookmarkButton(page: Page) {
-  return page.getByTestId('session-more-chrome').getByTestId('bookmark-menu');
+  return page.getByTestId('composer-chrome-cluster').getByTestId('bookmark-menu');
 }
 
-/** Export/Share trigger inside Session → More. */
+/** Export/Share trigger in the composer chrome cluster (dense v5.1). */
 export function sessionExportButton(page: Page) {
-  return page.getByTestId('session-more-chrome').getByRole('button', { name: /Export\/Share/ });
+  return page.getByTestId('composer-chrome-cluster').getByRole('button', { name: /Export\/Share/ });
 }
 
 export const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
- * Open Session → Tools → MCP Servers menu (dense v5; MCP is no longer a composer badge).
- * Leaves the sheet on the MCP view with the server menu open.
+ * Open Session → Tools → MCP Servers (dense v5; MCP is no longer a composer badge).
+ * Leaves the sheet on the MCP view with the inline server list visible.
  */
 export async function openSessionMcpMenu(page: Page) {
   await openSessionSheet(page);
@@ -94,29 +94,19 @@ export async function openSessionMcpMenu(page: Page) {
     await sheet.getByRole('button', { name: /MCP Servers/ }).click();
     await expect(mcpSection).toBeVisible();
   }
-  const menuOpen = await page
-    .getByRole('menuitemcheckbox')
-    .first()
-    .isVisible()
-    .catch(() => false);
-  if (!menuOpen) {
-    await mcpSection
-      .getByRole('button', { name: /MCP Servers|E2E Memory/ })
-      .first()
-      .click();
-  }
+  await expect(sheet.getByTestId('session-mcp-server-list')).toBeVisible();
 }
 
 /** Select an ephemeral MCP server from Session → Tools → MCP, then close the sheet. */
 export async function selectSessionMcpServer(page: Page, serverTitle: string) {
   await openSessionMcpMenu(page);
-  const serverItem = page.getByRole('menuitemcheckbox', { name: new RegExp(serverTitle) });
+  const sheet = page.getByTestId('session-sheet');
+  const serverItem = sheet.getByRole('checkbox', { name: new RegExp(serverTitle) });
   await expect(serverItem).toBeVisible();
   if ((await serverItem.getAttribute('aria-checked')) !== 'true') {
     await serverItem.click();
   }
   await expect(serverItem).toHaveAttribute('aria-checked', 'true');
-  await page.keyboard.press('Escape');
   await closeSessionSheet(page);
 }
 

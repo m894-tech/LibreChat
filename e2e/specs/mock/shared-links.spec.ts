@@ -7,7 +7,6 @@ import {
   MOCK_ENDPOINTS,
   NEW_CHAT_PATH,
   mockReply,
-  openSessionSheet,
   selectMockEndpoint,
   sendMessage,
   sessionExportButton,
@@ -170,7 +169,6 @@ test.describe('shared links', () => {
       throw new Error(`Could not parse conversation id from ${conversationUrl.href}`);
     }
 
-    await openSessionSheet(page);
     await sessionExportButton(page).click();
     await page.getByTestId('share-conversation-menu-item').click();
     const shareDialog = page.getByRole('dialog', { name: 'Share link to chat' });
@@ -242,7 +240,6 @@ test.describe('shared links', () => {
     await expect(mockReply(page)).toHaveCount(1);
 
     await page.goto(conversationUrl.pathname, { timeout: 10000 });
-    await openSessionSheet(page);
     await sessionExportButton(page).click();
     await page.getByTestId('share-conversation-menu-item').click();
     await expect(shareDialog).toBeVisible();
@@ -355,7 +352,6 @@ test.describe('shared links', () => {
     }
 
     await page.goto(conversationUrl.pathname, { timeout: 10000 });
-    await openSessionSheet(page);
     await sessionExportButton(page).click();
     await page.getByTestId('share-conversation-menu-item').click();
     await expect(shareDialog).toBeVisible();

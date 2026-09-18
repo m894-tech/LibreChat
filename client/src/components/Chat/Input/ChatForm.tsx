@@ -38,7 +38,10 @@ import {
   PendingToolApprovalButton,
   PendingToolApprovalPanel,
 } from '~/components/Chat/approval/Review';
+import ExportAndShareMenu from '~/components/Chat/ExportAndShareMenu';
+import BookmarkMenu from '~/components/Chat/Menus/BookmarkMenu';
 import PendingManualSkillsChips from './PendingManualSkillsChips';
+import AddMultiConvo from '~/components/Chat/AddMultiConvo';
 import usePastedTextEdit from '~/hooks/Files/usePastedTextEdit';
 import useAskAnswerMode from '~/hooks/Input/useAskAnswerMode';
 import AskUserQuestionPopover from './AskUserQuestionPopover';
@@ -887,7 +890,15 @@ const ChatForm = memo(function ChatForm({
                 <div className="grow" />
                 <PrivateToggle index={index} />
                 <TokenUsage index={index} conversation={conversation} isSubmitting={isSubmitting} />
-                <div className="flex shrink-0 items-center gap-1.5">
+                <div
+                  className="flex shrink-0 items-center gap-1.5"
+                  data-testid="composer-chrome-cluster"
+                >
+                  <ExportAndShareMenu
+                    isSharedButtonEnabled={startupConfig?.sharedLinksEnabled ?? false}
+                  />
+                  <BookmarkMenu />
+                  <AddMultiConvo />
                   <NewConversationButton index={index} />
                   {SpeechToText && (
                     <AudioRecorder

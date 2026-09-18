@@ -1,27 +1,24 @@
 import React, { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 import { ChevronRight } from 'lucide-react';
-import { getConfigDefaults, PermissionTypes, Permissions } from 'librechat-data-provider';
+import { getConfigDefaults } from 'librechat-data-provider';
 import type { TConversation } from 'librechat-data-provider';
 import type { NativeModelControls } from '~/hooks/Input/useNativeModelControls';
 import ModelSelector from '~/components/Chat/Menus/Endpoints/ModelSelector';
 import { TraceButton, useTraceControl } from '~/components/Chat/Trace';
-import ExportAndShareMenu from '~/components/Chat/ExportAndShareMenu';
 import { SessionAutomationsSection } from '~/components/Automations';
 import SessionNativeKnobsSection from './SessionNativeKnobsSection';
-import BookmarkMenu from '~/components/Chat/Menus/BookmarkMenu';
 import ResponseFormatSection from './ResponseFormatSection';
 import ContextSourcesSection from './ContextSourcesSection';
 import SessionProfileSection from './SessionProfileSection';
-import AddMultiConvo from '~/components/Chat/AddMultiConvo';
 import SessionEffortSection from './SessionEffortSection';
 import SessionSkillsSection from './SessionSkillsSection';
 import { useGetStartupConfig } from '~/data-provider';
 import SessionOrchSection from './SessionOrchSection';
 import { PresetsMenu } from '~/components/Chat/Menus';
-import { useLocalize, useHasAccess } from '~/hooks';
 import AgentPickerButton from './AgentPickerButton';
 import SessionMCPSection from './SessionMCPSection';
+import { useLocalize } from '~/hooks';
 import ToolGrid from './ToolGrid';
 import store from '~/store';
 
@@ -78,14 +75,8 @@ export default function SessionPanel({
     traceViewer: interfaceConfig.traceViewer,
     isSubmitting,
   });
-  const hasAccessToBookmarks = useHasAccess({
-    permissionType: PermissionTypes.BOOKMARKS,
-    permission: Permissions.USE,
-  });
-  const hasAccessToMultiConvo = useHasAccess({
-    permissionType: PermissionTypes.MULTI_CONVO,
-    permission: Permissions.USE,
-  });
+  const showMoreChrome =
+    trace.show || (interfaceConfig.presets === true && interfaceConfig.modelSelect);
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto px-2.5 py-2" data-testid="session-panel">
@@ -143,20 +134,17 @@ export default function SessionPanel({
                 label={localize('com_ui_context_sources')}
                 onClick={() => onViewChange('context')}
               />
-              <div
-                className="flex flex-wrap items-center gap-1 border-t border-border-light px-2 py-1.5"
-                data-testid="session-more-chrome"
-              >
-                {trace.show ? <TraceButton onClick={trace.open} /> : null}
-                <ExportAndShareMenu
-                  isSharedButtonEnabled={startupConfig?.sharedLinksEnabled ?? false}
-                />
-                {interfaceConfig.presets === true && interfaceConfig.modelSelect ? (
-                  <PresetsMenu />
-                ) : null}
-                {hasAccessToBookmarks ? <BookmarkMenu /> : null}
-                {hasAccessToMultiConvo ? <AddMultiConvo /> : null}
-              </div>
+              {showMoreChrome ? (
+                <div
+                  className="flex flex-wrap items-center gap-1 border-t border-border-light px-2 py-1.5"
+                  data-testid="session-more-chrome"
+                >
+                  {trace.show ? <TraceButton onClick={trace.open} /> : null}
+                  {interfaceConfig.presets === true && interfaceConfig.modelSelect ? (
+                    <PresetsMenu />
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           </section>
         </div>
