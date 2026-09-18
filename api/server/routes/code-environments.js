@@ -7,9 +7,10 @@ const {
   codeEnvironmentStatusLimiter,
 } = require('@librechat/api');
 const { SystemCapabilities } = require('@librechat/data-schemas');
+const { PermissionBits } = require('librechat-data-provider');
 const { requireCapability } = require('~/server/middleware/roles/capabilities');
 const { getAppConfig, getCodeEnvironmentRegistry } = require('~/server/services/Config');
-const { requireJwtAuth } = require('~/server/middleware');
+const { requireJwtAuth, canAccessCodeEnvironmentResource } = require('~/server/middleware');
 const db = require('~/models');
 
 const router = express.Router();
@@ -43,12 +44,19 @@ router.get(
   '/:environmentId/status',
   codeEnvironmentStatusIpLimiter,
   codeEnvironmentStatusLimiter,
+  canAccessCodeEnvironmentResource({ requiredPermission: PermissionBits.VIEW }),
   (req, res, next) => getHandlers().status(req, res, next),
 );
-router.patch('/:environmentId/settings', (req, res, next) =>
-  getHandlers().updateSettings(req, res, next),
+router.patch(
+  '/:environmentId/settings',
+  canAccessCodeEnvironmentResource({ requiredPermission: PermissionBits.EDIT }),
+  (req, res, next) => getHandlers().updateSettings(req, res, next),
 );
-router.delete('/:environmentId', (req, res, next) => getHandlers().remove(req, res, next));
+router.delete(
+  '/:environmentId',
+  canAccessCodeEnvironmentResource({ requiredPermission: PermissionBits.DELETE }),
+  (req, res, next) => getHandlers().remove(req, res, next),
+);
 router.patch(
   '/conversations/:conversationId/decision',
   codeEnvironmentStatusIpLimiter,

@@ -10,6 +10,7 @@ import React, {
 } from 'react';
 import { Badge } from '@librechat/client';
 import { useRecoilValue, useRecoilCallback } from 'recoil';
+import type { TConversation } from 'librechat-data-provider';
 import type { LucideIcon } from 'lucide-react';
 import type { BadgeItem } from '~/common';
 import CodeInterpreter from './CodeInterpreter';
@@ -27,12 +28,15 @@ import store from '~/store';
 
 interface BadgeRowProps {
   showEphemeralBadges?: boolean;
+  showSessionMenu?: boolean;
   onChange: (badges: Pick<BadgeItem, 'id'>[]) => void;
   onToggle?: (badgeId: string, currentActive: boolean) => void;
   conversationId?: string | null;
   specName?: string | null;
   isSubmitting?: boolean;
   isInChat: boolean;
+  conversation?: TConversation | null;
+  index?: number;
 }
 
 interface BadgeWrapperProps {
@@ -144,12 +148,15 @@ const dragReducer = (state: DragState, action: DragAction): DragState => {
 
 function BadgeRow({
   showEphemeralBadges,
+  showSessionMenu,
   conversationId,
   specName,
   isSubmitting,
   onChange,
   onToggle,
   isInChat,
+  conversation,
+  index = 0,
 }: BadgeRowProps) {
   const [orderedBadges, setOrderedBadges] = useState<BadgeItem[]>([]);
   const [dragState, dispatch] = useReducer(dragReducer, {
@@ -331,7 +338,14 @@ function BadgeRow({
       observeToolAuthorization={showEphemeralBadges === true}
     >
       <div ref={containerRef} className="relative flex flex-wrap items-center gap-2">
-        {showEphemeralBadges === true && <ToolsDropdown />}
+        {showSessionMenu === true && (
+          <ToolsDropdown
+            conversation={conversation}
+            modelControlsOnly={showEphemeralBadges !== true}
+            index={index}
+            isSubmitting={isSubmitting}
+          />
+        )}
         {tempBadges.map((badge, index) => (
           <React.Fragment key={badge.id}>
             {dragState.draggedBadge && dragState.insertIndex === index && ghostBadge && (

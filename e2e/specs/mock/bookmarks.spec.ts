@@ -7,6 +7,7 @@ import {
   NEW_CHAT_PATH,
   sendMessage,
   fetchJson,
+  sessionBookmarkButton,
 } from './helpers';
 
 type TagCount = { tag: string; count: number };
@@ -16,8 +17,12 @@ const uniqueName = (prefix: string) =>
 
 const firstConversation = (page: Page) => page.getByTestId('convo-item').first();
 
-/** The header bookmark menu (the nav filter button shares the `bookmark-menu` testid). */
-const headerBookmarkButton = (page: Page) => page.locator('#bookmark-menu-button');
+/** Return the composer bookmark control (dense v5.1 — not under Session → More). */
+async function openComposerBookmarkMenu(page: Page) {
+  const bookmark = sessionBookmarkButton(page);
+  await expect(bookmark).toBeVisible({ timeout: 15000 });
+  await bookmark.click();
+}
 
 /** Start a mock chat and send a message so the conversation persists at `/c/:id`. */
 async function startBookmarkableChat(page: Page): Promise<void> {
@@ -26,15 +31,15 @@ async function startBookmarkableChat(page: Page): Promise<void> {
   const response = await sendMessage(page, 'hello bookmarks');
   expect(response.ok()).toBeTruthy();
   await expect(page).toHaveURL(/\/c\/(?!new)/, { timeout: 15000 });
-  await expect(headerBookmarkButton(page)).toBeVisible({ timeout: 15000 });
+  await expect(sessionBookmarkButton(page)).toBeVisible({ timeout: 15000 });
 }
 
 /** Create a brand-new bookmark and attach it to the active conversation (count -> 1). */
 async function createBookmarkForActiveChat(page: Page, tag: string): Promise<void> {
-  await headerBookmarkButton(page).click();
+  await openComposerBookmarkMenu(page);
   await page.getByRole('menuitem', { name: 'New Bookmark' }).click();
 
-  const dialog = page.getByRole('dialog');
+  const dialog = page.getByRole('dialog', { name: 'New Bookmark' });
   await dialog.getByRole('textbox', { name: 'Title' }).fill(tag);
   const [response] = await Promise.all([
     page.waitForResponse(
@@ -50,7 +55,7 @@ async function createBookmarkForActiveChat(page: Page, tag: string): Promise<voi
 
 /** Attach an already-existing bookmark to the active conversation (count += 1). */
 async function addExistingBookmarkToActiveChat(page: Page, tag: string): Promise<void> {
-  await headerBookmarkButton(page).click();
+  await openComposerBookmarkMenu(page);
   // Existing-tag rows render as `menuitemcheckbox` (they carry aria-checked).
   const tagItem = page.getByRole('menuitemcheckbox', { name: tag, exact: true });
   await expect(tagItem).toBeVisible({ timeout: 10000 });

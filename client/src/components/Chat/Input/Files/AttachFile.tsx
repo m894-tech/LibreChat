@@ -45,7 +45,9 @@ const AttachFile = ({
             aria-keyshortcuts={ariaKey}
             disabled={isUploadDisabled}
             className={cn(
-              'flex size-theme-control items-center justify-center rounded-theme-control-round p-1 transition-colors duration-theme-fast hover:bg-surface-composer-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary focus-visible:ring-opacity-50',
+              /* Pre-meili / densify custom attach chrome — not theme-control default. */
+              'flex size-9 items-center justify-center rounded-full border border-border-light bg-surface-secondary p-1 text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary focus-visible:ring-opacity-50',
+              isUploadDisabled && 'pointer-events-none opacity-50',
             )}
             onKeyDownCapture={(e) => {
               if (!inputRef.current) {
@@ -63,10 +65,9 @@ const AttachFile = ({
               inputRef.current.value = '';
               inputRef.current.click();
             }}
+            data-testid="composer-attach-file"
           >
-            <div className="flex w-full items-center justify-center gap-2">
-              <AttachmentIcon />
-            </div>
+            <AttachmentIcon />
           </button>
         }
       />

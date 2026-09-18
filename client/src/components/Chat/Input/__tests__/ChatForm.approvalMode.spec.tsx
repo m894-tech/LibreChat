@@ -4,8 +4,8 @@ import { DndProvider } from 'react-dnd';
 import { useForm } from 'react-hook-form';
 import { RecoilRoot, useRecoilState } from 'recoil';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { render, screen } from '@testing-library/react';
 import { BrowserRouter as Router } from 'react-router-dom';
+import { render, screen, cleanup } from '@testing-library/react';
 import { QueryKeys, EModelEndpoint } from 'librechat-data-provider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { TFile, TConversation } from 'librechat-data-provider';
@@ -22,6 +22,16 @@ jest.mock('~/hooks/Agents/useCodeApprovalMode', () => ({
     available: true,
     modes: ['ask', 'acceptEdits'],
     selected: 'ask',
+  }),
+}));
+
+/** Session chrome ToolsDropdown loads native knobs via fetch; stub for jsdom. */
+jest.mock('~/hooks/Input/useNativeModelControls', () => ({
+  useNativeModelControls: () => ({
+    family: null,
+    values: {},
+    payload: undefined,
+    applyChip: jest.fn(),
   }),
 }));
 
@@ -106,6 +116,11 @@ function renderComposer({ submitting }: { submitting: boolean }) {
 describe('ChatForm code approval mode', () => {
   beforeEach(() => {
     localStorage.clear();
+  });
+
+  afterEach(async () => {
+    cleanup();
+    await Promise.resolve();
   });
 
   test('keeps the mode selector usable while a run is in flight', async () => {

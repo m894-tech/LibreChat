@@ -1,7 +1,7 @@
 import { memo, useRef, useMemo, useEffect, useState, useCallback } from 'react';
 import { useWatch } from 'react-hook-form';
+import { Constants, isAssistantsEndpoint } from 'librechat-data-provider';
 import { useRecoilState, useRecoilValue, useRecoilCallback } from 'recoil';
-import { Constants, isAssistantsEndpoint, isAgentsEndpoint } from 'librechat-data-provider';
 import { composerSurfaceClasses, composerSurfaceShadow, TextareaAutosize } from '@librechat/client';
 import type { TChatProject, TMessage, TConversation } from 'librechat-data-provider';
 import type { SetterOrUpdater } from 'recoil';
@@ -33,11 +33,15 @@ import {
   useAddedChatContext,
   useAssistantsMapContext,
 } from '~/Providers';
+import { SessionAgentsBar, SessionSummaryPill, NewConversationButton, PrivateToggle } from './SessionMenu';
 import {
   PendingToolApprovalButton,
   PendingToolApprovalPanel,
 } from '~/components/Chat/approval/Review';
+import ExportAndShareMenu from '~/components/Chat/ExportAndShareMenu';
+import BookmarkMenu from '~/components/Chat/Menus/BookmarkMenu';
 import PendingManualSkillsChips from './PendingManualSkillsChips';
+import AddMultiConvo from '~/components/Chat/AddMultiConvo';
 import usePastedTextEdit from '~/hooks/Files/usePastedTextEdit';
 import useAskAnswerMode from '~/hooks/Input/useAskAnswerMode';
 import AskUserQuestionPopover from './AskUserQuestionPopover';
@@ -776,6 +780,9 @@ const ChatForm = memo(function ChatForm({
                 onClose={pastedTextEdit.closeEditor}
                 onSave={pastedTextEdit.saveEdit}
               />
+              <div className="px-2 pb-0.5 pt-0.5">
+                <SessionSummaryPill conversation={conversation} index={index} />
+              </div>
               {endpoint && (
                 <div className={cn('flex', isRTL ? 'flex-row-reverse' : 'flex-row')}>
                   <div
@@ -836,13 +843,20 @@ const ChatForm = memo(function ChatForm({
                   </div>
                 </div>
               )}
+              <SessionAgentsBar
+                activeAgentId={conversation?.agent_id}
+                conversationId={conversationId}
+                index={index}
+              />
+              {/* Dense v5.1 tools row: 📎 ⚙ …… ＋(dashed) 🎤 ↑ */}
               <div
                 className={cn(
-                  '@container flex flex-wrap items-center gap-2 px-2 pb-2',
+                  '@container flex flex-wrap items-center gap-1.5 px-2 pb-1.5 pt-0.5',
                   isRTL ? 'flex-row-reverse' : 'flex-row',
                 )}
+                data-testid="composer-tools-row"
               >
-                <div className="shrink-0">
+                <div className="flex shrink-0 items-center gap-1.5">
                   <AttachFileChat
                     conversation={conversation}
                     disableInputs={disableInputs}
@@ -850,73 +864,83 @@ const ChatForm = memo(function ChatForm({
                     setFiles={setFiles}
                     setFilesLoading={setFilesLoading}
                   />
-                </div>
-                <BadgeRow
-                  showEphemeralBadges={
-                    !!endpoint &&
-                    !hideBadgeRow &&
-                    !isAgentsEndpoint(endpoint) &&
-                    !isAssistantsEndpoint(endpoint)
-                  }
-                  isSubmitting={isSubmitting}
-                  conversationId={conversationId}
-                  specName={conversation?.spec}
-                  onChange={setBadges}
-                  isInChat={
-                    Array.isArray(conversation?.messages) && conversation.messages.length >= 1
-                  }
-                />
-                <CodeApprovalMenu
-                  conversation={conversation}
-                  addedConversation={addedConvo}
-                  setConversation={setConversation}
-                  disabled={disableInputs}
-                />
-                {index === 0 && conversationId != null && (
-                  <PendingToolApprovalButton conversationId={conversationId} />
-                )}
-                <div className="grow" />
-                <TokenUsage index={index} conversation={conversation} isSubmitting={isSubmitting} />
-                {SpeechToText && (
-                  <AudioRecorder
-                    methods={methods}
-                    ask={submitComposerText}
-                    disabled={disableInputs || isNotAppendable}
+                  <BadgeRow
+                    showSessionMenu={!hideBadgeRow && !isAssistantsEndpoint(endpoint)}
+                    showEphemeralBadges={false}
                     isSubmitting={isSubmitting}
+                    conversationId={conversationId}
+                    specName={conversation?.spec}
+                    conversation={conversation}
+                    index={index}
+                    onChange={setBadges}
+                    isInChat={
+                      Array.isArray(conversation?.messages) && conversation.messages.length >= 1
+                    }
                   />
-                )}
-                {steering.duringRunActive &&
-                  steering.canControlGeneration &&
-                  (textValue?.trim() ?? '') !== '' && (
-                    <div className="shrink-0">
-                      <InterruptSteerButton
-                        steering={steering}
-                        getText={() => methods.getValues('text')}
-                        onConsumed={consumeComposer}
-                        disabled={filesLoading}
-                      />
-                    </div>
+                  <CodeApprovalMenu
+                    conversation={conversation}
+                    addedConversation={addedConvo}
+                    setConversation={setConversation}
+                    disabled={disableInputs}
+                  />
+                  {index === 0 && conversationId != null && (
+                    <PendingToolApprovalButton conversationId={conversationId} />
                   )}
-                <div className={cn('shrink-0', isRTL ? 'mr-auto' : 'ml-auto')}>
-                  {isSubmitting &&
-                  (showStopButton || steering.duringRunActive) &&
-                  !answerMode.composerAnswers
-                    ? duringRunSlot
-                    : endpoint && (
-                        <SendButton
-                          ref={submitButtonRef}
-                          control={methods.control}
-                          fileCount={submittableFileCount}
-                          disabled={
-                            filesLoading ||
-                            disableInputs ||
-                            !codeWorkspace.canSubmit ||
-                            isNotAppendable ||
-                            answerMode.composerLocked ||
-                            (isSubmitting && !answerMode.composerAnswers)
-                          }
+                </div>
+                <div className="grow" />
+                <PrivateToggle index={index} />
+                <TokenUsage index={index} conversation={conversation} isSubmitting={isSubmitting} />
+                <div
+                  className="flex shrink-0 items-center gap-1.5"
+                  data-testid="composer-chrome-cluster"
+                >
+                  <ExportAndShareMenu
+                    isSharedButtonEnabled={startupConfig?.sharedLinksEnabled ?? false}
+                  />
+                  <BookmarkMenu />
+                  <AddMultiConvo />
+                  <NewConversationButton index={index} />
+                  {SpeechToText && (
+                    <AudioRecorder
+                      methods={methods}
+                      ask={submitComposerText}
+                      disabled={disableInputs || isNotAppendable}
+                      isSubmitting={isSubmitting}
+                    />
+                  )}
+                  {steering.duringRunActive &&
+                    steering.canControlGeneration &&
+                    (textValue?.trim() ?? '') !== '' && (
+                      <div className="shrink-0">
+                        <InterruptSteerButton
+                          steering={steering}
+                          getText={() => methods.getValues('text')}
+                          onConsumed={consumeComposer}
+                          disabled={filesLoading}
                         />
-                      )}
+                      </div>
+                    )}
+                  <div className="shrink-0">
+                    {isSubmitting &&
+                    (showStopButton || steering.duringRunActive) &&
+                    !answerMode.composerAnswers
+                      ? duringRunSlot
+                      : endpoint && (
+                          <SendButton
+                            ref={submitButtonRef}
+                            control={methods.control}
+                            fileCount={submittableFileCount}
+                            disabled={
+                              filesLoading ||
+                              disableInputs ||
+                              !codeWorkspace.canSubmit ||
+                              isNotAppendable ||
+                              answerMode.composerLocked ||
+                              (isSubmitting && !answerMode.composerAnswers)
+                            }
+                          />
+                        )}
+                  </div>
                 </div>
               </div>
               {TextToSpeech && automaticPlayback && <AutoPlayAudio index={index} />}

@@ -74,6 +74,8 @@ export interface IUser extends Document {
   updatedAt?: Date;
   /** Field for external source identification (for consistency with TPrincipal schema) */
   idOnTheSource?: string;
+  /** Last successful Entra group membership sync (Graph). Used for TTL refresh outside login. */
+  entraGroupLastSyncedAt?: Date;
   tenantId?: string;
   federatedTokens?: OIDCTokens;
   openidTokens?: OIDCTokens;

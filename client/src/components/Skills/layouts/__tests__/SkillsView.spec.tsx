@@ -43,6 +43,11 @@ jest.mock('~/components/Skills/forms', () => ({
   SkillForm: () => <div data-testid="skill-form" />,
 }));
 
+jest.mock('~/components/Skills/sidebar/SkillsSidePanel', () => ({
+  __esModule: true,
+  default: () => <div data-testid="skills-side-panel" />,
+}));
+
 jest.mock('~/components/Skills/display/SkillFileViewer', () => () => (
   <div data-testid="skill-file-viewer" />
 ));
@@ -69,6 +74,19 @@ describe('SkillsView', () => {
     render(<RouterProvider router={router} />);
 
     expect(screen.getByTestId('create-skill-form')).toBeInTheDocument();
+  });
+
+  it('renders the skills catalog on /skills (Manage destination)', () => {
+    const router = createMemoryRouter([{ path: '/skills', element: <SkillsView /> }], {
+      initialEntries: ['/skills'],
+    });
+
+    render(<RouterProvider router={router} />);
+
+    expect(screen.getByTestId('skills-management-catalog')).toBeInTheDocument();
+    expect(screen.getByTestId('skills-side-panel')).toBeInTheDocument();
+    expect(screen.getByText('com_ui_skills')).toBeInTheDocument();
+    expect(screen.queryByText('com_ui_skill_no_selection')).not.toBeInTheDocument();
   });
 
   it('renders the sidebar toggle on small screens', () => {

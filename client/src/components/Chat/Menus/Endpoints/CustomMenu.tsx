@@ -1,5 +1,6 @@
 import * as React from 'react';
 import * as Ariakit from '@ariakit/react';
+import { usePopoverZIndex } from '@librechat/client';
 import { cn } from '~/utils';
 
 export interface CustomMenuProps extends Ariakit.MenuButtonProps<'div'> {
@@ -32,6 +33,12 @@ export const CustomMenu = React.forwardRef<HTMLDivElement, CustomMenuProps>(func
 ) {
   const parent = Ariakit.useMenuContext();
   const searchable = searchValue != null || !!onSearch || !!combobox;
+  /** Body-portaled menus sit beside OGDialog (Session sheet content z≈140,
+   *  overlay z≈130). Inline z-index from dialog depth lifts the picker above
+   *  the scrim — same contract as DropdownPopup / ChatFilterMenu. Do not also
+   *  set Tailwind z-* on the menu: it fights the inline elevation on Pixel. */
+  const zIndex = usePopoverZIndex();
+  const menuZIndex = zIndex > 50 ? Math.max(zIndex, 200) : zIndex;
 
   const menuStore = Ariakit.useMenuStore({
     showTimeout: 100,
@@ -71,9 +78,10 @@ export const CustomMenu = React.forwardRef<HTMLDivElement, CustomMenuProps>(func
         overlap
         unmountOnHide
         gutter={parent ? -4 : 4}
+        style={{ zIndex: menuZIndex, pointerEvents: 'auto' }}
         className={cn(
           parent ? 'animate-popover-left ml-3' : 'animate-popover',
-          'outline-none! z-40 flex max-h-[min(450px,var(--popover-available-height))] w-full',
+          'outline-none! flex max-h-[min(450px,var(--popover-available-height))] w-full',
           'w-[var(--menu-width,auto)] min-w-[300px] flex-col overflow-auto rounded-xl border border-border-light',
           'bg-presentation text-sm text-text-primary shadow-lg',
           parent ? 'px-0.5 py-0.5' : 'px-3 py-2',

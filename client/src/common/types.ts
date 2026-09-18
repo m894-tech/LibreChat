@@ -328,6 +328,37 @@ export type TAskProps = {
   clientTimestamp?: string;
 };
 
+export type QueuedComposerItem = {
+  id: string;
+  userMessageId: string;
+  createdAt: number;
+  text: string;
+  files: ExtendedFile[];
+  manualSkills: string[];
+  quotes: string[];
+  conversation: t.TConversation;
+  anchorMessageId?: string | null;
+  stopCurrent?: boolean;
+  ephemeralAgent: t.TEphemeralAgent | null;
+  nativeKnobs: t.TNativeKnobs | null;
+  addedConvo?: t.TConversation;
+  responseFormat?: 'default' | 'concise' | 'detailed' | 'json';
+  sessionProfile?: {
+    profile:
+      | 'fast'
+      | 'think'
+      | 'research'
+      | 'create'
+      | 'execute'
+      | 'plan'
+      | 'review'
+      | 'teach'
+      | 'debug';
+    createContract: 'none' | 'site' | 'slides' | 'pdf' | 'table' | 'email' | 'memo' | 'diagram';
+    executePolicy: 'ask' | 'autorun';
+  };
+};
+
 export type TOptions = {
   editedMessageId?: string | null;
   editedContent?: t.TEditedContent;

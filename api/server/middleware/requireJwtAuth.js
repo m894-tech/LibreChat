@@ -10,6 +10,7 @@ const {
   recordRumProxyRequest,
   getValidOpenIdReuseUserId,
 } = require('@librechat/api');
+const { maybeSyncUserEntraGroupMemberships } = require('~/server/services/PermissionService');
 
 const hasPassportStrategy = (strategy) =>
   typeof passport._strategy === 'function' && passport._strategy(strategy) != null;
@@ -18,6 +19,33 @@ const getAuthenticatedUserId = (user) => user?.id?.toString?.() ?? user?._id?.to
 const refreshCloudFrontCookies =
   maybeRefreshCloudFrontAuthCookiesMiddleware ?? ((_req, _res, next) => next());
 const ACCOUNT_DELETION_CODE = 'ACCOUNT_DELETION_IN_PROGRESS';
+
+const getOpenIdAccessToken = (req) => {
+  const sessionToken = req.session?.openidTokens?.accessToken;
+  if (typeof sessionToken === 'string' && sessionToken.length > 0) {
+    return sessionToken;
+  }
+  const cookieHeader = req.headers.cookie;
+  if (!cookieHeader) {
+    return undefined;
+  }
+  const parsed = cookies.parse(cookieHeader);
+  const cookieToken = parsed.openid_access_token;
+  return typeof cookieToken === 'string' && cookieToken.length > 0 ? cookieToken : undefined;
+};
+
+/**
+ * Best-effort Entra group TTL refresh after auth. Never delays the request.
+ */
+const maybeRefreshEntraGroups = (req, res, next) => {
+  const accessToken = getOpenIdAccessToken(req);
+  if (req.user && accessToken) {
+    void maybeSyncUserEntraGroupMemberships(req.user, accessToken).catch((error) => {
+      logger.warn('[requireJwtAuth] Entra group TTL refresh failed:', error);
+    });
+  }
+  return next();
+};
 
 const getAuthTokenSource = (req) => {
   const authorization = req.headers.authorization;
@@ -189,7 +217,12 @@ const requireJwtAuth = (req, res, next) => {
         if (tenantErr) {
           return next(tenantErr);
         }
-        refreshCloudFrontCookies(req, res, next);
+        refreshCloudFrontCookies(req, res, (cookieErr) => {
+          if (cookieErr) {
+            return next(cookieErr);
+          }
+          maybeRefreshEntraGroups(req, res, next);
+        });
       });
     })(req, res, next);
   };

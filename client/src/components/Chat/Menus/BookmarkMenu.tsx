@@ -2,7 +2,7 @@ import { useState, useId } from 'react';
 import { useRecoilValue } from 'recoil';
 import * as Ariakit from '@ariakit/react';
 import { BookmarkFilledIcon, BookmarkIcon } from '@radix-ui/react-icons';
-import { DropdownPopup, TooltipAnchor, Spinner } from '@librechat/client';
+import { DropdownPopup, TooltipAnchor, Spinner, composerControlClasses } from '@librechat/client';
 import type { FC } from 'react';
 import { BookmarkContext } from '~/Providers/BookmarkContext';
 import useBookmarkItems from '~/hooks/Chat/useBookmarkItems';
@@ -10,7 +10,11 @@ import { useLocalize } from '~/hooks';
 import { cn } from '~/utils';
 import store from '~/store';
 
-const BookmarkMenu: FC = () => {
+type BookmarkMenuProps = {
+  className?: string;
+};
+
+const BookmarkMenu: FC<BookmarkMenuProps> = ({ className }) => {
   const localize = useLocalize();
   const menuId = useId();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -27,9 +31,9 @@ const BookmarkMenu: FC = () => {
       return <Spinner aria-label="Spinner" />;
     }
     if (hasBookmarks) {
-      return <BookmarkFilledIcon className="icon-md" aria-hidden="true" />;
+      return <BookmarkFilledIcon className="size-4" aria-hidden="true" />;
     }
-    return <BookmarkIcon className="icon-md" aria-hidden="true" />;
+    return <BookmarkIcon className="size-4" aria-hidden="true" />;
   };
 
   return (
@@ -50,11 +54,13 @@ const BookmarkMenu: FC = () => {
                 id="bookmark-menu-button"
                 aria-label={triggerAriaLabel}
                 aria-pressed={hasBookmarks}
-                className={cn(
-                  'mt-text-sm flex size-9 flex-shrink-0 items-center justify-center gap-2 rounded-xl border border-border-light bg-presentation text-sm transition-colors duration-200 hover:bg-surface-hover',
-                  isMenuOpen ? 'bg-surface-hover' : '',
-                )}
                 data-testid="bookmark-menu"
+                className={cn(
+                  composerControlClasses(),
+                  'size-theme-control min-w-0 rounded-[9px] border-border-light bg-surface-secondary p-1 text-text-secondary shadow-none hover:border-border-medium hover:bg-surface-hover hover:text-text-primary hover:shadow-none',
+                  isMenuOpen && 'bg-surface-hover text-text-primary',
+                  className,
+                )}
               >
                 {renderButtonContent()}
               </Ariakit.MenuButton>

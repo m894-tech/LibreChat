@@ -45,6 +45,9 @@ jest.mock('@librechat/data-schemas', () => {
     getRequestId: () => tenantStorage.getStore()?.requestId,
     logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
     tenantStorage,
+    // models/index.js calls createMethods at load; keep a stub so the
+    // PermissionService → GraphApiService require chain can initialize.
+    createMethods: jest.fn(() => ({})),
   };
 });
 
@@ -52,6 +55,17 @@ jest.mock('@librechat/data-schemas', () => {
 // required directly from CJS tests. This thin wrapper mirrors the real logic
 // (read request context, call tenantStorage.run) using the same data-schemas
 // primitives. The real implementation is covered by packages/api tenant.spec.ts.
+// Avoid evaluating getLogStores (Keyv + cache factories) when PermissionService
+// pulls GraphApiService into this suite.
+jest.mock('~/cache/getLogStores', () =>
+  jest.fn(() => ({
+    get: jest.fn(),
+    set: jest.fn(),
+    delete: jest.fn(),
+    clear: jest.fn(),
+  })),
+);
+
 jest.mock('@librechat/api', () => {
   const { tenantStorage } = require('@librechat/data-schemas');
   const actualApi = jest.requireActual('@librechat/api');
@@ -67,23 +81,9 @@ jest.mock('@librechat/api', () => {
     normalizeContextValue(req.headers?.['x-request-id']) ??
     normalizeContextValue(req.headers?.['x-correlation-id']);
   return {
+    ...actualApi,
     isEnabled: jest.fn(() => false),
     recordRumProxyRequest: jest.fn(),
-    getAuthFailureReasonCategory: actualApi.getAuthFailureReasonCategory,
-    buildSafeAuthLogContext: actualApi.buildSafeAuthLogContext,
-    getValidOpenIdReuseUserId: (token) => {
-      if (!token || !process.env.JWT_REFRESH_SECRET) {
-        return null;
-      }
-      try {
-        const payload = require('jsonwebtoken').verify(token, process.env.JWT_REFRESH_SECRET);
-        return typeof payload === 'object' && payload != null && typeof payload.id === 'string'
-          ? payload.id
-          : null;
-      } catch {
-        return null;
-      }
-    },
     maybeRefreshCloudFrontAuthCookiesMiddleware: jest.fn((req, res, next) => next()),
     tenantContextMiddleware: (req, res, next) => {
       const context = {

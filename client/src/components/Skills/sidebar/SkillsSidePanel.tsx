@@ -14,6 +14,11 @@ import store from '~/store';
 
 interface SkillsSidePanelProps {
   className?: string;
+  /**
+   * Main-pane `/skills` catalog: keep paging even if the left rail is collapsed.
+   * The sidebar instance leaves this false so a collapsed drawer does not drain pages.
+   */
+  alwaysActive?: boolean;
 }
 
 /**
@@ -21,7 +26,7 @@ interface SkillsSidePanelProps {
  * Header: filter input + create menu, matching the other side panels.
  */
 
-export default function SkillsSidePanel({ className }: SkillsSidePanelProps) {
+export default function SkillsSidePanel({ className, alwaysActive = false }: SkillsSidePanelProps) {
   const localize = useLocalize();
   const { skillId: activeSkillId } = useParams();
   const [searchTerm, setSearchTerm] = useState('');
@@ -43,7 +48,7 @@ export default function SkillsSidePanel({ className }: SkillsSidePanelProps) {
     nextCursor,
     isFetchingNext: listQuery.isFetchingNextPage,
     fetchNextPage: listQuery.fetchNextPage,
-    enabled: sidebarExpanded && sectionOpen,
+    enabled: (alwaysActive || sidebarExpanded) && sectionOpen,
   });
 
   return (

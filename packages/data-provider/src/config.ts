@@ -2031,6 +2031,8 @@ export const interfaceSchema = z
     bookmarks: z.boolean().optional(),
     memories: z.boolean().optional(),
     presets: z.boolean().optional(),
+    /** Dense Session chrome (SessionSheet) in the composer. Default on. */
+    sessionMenu: z.boolean().optional(),
     prompts: z
       .union([
         z.boolean(),
@@ -2152,6 +2154,7 @@ export const interfaceSchema = z
     multiConvo: true,
     bookmarks: true,
     memories: true,
+    sessionMenu: true,
     prompts: {
       use: true,
       create: true,
@@ -3004,6 +3007,20 @@ export const configSchema = z.object({
       enabled: z.boolean().optional(),
     })
     .optional(),
+  /**
+   * MeiliSearch operational levers. `meiliSettingsTimeoutMs` bounds how long
+   * startup and search wait for filterable-attribute settings tasks.
+   */
+  search: z
+    .object({
+      meiliSettingsTimeoutMs: z
+        .number()
+        .int()
+        .positive()
+        .max(3_600_000)
+        .default(10 * 60_000),
+    })
+    .default({}),
 });
 
 /**
