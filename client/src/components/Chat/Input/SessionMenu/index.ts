@@ -2,6 +2,7 @@ export { default as AgentPickerButton } from './AgentPickerButton';
 export { default as AgentPickerDialog } from './AgentPickerDialog';
 export { default as ResponseFormatSection } from './ResponseFormatSection';
 export { default as ContextSourcesSection } from './ContextSourcesSection';
+export { default as SessionProjectSection } from './SessionProjectSection';
 export { default as SessionMenuPopover } from './SessionMenuPopover';
 export { default as SessionAgentsBar } from './SessionAgentsBar';
 export { default as SessionModeList } from './SessionModeList';

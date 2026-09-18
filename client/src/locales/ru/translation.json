@@ -1386,5 +1386,16 @@
   "com_ui_session_orch_progress_team": "M2-interim · без пакетов",
   "com_ui_session_orch_step_plan": "План",
   "com_ui_session_orch_step_leaf": "Листья",
-  "com_ui_session_orch_step_accept": "A5"
+  "com_ui_session_orch_step_accept": "A5",
+  "com_ui_select_project": "Выбор проекта",
+  "com_ui_session_select_project": "Выбор проекта",
+  "com_ui_project": "Проект",
+  "com_ui_projects": "Проекты",
+  "com_ui_no_projects": "Пока нет проектов",
+  "com_ui_project_updated": "Проект обновлён",
+  "com_ui_project_update_error": "Не удалось обновить проект",
+  "com_ui_schedule_project_none": "Без проекта",
+  "com_ui_search_projects": "Поиск проектов",
+  "com_ui_change_project": "Сменить проект",
+  "com_ui_remove_from_project": "Убрать из проекта"
 }

@@ -9,7 +9,6 @@ import { TraceButton, useTraceControl } from '~/components/Chat/Trace';
 import { SessionAutomationsSection } from '~/components/Automations';
 import SessionNativeKnobsSection from './SessionNativeKnobsSection';
 import ResponseFormatSection from './ResponseFormatSection';
-import ContextSourcesSection from './ContextSourcesSection';
 import SessionProfileSection from './SessionProfileSection';
 import SessionEffortSection from './SessionEffortSection';
 import SessionSkillsSection from './SessionSkillsSection';
@@ -18,11 +17,12 @@ import SessionOrchSection from './SessionOrchSection';
 import { PresetsMenu } from '~/components/Chat/Menus';
 import AgentPickerButton from './AgentPickerButton';
 import SessionMCPSection from './SessionMCPSection';
+import SessionProjectSection from './SessionProjectSection';
 import { useLocalize } from '~/hooks';
 import ToolGrid from './ToolGrid';
 import store from '~/store';
 
-export type SessionPanelView = 'main' | 'mcp' | 'skills' | 'automations' | 'context';
+export type SessionPanelView = 'main' | 'mcp' | 'skills' | 'automations' | 'project';
 
 type SessionPanelProps = {
   conversation?: TConversation | null;
@@ -131,8 +131,8 @@ export default function SessionPanel({
                 onClick={() => onViewChange('automations')}
               />
               <NavRow
-                label={localize('com_ui_context_sources')}
-                onClick={() => onViewChange('context')}
+                label={localize('com_ui_session_select_project')}
+                onClick={() => onViewChange('project')}
               />
               {showMoreChrome ? (
                 <div
@@ -155,7 +155,7 @@ export default function SessionPanel({
       {view === 'automations' ? (
         <SessionAutomationsSection conversationId={conversation?.conversationId} />
       ) : null}
-      {view === 'context' ? <ContextSourcesSection conversation={conversation} /> : null}
+      {view === 'project' ? <SessionProjectSection conversation={conversation} /> : null}
     </div>
   );
 }

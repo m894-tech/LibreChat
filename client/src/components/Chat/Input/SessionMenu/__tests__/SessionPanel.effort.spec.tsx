@@ -92,7 +92,7 @@ jest.mock('../SessionSkillsSection', () => ({
   default: () => null,
 }));
 
-jest.mock('../ContextSourcesSection', () => ({
+jest.mock('../SessionProjectSection', () => ({
   __esModule: true,
   default: () => null,
 }));

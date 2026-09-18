@@ -3022,5 +3022,6 @@
   "com_ui_session_orch_progress_team": "M2-interim · no packages",
   "com_ui_session_orch_step_plan": "Plan",
   "com_ui_session_orch_step_leaf": "Leaves",
-  "com_ui_session_orch_step_accept": "A5"
+  "com_ui_session_orch_step_accept": "A5",
+  "com_ui_session_select_project": "Select project"
 }
