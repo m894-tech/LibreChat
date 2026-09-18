@@ -16,6 +16,7 @@ const {
   getGroupOwners,
 } = require('~/server/services/GraphApiService');
 const db = require('~/models');
+const { isEntraGroupSyncDue } = require('./entraGroupSyncTtl');
 
 /**
  * Validates that the resourceType is one of the supported enum values
@@ -647,10 +648,62 @@ const performEntraGroupMembershipSync = async (user, accessToken, session = null
     logger.info(
       `[PermissionService.syncUserEntraGroupMemberships] Successfully synced groups for user ${user._id}`,
     );
+
+    try {
+      await db.updateUser(user._id.toString(), { entraGroupLastSyncedAt: new Date() });
+      if (user) {
+        user.entraGroupLastSyncedAt = new Date();
+      }
+    } catch (stampError) {
+      logger.warn(
+        `[PermissionService.syncUserEntraGroupMemberships] Synced groups but failed to stamp entraGroupLastSyncedAt for user ${user._id}:`,
+        stampError,
+      );
+    }
   } catch (error) {
     // Log error but don't re-throw: group sync is best-effort operation
     // and should not block authentication even if temporary API/DB issues occur
     logger.error(`[PermissionService.syncUserEntraGroupMemberships] Error syncing groups:`, error);
+  }
+};
+
+const DEFAULT_ENTRA_GROUP_SYNC_TTL_MINUTES = 60;
+
+/**
+ * Revalidate Entra group membership when the last sync is older than TTL.
+ * Best-effort: never throws to the caller.
+ *
+ * @param {Object} user
+ * @param {string} accessToken
+ * @param {Object} [options]
+ * @param {number} [options.ttlMinutes]
+ * @param {mongoose.ClientSession} [options.session]
+ * @returns {Promise<'skipped'|'synced'|'error'>}
+ */
+const maybeSyncUserEntraGroupMemberships = async (user, accessToken, options = {}) => {
+  try {
+    if (!user || !accessToken) {
+      return 'skipped';
+    }
+
+    const rawTtl = process.env.ENTRA_GROUP_SYNC_TTL_MINUTES;
+    const parsedTtl = rawTtl != null && rawTtl !== '' ? Number(rawTtl) : NaN;
+    const ttlMinutes =
+      options.ttlMinutes ??
+      (Number.isFinite(parsedTtl) && parsedTtl > 0 ? parsedTtl : DEFAULT_ENTRA_GROUP_SYNC_TTL_MINUTES);
+
+    if (!isEntraGroupSyncDue(user.entraGroupLastSyncedAt, ttlMinutes)) {
+      return 'skipped';
+    }
+
+    await syncUserEntraGroupMemberships(user, accessToken, options.session ?? null);
+    return 'synced';
+  } catch (error) {
+    logger.error(
+      `[PermissionService.maybeSyncUserEntraGroupMemberships] Error refreshing groups:`,
+      error,
+    );
+    return 'error';
   }
 };
 
@@ -743,5 +796,6 @@ module.exports = {
   ensurePrincipalExists,
   ensureGroupPrincipalExists,
   syncUserEntraGroupMemberships,
+  maybeSyncUserEntraGroupMemberships,
   removeAllPermissions,
 };
