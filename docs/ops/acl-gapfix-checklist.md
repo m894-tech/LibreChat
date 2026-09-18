@@ -35,7 +35,9 @@ Remote agents are the **API-key invoke plane** (`openai.js` / `responses.js`), n
 | create writes owner `AclEntry` | **Done** | agent v1 create grants `REMOTE_AGENT_OWNER` |
 | share path = `ResourceType.REMOTE_AGENT` | **Done** | `accessPermissions.js` |
 
-**Hole closed this PR:** capability without per-id ACL on `GET /models/:model` and `GET /responses/:id`.
+**Hole closed on main (prior PR):** capability without per-id ACL on `GET /models/:model` and `GET /responses/:id`.
+
+**This PR:** move the response-agent VIEW gate into `createCheckResponseAgentAccess` (`@librechat/api`) and wire `checkResponseAgentPermission` through it so the route file stays thin.
 
 **Explicit N/A (not a hole):** separate remoteAgent management CRUD mirroring agent v1 GET-full / PATCH / DELETE — product model is invoke-plane + agent v1 ownership, not a second CRUD surface.
 
@@ -55,6 +57,8 @@ Remote agents are the **API-key invoke plane** (`openai.js` / `responses.js`), n
 - `POST /pairings` — pairing / control-plane policy
 - `PATCH /conversations/:conversationId/decision` — conversation ownership + policy
 
+**This PR:** `canAccessCodeEnvironmentResource` resolves the public `environmentId` string to the document `_id` via `findCodeEnvironmentByEnvironmentId` before the ACL check. Without that resolver, grants keyed by `_id` never match the route param and every shared environment 403s.
+
 ---
 
 ## Cross-cutting (also required)
@@ -63,7 +67,7 @@ Remote agents are the **API-key invoke plane** (`openai.js` / `responses.js`), n
 |---|---|---|
 | ADR: capability ≠ resource ACL + gate order | **Done** | PR #4 `docs/adr/0001-acl-capability-vs-resource.md` |
 | `inheritedFrom`: kill / won't-do (no production cascade) | **Done** | PR #4 — removed schema/DTO/tests; ADR won't-do |
-| Entra TTL / revalidate outside login | **Done** | this PR — `entraGroupLastSyncedAt` + `maybeSyncUserEntraGroupMemberships` from `requireJwtAuth`; ops `docs/ops/entra-group-sync-ttl.md` |
+| Entra TTL / revalidate outside login | **Done** | already on `main` — `entraGroupLastSyncedAt` + `maybeSyncUserEntraGroupMemberships` from `requireJwtAuth`; ops `docs/ops/entra-group-sync-ttl.md` |
 | `TENANT_ISOLATION_STRICT`: missing ALS+strict → throw; monetka ops | **Done** | code invariant + PR #4 `docs/ops/tenant-isolation-strict-verify.md`; **live Fixit/netcup:** flag `true`, missing ALS → `TENANT_CONTEXT_REQUIRED` |
 
 ---
