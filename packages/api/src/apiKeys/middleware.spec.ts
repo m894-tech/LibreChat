@@ -2,12 +2,12 @@ import express from 'express';
 import request from 'supertest';
 import { Types } from 'mongoose';
 import { PermissionBits } from 'librechat-data-provider';
+import type { ResponseAgentAccessDependencies } from './middleware';
 import {
   createCheckAgentTriggerAccess,
   createCheckRemoteAgentAccess,
   createCheckResponseAgentAccess,
 } from './middleware';
-import type { ResponseAgentAccessDependencies } from './middleware';
 
 describe('createCheckRemoteAgentAccess', () => {
   it('preserves model-based authorization for existing remote agent routes', async () => {
