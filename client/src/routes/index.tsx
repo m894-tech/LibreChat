@@ -46,6 +46,18 @@ const loadInsightsView = () =>
     Component: m.default,
   }));
 
+
+const loadAutomationsView = () =>
+  import('~/components/Automations').then((m) => ({
+    Component: m.AutomationsPage,
+  }));
+
+const loadAutomationCreateView = () =>
+  import('~/components/Automations').then((m) => ({
+    Component: m.AutomationCreatePage,
+  }));
+
+
 const loadProjectsView = () =>
   import('~/components/Projects').then((m) => ({
     Component: m.ProjectsView,
@@ -171,6 +183,18 @@ export const router = createBrowserRouter(
             {
               path: 'skills/:skillId/edit',
               lazy: loadSkillsView,
+            },
+            {
+              path: 'automations',
+              lazy: loadAutomationsView,
+            },
+            {
+              path: 'automations/new',
+              lazy: loadAutomationCreateView,
+            },
+            {
+              path: 'automations/:automationId',
+              lazy: loadAutomationsView,
             },
             {
               path: 'projects',
