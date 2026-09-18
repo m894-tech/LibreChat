@@ -45,9 +45,6 @@ export function isAgentGenerationStart(response: Response) {
   );
 }
 
-const modelSelectorTrigger = (page: Page) =>
-  page.getByRole('button', { name: 'Select a model' }).first();
-
 /**
  * Dense Session chrome: bookmarks / export / share / MCP / skills live in SessionPanel.
  * Open via the always-visible summary pill (aria-label Session menu).
@@ -59,6 +56,46 @@ export async function openSessionSheet(page: Page) {
   }
   await page.getByTestId('session-summary-pill').click();
   await expect(sheet).toBeVisible();
+}
+
+/**
+ * Dense Session chrome: the model chip lives in Session → Now (`session-sheet-model`).
+ * When `sessionMenu` is off, it is the standalone `session-model-chip`.
+ * Nested endpoint→model Ariakit flyouts do not stay open under Session's OGDialog
+ * (same class of bug as MCPSubMenu) — callers should pick via root `#model-search`.
+ */
+async function openModelSelector(page: Page) {
+  const chipTrigger = page.getByTestId('session-model-chip').getByTestId('model-selector-button');
+  if (await chipTrigger.isVisible().catch(() => false)) {
+    await chipTrigger.click({ timeout: 10000 });
+    return chipTrigger;
+  }
+
+  await openSessionSheet(page);
+  const sheetTrigger = page
+    .getByTestId('session-sheet-model')
+    .getByTestId('model-selector-button');
+  await expect(sheetTrigger).toBeVisible({ timeout: 15000 });
+  await sheetTrigger.scrollIntoViewIfNeeded();
+  await sheetTrigger.click({ timeout: 10000 });
+  return sheetTrigger;
+}
+
+async function assertModelSelection(page: Page, expectedText: string) {
+  const sheet = page.getByTestId('session-sheet');
+  if (await sheet.isVisible().catch(() => false)) {
+    await closeSessionSheet(page);
+  }
+
+  const summary = page.getByTestId('session-summary-model');
+  if (await summary.isVisible().catch(() => false)) {
+    await expect(summary).toContainText(expectedText, { timeout: 10000 });
+    return;
+  }
+
+  await expect(
+    page.getByTestId('session-model-chip').getByTestId('model-selector-button'),
+  ).toContainText(expectedText, { timeout: 10000 });
 }
 
 export async function closeSessionSheet(page: Page) {
@@ -133,28 +170,70 @@ export async function selectSessionMcpServer(page: Page, serverTitle: string) {
   await closeSessionSheet(page);
 }
 
-/** Open the model selector, choose an endpoint, then its model (committed on the model click). */
+/**
+ * Open Session → model selector (or the standalone chip), search for the mock
+ * model id, and commit via the flat search option — not the nested endpoint submenu.
+ */
 export async function selectMockEndpoint(page: Page, endpoint: MockEndpoint) {
-  const trigger = modelSelectorTrigger(page);
-  await trigger.click();
-  await page.getByRole('option', { name: endpoint.label }).click();
-  const modelOption = page.getByRole('option', { name: endpoint.model, exact: true });
-  if (await modelOption.isVisible({ timeout: 1000 }).catch(() => false)) {
-    await modelOption.click();
+  const summary = page.getByTestId('session-summary-model');
+  if (
+    (await summary.isVisible().catch(() => false)) &&
+    (await summary.textContent())?.includes(endpoint.model)
+  ) {
+    return;
   }
-  await expect(trigger).not.toHaveText('Select a model');
+  const chipTrigger = page.getByTestId('session-model-chip').getByTestId('model-selector-button');
+  if (
+    (await chipTrigger.isVisible().catch(() => false)) &&
+    (await chipTrigger.textContent())?.includes(endpoint.model)
+  ) {
+    return;
+  }
+
+  await openModelSelector(page);
+  const search = page.locator('#model-search');
+  await expect(search).toBeVisible({ timeout: 10000 });
+  const modelOption = page.getByRole('option', { name: endpoint.model, exact: true });
+  /** Search is debounced 200ms; retry fill until the flat result row mounts. */
+  await expect(async () => {
+    await search.fill(endpoint.model);
+    await expect(modelOption).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 10000 });
+  await modelOption.scrollIntoViewIfNeeded();
+  await modelOption.click({ timeout: 10000 });
+  await assertModelSelection(page, endpoint.model);
 }
 
 /** Open the model selector and choose a configured model spec by label. */
 export async function selectModelSpec(page: Page, label: string) {
-  const trigger = modelSelectorTrigger(page);
-  await expect(trigger).toBeVisible();
-  if ((await trigger.textContent())?.includes(label)) {
+  const summary = page.getByTestId('session-summary-model');
+  if (
+    (await summary.isVisible().catch(() => false)) &&
+    (await summary.textContent())?.includes(label)
+  ) {
     return;
   }
-  await trigger.click();
-  await page.getByRole('option', { name: new RegExp(`(^|\\s)${escapeRegExp(label)}\\b`) }).click();
-  await expect(trigger).toContainText(label);
+  const chipTrigger = page.getByTestId('session-model-chip').getByTestId('model-selector-button');
+  if (
+    (await chipTrigger.isVisible().catch(() => false)) &&
+    (await chipTrigger.textContent())?.includes(label)
+  ) {
+    return;
+  }
+
+  await openModelSelector(page);
+  const search = page.locator('#model-search');
+  await expect(search).toBeVisible({ timeout: 10000 });
+  const option = page.getByRole('option', {
+    name: new RegExp(`(^|\\s)${escapeRegExp(label)}\\b`),
+  });
+  await expect(async () => {
+    await search.fill(label);
+    await expect(option).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 10000 });
+  await option.scrollIntoViewIfNeeded();
+  await option.click({ timeout: 10000 });
+  await assertModelSelection(page, label);
 }
 
 /** Enable Skills from Session → Skills (dense Session chrome). */
