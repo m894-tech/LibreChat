@@ -22,7 +22,6 @@ import { PresetsMenu } from '~/components/Chat/Menus';
 import { useLocalize, useHasAccess } from '~/hooks';
 import AgentPickerButton from './AgentPickerButton';
 import SessionMCPSection from './SessionMCPSection';
-import PrivateToggle from './PrivateToggle';
 import ToolGrid from './ToolGrid';
 import store from '~/store';
 
@@ -112,11 +111,6 @@ export default function SessionPanel({
             <p className="mt-1 px-0.5 text-[10px] leading-snug text-text-secondary">
               {localize('com_ui_session_sheet_now_hint')}
             </p>
-          </section>
-
-          <section>
-            <SectionLabel>{localize('com_ui_session_privacy')}</SectionLabel>
-            <PrivateToggle index={index} />
           </section>
 
           <section>

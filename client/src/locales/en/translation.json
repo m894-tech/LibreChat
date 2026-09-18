@@ -2989,7 +2989,7 @@
   "com_ui_session_skills_drill_hint": "Pick skills for this session · inline in the same sheet.",
   "com_ui_session_skills_manage_full": "Manage skills → full page",
   "com_ui_session_automations": "Automations",
-  "com_ui_session_private_locked": "Locked after the first message — start a new chat to change",
+  "com_ui_session_private_locked": "Only in a new chat",
   "com_ui_skills_manage": "Manage skills",
   "com_ui_context_usage_snapshot": "Context {{0}} / {{1}} ({{2}}%)",
   "com_ui_favorites": "Favorites",

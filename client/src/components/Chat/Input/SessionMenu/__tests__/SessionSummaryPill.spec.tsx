@@ -94,7 +94,7 @@ describe('SessionSummaryPill', () => {
     expect(pill).toHaveTextContent('com_ui_response_format_detailed');
     expect(pill).toHaveAttribute('aria-haspopup', 'dialog');
     expect(pill).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.getByTestId('session-private-chip')).toBeVisible();
+    expect(screen.queryByTestId('session-private-chip')).not.toBeInTheDocument();
 
     await user.click(pill);
     expect(mockSetSheetOpen).toHaveBeenCalledWith(true);

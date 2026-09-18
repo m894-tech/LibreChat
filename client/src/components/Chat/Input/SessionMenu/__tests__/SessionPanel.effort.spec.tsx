@@ -77,11 +77,6 @@ jest.mock('../ToolGrid', () => ({
   default: () => null,
 }));
 
-jest.mock('../PrivateToggle', () => ({
-  __esModule: true,
-  default: () => null,
-}));
-
 jest.mock('../AgentPickerButton', () => ({
   __esModule: true,
   default: () => null,
@@ -147,6 +142,7 @@ describe('SessionPanel Effort SoT', () => {
 
     expect(screen.getAllByTestId('session-effort')).toHaveLength(1);
     expect(screen.queryByTestId('session-native-knobs')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('session-private-toggle')).not.toBeInTheDocument();
     expect(screen.getByTestId('session-effort-mid')).toHaveAttribute('aria-checked', 'true');
   });
 });

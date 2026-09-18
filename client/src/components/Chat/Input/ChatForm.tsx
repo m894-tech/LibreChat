@@ -33,11 +33,11 @@ import {
   useAddedChatContext,
   useAssistantsMapContext,
 } from '~/Providers';
+import { SessionAgentsBar, SessionSummaryPill, NewConversationButton, PrivateToggle } from './SessionMenu';
 import {
   PendingToolApprovalButton,
   PendingToolApprovalPanel,
 } from '~/components/Chat/approval/Review';
-import { SessionAgentsBar, SessionSummaryPill, NewConversationButton } from './SessionMenu';
 import PendingManualSkillsChips from './PendingManualSkillsChips';
 import usePastedTextEdit from '~/hooks/Files/usePastedTextEdit';
 import useAskAnswerMode from '~/hooks/Input/useAskAnswerMode';
@@ -885,6 +885,7 @@ const ChatForm = memo(function ChatForm({
                   )}
                 </div>
                 <div className="grow" />
+                <PrivateToggle index={index} />
                 <TokenUsage index={index} conversation={conversation} isSubmitting={isSubmitting} />
                 <div className="flex shrink-0 items-center gap-1.5">
                   <NewConversationButton index={index} />

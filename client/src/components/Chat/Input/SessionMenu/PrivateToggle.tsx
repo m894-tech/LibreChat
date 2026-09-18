@@ -1,5 +1,5 @@
-import React, { useCallback } from 'react';
-import { Switch } from '@librechat/client';
+import React, { useCallback, useId } from 'react';
+import { TooltipAnchor } from '@librechat/client';
 import { MessageCircleDashed } from 'lucide-react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { PermissionTypes, Permissions } from 'librechat-data-provider';
@@ -12,9 +12,14 @@ type PrivateToggleProps = {
   index?: number;
 };
 
-/** Temporary/private chat toggle for SessionSheet. Same atom as TemporaryChat. */
+/**
+ * Dense v5.1: Private is a composer icon beside TokenUsage — not a Session-sheet
+ * section and not a second chip next to SessionSummaryPill. Same SoT as
+ * TemporaryChat: store.isTemporary.
+ */
 export default function PrivateToggle({ className, index = 0 }: PrivateToggleProps) {
   const localize = useLocalize();
+  const hintId = useId();
   const [isTemporary, setIsTemporary] = useRecoilState(store.isTemporary);
   const conversation = useRecoilValue(store.conversationByIndex(index));
   const isSubmitting = useRecoilValue(store.isSubmittingFamily(index));
@@ -26,55 +31,52 @@ export default function PrivateToggle({ className, index = 0 }: PrivateTogglePro
   const locked =
     (Array.isArray(conversation?.messages) && conversation.messages.length >= 1) || isSubmitting;
 
-  const onCheckedChange = useCallback(
-    (next: boolean) => {
-      if (locked) {
-        return;
-      }
-      setIsTemporary(next);
-    },
-    [locked, setIsTemporary],
-  );
+  const onToggle = useCallback(() => {
+    if (locked) {
+      return;
+    }
+    setIsTemporary((previous) => !previous);
+  }, [locked, setIsTemporary]);
 
   if (!hasAccess) {
     return null;
   }
 
+  const tooltip = locked
+    ? localize('com_ui_session_private_locked')
+    : isTemporary
+      ? localize('com_ui_session_private_hint')
+      : localize('com_ui_session_private');
+
   return (
-    <div
-      className={cn(
-        'flex items-center gap-2 rounded-xl border border-border-light bg-surface-secondary px-2.5 py-2',
-        locked && 'opacity-90',
-        className,
-      )}
-      data-testid="session-private-toggle"
-      title={locked ? localize('com_ui_session_private_locked') : undefined}
-    >
-      <span className="flex size-5 items-center justify-center rounded-md bg-surface-tertiary text-text-secondary">
-        <MessageCircleDashed className="size-3.5" aria-hidden="true" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="text-xs font-medium text-text-primary">
-          {localize('com_ui_session_private')}
-        </div>
-        <div className="text-[10px] text-text-secondary">
-          {locked
-            ? localize('com_ui_session_private_locked')
-            : localize('com_ui_session_private_hint')}
-        </div>
-      </div>
-      <Switch
-        checked={isTemporary}
-        onCheckedChange={onCheckedChange}
-        disabled={locked}
-        aria-label={localize('com_ui_session_private')}
-        aria-describedby={locked ? 'session-private-locked-hint' : undefined}
-      />
-      {locked ? (
-        <span id="session-private-locked-hint" className="sr-only">
-          {localize('com_ui_session_private_locked')}
-        </span>
-      ) : null}
-    </div>
+    <TooltipAnchor
+      description={tooltip}
+      render={
+        <button
+          type="button"
+          data-testid="session-private-toggle"
+          aria-label={localize('com_ui_session_private')}
+          aria-pressed={isTemporary}
+          aria-disabled={locked || undefined}
+          aria-describedby={locked ? hintId : undefined}
+          onClick={onToggle}
+          className={cn(
+            'focus-visible:ring-primary flex size-theme-control items-center justify-center rounded-[9px] border p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-opacity-50',
+            locked && 'cursor-not-allowed opacity-60',
+            isTemporary
+              ? 'border-violet-400/60 bg-violet-500/15 text-violet-200'
+              : 'border-border-light bg-surface-secondary text-text-secondary hover:border-border-medium hover:text-text-primary',
+            className,
+          )}
+        >
+          <MessageCircleDashed className="size-4" aria-hidden="true" />
+          {locked ? (
+            <span id={hintId} className="sr-only">
+              {localize('com_ui_session_private_locked')}
+            </span>
+          ) : null}
+        </button>
+      }
+    />
   );
 }

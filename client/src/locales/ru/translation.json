@@ -1357,7 +1357,7 @@
   "com_ui_session_skills_drill_hint": "Скиллы для этой сессии · прямо в этом листе.",
   "com_ui_session_skills_manage_full": "Управление скиллами → полная страница",
   "com_ui_session_automations": "Автоматизации",
-  "com_ui_session_private_locked": "Заблокировано после первого сообщения — смените в новом чате",
+  "com_ui_session_private_locked": "Только в новом чате",
   "com_ui_skills_manage": "Управление скиллами",
   "com_ui_execute_autorun_blocked": "Autorun запрошен. В этом ходе всё равно нет shell/Dropbox/execute_code — не YOLO и не persist-gate.",
   "com_ui_execute_policy_hint": "Как Plan Mode: запись в инструменты потребует подтверждения, когда появится persist-gate.",
