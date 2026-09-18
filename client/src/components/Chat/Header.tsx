@@ -1,77 +1,30 @@
-import { memo, useMemo } from 'react';
+import { memo } from 'react';
 import { useRecoilValue } from 'recoil';
 import { useParams } from 'react-router-dom';
-import {
-  getConfigDefaults,
-  Constants,
-  PermissionTypes,
-  Permissions,
-} from 'librechat-data-provider';
-import { OpenSidebar, PresetsMenu, NewChat, HeaderMenu } from './Menus';
+import { Constants, PermissionTypes, Permissions } from 'librechat-data-provider';
 import { TemporaryChat, TemporaryChatIndicator } from './TemporaryChat';
-import ModelSelector from './Menus/Endpoints/ModelSelector';
-import { TraceButton, useTraceControl } from './Trace';
-import { useGetStartupConfig } from '~/data-provider';
-import ExportAndShareMenu from './ExportAndShareMenu';
 import SubagentThreadLink from './SubagentThreadLink';
-import BookmarkMenu from './Menus/BookmarkMenu';
-import AddMultiConvo from './AddMultiConvo';
+import { OpenSidebar, NewChat } from './Menus';
 import { useHasAccess } from '~/hooks';
 import { cn } from '~/utils';
 import store from '~/store';
 
-const defaultInterface = getConfigDefaults().interface;
-
 /**
- * Three zones in a single DOM order that serves both layouts: hidden items
- * generate no flex gap, so each breakpoint collapses to the right row without
- * reordering. Branching is CSS-only — `useMediaQuery` resolves after paint and
- * would pop the row a frame late on every mount.
+ * Session chrome owns model / bookmarks / export / private at every breakpoint
+ * (SessionPanel → More). The header keeps the mobile sidebar opener, new-chat,
+ * temporary-chat mark, and optional subagent title — controls the e2e header
+ * surface and temporary-chat scenarios still drive.
+ *
+ * `header-open-sidebar-button` stays distinct from the rail's `open-sidebar-button`
+ * so `getByTestId('open-sidebar-button')` resolves to one element.
  */
-function Header({
-  parentConversationId,
-  readOnly = false,
-}: {
-  parentConversationId?: string;
-  readOnly?: boolean;
-}) {
-  const { data: startupConfig } = useGetStartupConfig();
+function Header({ parentConversationId }: { parentConversationId?: string; readOnly?: boolean }) {
   const navVisible = useRecoilValue(store.sidebarExpanded);
-  const isSubmitting = useRecoilValue(store.isSubmittingFamily(0));
-
-  /** The mobile row only offers a new chat when there is one to leave. Read
-   *  from the route rather than the context conversation, which still holds the
-   *  previous chat for a render after a history or link navigation. An unsaved
-   *  conversation has no id in the route yet, so absence counts as new too. */
   const { conversationId: routeConversationId } = useParams();
   const isNewChat = routeConversationId == null || routeConversationId === Constants.NEW_CONVO;
-
-  const interfaceConfig = useMemo(
-    () => startupConfig?.interface ?? defaultInterface,
-    [startupConfig],
-  );
-
-  const hasAccessToBookmarks = useHasAccess({
-    permissionType: PermissionTypes.BOOKMARKS,
-    permission: Permissions.USE,
-  });
-
-  const hasAccessToMultiConvo = useHasAccess({
-    permissionType: PermissionTypes.MULTI_CONVO,
-    permission: Permissions.USE,
-  });
-
   const hasAccessToTemporaryChat = useHasAccess({
     permissionType: PermissionTypes.TEMPORARY_CHAT,
     permission: Permissions.USE,
-  });
-
-  /** Child threads are view-only records of their parent's run and have no trace of their own. */
-  const trace = useTraceControl({
-    conversationId: isNewChat ? null : routeConversationId,
-    traceViewer: interfaceConfig.traceViewer,
-    isSubmitting,
-    enabled: parentConversationId == null,
   });
 
   /** The drawer covers the header on mobile; keep its controls out of the tab order. */
@@ -92,29 +45,12 @@ function Header({
         {parentConversationId != null && (
           <SubagentThreadLink threadId={parentConversationId} labelClassName="hidden lg:inline" />
         )}
-        {!readOnly && <ModelSelector startupConfig={startupConfig} />}
-        {!readOnly && interfaceConfig.presets === true && interfaceConfig.modelSelect === true && (
-          <PresetsMenu />
-        )}
-        {hasAccessToBookmarks === true && (
-          <div className="hidden items-center md:flex">
-            <BookmarkMenu />
-          </div>
-        )}
-        {hasAccessToMultiConvo === true && (
-          <div className="hidden items-center md:flex">
-            <AddMultiConvo />
-          </div>
-        )}
       </div>
 
       <div className={cn('flex flex-shrink-0 items-center gap-2', hiddenBehindNav)}>
         {hasAccessToTemporaryChat === true && <TemporaryChatIndicator />}
         {!isNewChat && <NewChat className="md:hidden" />}
-        <HeaderMenu startupConfig={startupConfig} trace={trace} className="md:hidden" />
         <div className="hidden items-center gap-2 md:flex">
-          {trace.show && <TraceButton onClick={trace.open} />}
-          <ExportAndShareMenu isSharedButtonEnabled={startupConfig?.sharedLinksEnabled ?? false} />
           {hasAccessToTemporaryChat === true && <TemporaryChat />}
         </div>
       </div>

@@ -6,6 +6,7 @@ import {
   escapeRegExp,
   messagesView,
   selectMockEndpoint,
+  selectSessionMcpServer,
   sendMessageAndWaitForCompletion,
 } from '../helpers';
 
@@ -26,13 +27,7 @@ async function expectGaugeAboveZero(page: Page) {
 /** Select the ephemeral MCP server whose real remember_fact tool creates the
  * tool boundary and causes the fake model to take its tool-response path. */
 async function selectEphemeralMCP(page: Page) {
-  await page.getByRole('button', { name: 'MCP Servers', exact: true }).click();
-  const serverItem = page.getByRole('menuitemcheckbox', { name: new RegExp(MCP_SERVER_TITLE) });
-  await expect(serverItem).toBeVisible();
-  await serverItem.click();
-  await expect(serverItem).toHaveAttribute('aria-checked', 'true');
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('button', { name: new RegExp(MCP_SERVER_TITLE) })).toBeVisible();
+  await selectSessionMcpServer(page, MCP_SERVER_TITLE);
 }
 
 /** The popover opens with only the meter visible; its detail is a remembered

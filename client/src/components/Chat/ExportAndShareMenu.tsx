@@ -50,7 +50,7 @@ export default function ExportAndShareMenu({
                 {hasSharedLink && (
                   <span
                     className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-status-info ring-2 ring-presentation"
-                    data-testid="header-shared-link-indicator"
+                    data-testid="shared-link-indicator"
                     aria-hidden="true"
                   />
                 )}

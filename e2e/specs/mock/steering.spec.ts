@@ -11,6 +11,7 @@ import {
   getAccessToken,
   requestJson,
   selectMockEndpoint,
+  selectSessionMcpServer,
   sendMessage,
 } from './helpers';
 
@@ -58,15 +59,9 @@ function isSteerRequest(response: Response) {
   );
 }
 
-/** Select the MCP server from the composer's ephemeral MCP dropdown. */
+/** Select the MCP server from Session → Tools → MCP. */
 async function selectEphemeralMCP(page: Page) {
-  await page.getByRole('button', { name: 'MCP Servers', exact: true }).click();
-  const serverItem = page.getByRole('menuitemcheckbox', { name: new RegExp(MCP_SERVER_TITLE) });
-  await expect(serverItem).toBeVisible();
-  await serverItem.click();
-  await expect(serverItem).toHaveAttribute('aria-checked', 'true');
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('button', { name: new RegExp(MCP_SERVER_TITLE) })).toBeVisible();
+  await selectSessionMcpServer(page, MCP_SERVER_TITLE);
 }
 
 /** Establish a real conversation with a fast first turn so during-run actions

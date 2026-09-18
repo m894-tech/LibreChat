@@ -22,9 +22,7 @@ describe('foldSubagentDynamicInstructionsForPromptCache', () => {
     expect(inputs).not.toBe(original);
     expect(original.additional_instructions).toBe('Conversation Date & Time: 2026-09-17');
     expect(inputs.additional_instructions).toBeUndefined();
-    expect(inputs.instructions).toBe(
-      'You are a researcher.\nConversation Date & Time: 2026-09-17',
-    );
+    expect(inputs.instructions).toBe('You are a researcher.\nConversation Date & Time: 2026-09-17');
   });
 
   it('leaves the parent-style split intact when promptCache is off', () => {

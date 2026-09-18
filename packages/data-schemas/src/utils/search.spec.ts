@@ -1,11 +1,5 @@
-import {
-  TenantIsolationError,
-  resetTenantStrictCache,
-} from '~/tenant/policy';
-import {
-  escapeMeiliFilterValue,
-  buildMeiliUserTenantFilter,
-} from './search';
+import { TenantIsolationError, resetTenantStrictCache } from '~/tenant/policy';
+import { escapeMeiliFilterValue, buildMeiliUserTenantFilter } from './search';
 import { tenantStorage, runAsSystem } from '~/config/tenantContext';
 
 describe('escapeMeiliFilterValue', () => {

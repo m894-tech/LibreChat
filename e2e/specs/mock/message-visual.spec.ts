@@ -7,6 +7,7 @@ import {
   replyPrompt,
   replyText,
   selectMockEndpoint,
+  selectSessionMcpServer,
   sendMessage,
   sendMessageAndWaitForCompletion,
 } from './helpers';
@@ -78,14 +79,7 @@ async function expectMessageScreenshot(locator: Locator, name: string) {
 }
 
 async function selectEphemeralMCP(page: Page) {
-  await page.getByRole('button', { name: 'MCP Servers', exact: true }).click();
-  const serverItem = page.getByRole('menuitemcheckbox', {
-    name: new RegExp(MCP_SERVER_TITLE),
-  });
-  await expect(serverItem).toBeVisible();
-  await serverItem.click();
-  await expect(serverItem).toHaveAttribute('aria-checked', 'true');
-  await page.keyboard.press('Escape');
+  await selectSessionMcpServer(page, MCP_SERVER_TITLE);
 }
 
 test.skip(process.platform !== 'linux', 'Message visual baselines target the Linux CI runner');

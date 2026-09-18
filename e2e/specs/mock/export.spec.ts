@@ -9,8 +9,10 @@ import {
   NEW_CHAT_PATH,
   messagesView,
   mockReply,
+  openSessionSheet,
   selectMockEndpoint,
   sendMessage,
+  sessionExportButton,
 } from './helpers';
 import {
   deleteConversations,
@@ -51,7 +53,8 @@ async function startMockConversation(page: Page): Promise<string> {
 }
 
 async function openExportModal(page: Page): Promise<Locator> {
-  await page.getByRole('button', { name: 'Export/Share' }).click();
+  await openSessionSheet(page);
+  await sessionExportButton(page).click();
   await page.getByRole('menuitem', { name: 'Export' }).click();
   const dialog = page.getByRole('dialog', { name: 'Export conversation' });
   await expect(dialog).toBeVisible();

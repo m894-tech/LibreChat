@@ -117,6 +117,8 @@ export type TEndpointOption = Pick<
   clientOptions?: Record<string, unknown>;
 };
 
+export type TNativeKnobs = Record<string, string | number | boolean | Record<string, unknown>>;
+
 export type TEphemeralAgent = {
   mcp?: string[];
   web_search?: boolean;
@@ -152,6 +154,7 @@ export type TPayload = Partial<TMessage> &
     messages?: TMessages;
     isTemporary: boolean;
     ephemeralAgent?: TEphemeralAgent | null;
+    nativeKnobs?: TNativeKnobs | null;
     editedContent?: TEditedContent | null;
     /** Added conversation for multi-convo feature */
     addedConvo?: TConversation;
@@ -162,6 +165,18 @@ export type TPayload = Partial<TMessage> &
      * before the LLM turn runs.
      */
     manualSkills?: string[];
+    /** Compact session response format preference for this turn. */
+    responseFormat?: 'default' | 'concise' | 'detailed' | 'json';
+    /** Compact session profile instruction (Fast/Think/Research/Create/Execute). */
+    sessionProfileInstruction?: string | null;
+    /** Compact session profile object (Plan/autorun gate). */
+    sessionProfile?: {
+      profile?: string;
+      createContract?: string;
+      executePolicy?: string;
+    } | null;
+    /** Ready ContextSource ids the user wants injected this turn. */
+    contextSourceIds?: string[];
     /** Conversation-scoped preference for code tool approval behavior. */
     codeApprovalMode?: CodeApprovalMode;
     /** Immutable conversation choice for attached code execution. */
@@ -216,6 +231,7 @@ export type TSubmission = {
   endpointOption: TEndpointOption;
   clientTimestamp?: string;
   ephemeralAgent?: TEphemeralAgent | null;
+  nativeKnobs?: TNativeKnobs | null;
   editedContent?: TEditedContent | null;
   /**
    * Length of the retained content prefix for an edited resubmission, captured
@@ -247,6 +263,28 @@ export type TSubmission = {
   addedConvo?: TConversation;
   /** Skills the user invoked via the `$` popover for this submission. */
   manualSkills?: string[];
+  /** Compact session response format preference for this turn. */
+  responseFormat?: 'default' | 'concise' | 'detailed' | 'json';
+  sessionProfileInstruction?: string | null;
+  sessionProfile?: {
+    profile?: string;
+    createContract?: string;
+    executePolicy?: string;
+    orchMode?: string;
+    orchParallel?: boolean;
+    orchCompare?: unknown;
+    orchParentModel?: string;
+    orchParentSpec?: string;
+    orchParentEndpoint?: string;
+  } | null;
+  orchMode?: 'off' | 'auto' | 'team' | 'm2' | 'm3' | 'compare';
+  orchParallel?: boolean;
+  orchCompare?: {
+    brief?: string;
+    candidates?: Array<{ id: string; providerId: string; model?: string }>;
+    judge?: { id: string; providerId: string };
+  };
+  contextSourceIds?: string[];
   /** Conversation-scoped preference for code tool approval behavior. */
   codeApprovalMode?: CodeApprovalMode;
   /** Immutable conversation choice for attached code execution. */

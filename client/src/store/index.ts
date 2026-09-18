@@ -1,3 +1,5 @@
+import sessionChrome from './sessionChrome';
+import sessionSheet from './sessionSheet';
 import * as artifacts from './artifacts';
 import submission from './submission';
 import isTemporary from './temporary';
@@ -19,6 +21,7 @@ export * from './sandbox';
 export * from './ptc';
 export * from './usage';
 export * from './steer';
+export * from './contextSources';
 
 export default {
   ...artifacts,
@@ -35,4 +38,6 @@ export default {
   ...settings,
   ...misc,
   ...isTemporary,
+  ...sessionSheet,
+  ...sessionChrome,
 };

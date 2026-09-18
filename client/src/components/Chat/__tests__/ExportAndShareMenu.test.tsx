@@ -54,7 +54,7 @@ describe('ExportAndShareMenu link status', () => {
 
     render(<ExportAndShareMenu isSharedButtonEnabled={true} />);
 
-    expect(screen.getByTestId('header-shared-link-indicator')).toHaveClass(
+    expect(screen.getByTestId('shared-link-indicator')).toHaveClass(
       'rounded-full',
       'bg-status-info',
       '-right-0.5',
@@ -70,7 +70,7 @@ describe('ExportAndShareMenu link status', () => {
   it('uses the default share control when the conversation has no link', () => {
     render(<ExportAndShareMenu isSharedButtonEnabled={true} />);
 
-    expect(screen.queryByTestId('header-shared-link-indicator')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('shared-link-indicator')).not.toBeInTheDocument();
     expect(screen.getByRole('button')).toHaveAttribute('aria-label', 'com_endpoint_export_share');
   });
 });

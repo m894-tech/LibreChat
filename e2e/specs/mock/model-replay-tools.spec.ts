@@ -12,6 +12,7 @@ import {
   fetchJson,
   getAccessToken,
   selectMockEndpoint,
+  selectSessionMcpServer,
   sendMessageAndWaitForCompletion,
 } from './helpers';
 
@@ -58,13 +59,7 @@ const TOOL_PROMPT =
 
 /** Enable the ephemeral MCP server whose tools this turn calls. */
 async function selectEphemeralMCP(page: Page) {
-  await page.getByRole('button', { name: 'MCP Servers', exact: true }).click();
-  const serverItem = page.getByRole('menuitemcheckbox', { name: new RegExp(MCP_SERVER_TITLE) });
-  await expect(serverItem).toBeVisible();
-  await serverItem.click();
-  await expect(serverItem).toHaveAttribute('aria-checked', 'true');
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('button', { name: new RegExp(MCP_SERVER_TITLE) })).toBeVisible();
+  await selectSessionMcpServer(page, MCP_SERVER_TITLE);
 }
 
 test.describe('recorded tool-call fixture replay', () => {

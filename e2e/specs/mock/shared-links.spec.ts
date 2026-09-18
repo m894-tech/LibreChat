@@ -7,8 +7,10 @@ import {
   MOCK_ENDPOINTS,
   NEW_CHAT_PATH,
   mockReply,
+  openSessionSheet,
   selectMockEndpoint,
   sendMessage,
+  sessionExportButton,
 } from './helpers';
 
 type SharedLinkDoc = {
@@ -168,7 +170,8 @@ test.describe('shared links', () => {
       throw new Error(`Could not parse conversation id from ${conversationUrl.href}`);
     }
 
-    await page.getByRole('button', { name: 'Export/Share' }).click();
+    await openSessionSheet(page);
+    await sessionExportButton(page).click();
     await page.getByTestId('share-conversation-menu-item').click();
     const shareDialog = page.getByRole('dialog', { name: 'Share link to chat' });
     await expect(shareDialog).toBeVisible();
@@ -206,8 +209,8 @@ test.describe('shared links', () => {
       throw new Error('Expected shared-link URL to be rendered after creating a link');
     }
 
-    /** The header trigger flips to the "link active" label once a share exists. */
-    await expect(page.getByTestId('header-shared-link-indicator')).toBeVisible();
+    /** The Export/Share control flips to the "link active" indicator once a share exists. */
+    await expect(page.getByTestId('shared-link-indicator')).toBeVisible();
 
     const publicSharePath = new URL(sharedLinkUrl, baseURL).pathname;
     const optedOutPayload = await openPublicSharedLink(page, publicSharePath, sharePayload.shareId);
@@ -239,7 +242,8 @@ test.describe('shared links', () => {
     await expect(mockReply(page)).toHaveCount(1);
 
     await page.goto(conversationUrl.pathname, { timeout: 10000 });
-    await page.getByRole('button', { name: 'Export/Share' }).click();
+    await openSessionSheet(page);
+    await sessionExportButton(page).click();
     await page.getByTestId('share-conversation-menu-item').click();
     await expect(shareDialog).toBeVisible();
     await expect(shareFilesSwitch).not.toBeChecked();
@@ -351,7 +355,8 @@ test.describe('shared links', () => {
     }
 
     await page.goto(conversationUrl.pathname, { timeout: 10000 });
-    await page.getByRole('button', { name: 'Export/Share' }).click();
+    await openSessionSheet(page);
+    await sessionExportButton(page).click();
     await page.getByTestId('share-conversation-menu-item').click();
     await expect(shareDialog).toBeVisible();
     await shareDialog.getByRole('button', { name: 'Delete Link' }).click();
@@ -373,6 +378,6 @@ test.describe('shared links', () => {
     await expect(shareDialog).toBeVisible();
     await expect(shareDialog.getByRole('button', { name: 'Create a shared link' })).toBeVisible();
     await expect(sharedLinkInput).toHaveCount(0);
-    await expect(page.getByTestId('header-shared-link-indicator')).toHaveCount(0);
+    await expect(page.getByTestId('shared-link-indicator')).toHaveCount(0);
   });
 });

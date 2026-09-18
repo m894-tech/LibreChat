@@ -1,7 +1,7 @@
 import { memo, useRef, useMemo, useEffect, useState, useCallback } from 'react';
 import { useWatch } from 'react-hook-form';
+import { Constants, isAssistantsEndpoint } from 'librechat-data-provider';
 import { useRecoilState, useRecoilValue, useRecoilCallback } from 'recoil';
-import { Constants, isAssistantsEndpoint, isAgentsEndpoint } from 'librechat-data-provider';
 import { composerSurfaceClasses, composerSurfaceShadow, TextareaAutosize } from '@librechat/client';
 import type { TChatProject, TMessage, TConversation } from 'librechat-data-provider';
 import type { SetterOrUpdater } from 'recoil';
@@ -37,6 +37,7 @@ import {
   PendingToolApprovalButton,
   PendingToolApprovalPanel,
 } from '~/components/Chat/approval/Review';
+import { SessionAgentsBar, SessionSummaryPill, NewConversationButton } from './SessionMenu';
 import PendingManualSkillsChips from './PendingManualSkillsChips';
 import usePastedTextEdit from '~/hooks/Files/usePastedTextEdit';
 import useAskAnswerMode from '~/hooks/Input/useAskAnswerMode';
@@ -836,6 +837,14 @@ const ChatForm = memo(function ChatForm({
                   </div>
                 </div>
               )}
+              <div className="px-2 pb-1 pt-1">
+                <SessionSummaryPill conversation={conversation} index={index} />
+              </div>
+              <SessionAgentsBar
+                activeAgentId={conversation?.agent_id}
+                conversationId={conversationId}
+                index={index}
+              />
               <div
                 className={cn(
                   '@container flex flex-wrap items-center gap-2 px-2 pb-2',
@@ -852,15 +861,13 @@ const ChatForm = memo(function ChatForm({
                   />
                 </div>
                 <BadgeRow
-                  showEphemeralBadges={
-                    !!endpoint &&
-                    !hideBadgeRow &&
-                    !isAgentsEndpoint(endpoint) &&
-                    !isAssistantsEndpoint(endpoint)
-                  }
+                  showSessionMenu={!hideBadgeRow && !isAssistantsEndpoint(endpoint)}
+                  showEphemeralBadges={false}
                   isSubmitting={isSubmitting}
                   conversationId={conversationId}
                   specName={conversation?.spec}
+                  conversation={conversation}
+                  index={index}
                   onChange={setBadges}
                   isInChat={
                     Array.isArray(conversation?.messages) && conversation.messages.length >= 1
@@ -877,6 +884,7 @@ const ChatForm = memo(function ChatForm({
                 )}
                 <div className="grow" />
                 <TokenUsage index={index} conversation={conversation} isSubmitting={isSubmitting} />
+                <NewConversationButton index={index} />
                 {SpeechToText && (
                   <AudioRecorder
                     methods={methods}
