@@ -94,29 +94,20 @@ export async function openSessionMcpMenu(page: Page) {
     await sheet.getByRole('button', { name: /MCP Servers/ }).click();
     await expect(mcpSection).toBeVisible();
   }
-  const menuOpen = await page
-    .getByRole('menuitemcheckbox')
-    .first()
-    .isVisible()
-    .catch(() => false);
-  if (!menuOpen) {
-    await mcpSection
-      .getByRole('button', { name: /MCP Servers|E2E Memory/ })
-      .first()
-      .click();
-  }
+  /** Session MCP view lists servers inline (no flyout); wait for the checklist. */
+  await expect(mcpSection.getByRole('menuitemcheckbox').first()).toBeVisible();
 }
 
 /** Select an ephemeral MCP server from Session → Tools → MCP, then close the sheet. */
 export async function selectSessionMcpServer(page: Page, serverTitle: string) {
   await openSessionMcpMenu(page);
-  const serverItem = page.getByRole('menuitemcheckbox', { name: new RegExp(serverTitle) });
+  const mcpSection = page.getByTestId('session-menu-mcp');
+  const serverItem = mcpSection.getByRole('menuitemcheckbox', { name: new RegExp(serverTitle) });
   await expect(serverItem).toBeVisible();
   if ((await serverItem.getAttribute('aria-checked')) !== 'true') {
     await serverItem.click();
   }
   await expect(serverItem).toHaveAttribute('aria-checked', 'true');
-  await page.keyboard.press('Escape');
   await closeSessionSheet(page);
 }
 
