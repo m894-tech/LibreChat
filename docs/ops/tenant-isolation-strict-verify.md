@@ -104,17 +104,23 @@ Expected HTTP without `tenantId` on an authenticated user:
 { "error": "Tenant context required in strict isolation mode" }
 ```
 
-### Fixit confirm — live=strict
+### Fixit confirm — verified live evidence (live=strict)
 
-Fixit applied Denis's approval and verified:
+**VERIFIED** by Fixit on netcup monetka:
+
+- `TENANT_ISOLATION_STRICT=true` in `/opt/librechat-mcp/LibreChat-src/.env`
+- `librechat-mcp.service` restarted; health **200**
+- missing ALS → **DENIED** (`TENANT_CONTEXT_REQUIRED` / fail-closed)
+- backup: `.env.bak-tenant-strict-20260918T063632Z`
 
 | Item | Value |
 |---|---|
-| `TENANT_ISOLATION_STRICT` | `true` in `/opt/librechat-mcp/LibreChat-src/.env` |
-| Backup | `.env.bak-tenant-strict-20260918T063632Z` |
-| Restart | `librechat-mcp.service` — health **200** |
-| Missing ALS | **DENIED** (fail-closed; Fixit label `TENANT_CONTEXT_REQUIRED`) |
+| Flag | `true` (string) |
+| Service | `librechat-mcp.service` `:3080` |
+| Missing ALS | fail-closed (no longer pass-through) |
+| Policy throw (code) | `[TenantIsolation] <operation> attempted without tenant context in strict mode` |
+| HTTP (no user tenantId) | `403` `{ "error": "Tenant context required in strict isolation mode" }` |
 
-**live=strict** on monetka/netcup after this Fixit confirm only.
+**live=strict** on monetka/netcup after this Fixit confirm only — not from the earlier missing-flag observation.
 
 Do not invent or commit monetka or netcup credentials in this repo.
