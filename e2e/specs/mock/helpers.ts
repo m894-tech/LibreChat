@@ -48,6 +48,38 @@ export function isAgentGenerationStart(response: Response) {
 const modelSelectorTrigger = (page: Page) =>
   page.getByRole('button', { name: 'Select a model' }).first();
 
+/**
+ * Dense Session chrome: bookmarks / export / share / MCP / skills live in SessionPanel.
+ * Open via the always-visible summary pill (aria-label Session menu).
+ */
+export async function openSessionSheet(page: Page) {
+  const sheet = page.getByTestId('session-sheet');
+  if (await sheet.isVisible().catch(() => false)) {
+    return;
+  }
+  await page.getByTestId('session-summary-pill').click();
+  await expect(sheet).toBeVisible();
+}
+
+export async function closeSessionSheet(page: Page) {
+  const sheet = page.getByTestId('session-sheet');
+  if (!(await sheet.isVisible().catch(() => false))) {
+    return;
+  }
+  await sheet.getByRole('button', { name: 'Close' }).click();
+  await expect(sheet).toBeHidden();
+}
+
+/** Bookmark control inside Session → More (not the nav filter). */
+export function sessionBookmarkButton(page: Page) {
+  return page.getByTestId('session-more-chrome').getByTestId('bookmark-menu');
+}
+
+/** Export/Share trigger inside Session → More. */
+export function sessionExportButton(page: Page) {
+  return page.getByTestId('session-more-chrome').getByRole('button', { name: 'Export options' });
+}
+
 export const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** Open the model selector, choose an endpoint, then its model (committed on the model click). */
@@ -74,8 +106,23 @@ export async function selectModelSpec(page: Page, label: string) {
   await expect(trigger).toContainText(label);
 }
 
-/** Enable the ephemeral Skills capability from the composer tool menu. */
+/** Enable Skills from Session → Skills (dense v5); fall back to Tools Options. */
 export async function enableSkills(page: Page) {
+  const sessionPill = page.getByTestId('session-summary-pill');
+  if (await sessionPill.isVisible().catch(() => false)) {
+    await openSessionSheet(page);
+    await page.getByRole('button', { name: 'Skills' }).click();
+    const sheet = page.getByTestId('session-sheet');
+    const toggle = sheet.getByRole('switch').first();
+    if (await toggle.isVisible().catch(() => false)) {
+      const checked = await toggle.getAttribute('aria-checked');
+      if (checked !== 'true') {
+        await toggle.click();
+      }
+    }
+    await closeSessionSheet(page);
+    return;
+  }
   await page.getByRole('button', { name: 'Tools Options' }).click();
   await page.getByTestId('tools-menu-skills').click();
   await page.keyboard.press('Escape');

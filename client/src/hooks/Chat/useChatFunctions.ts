@@ -39,12 +39,12 @@ import {
 } from '~/utils';
 import useFocusRegeneratedResponse from '~/hooks/Chat/useFocusRegeneratedResponse';
 import useGetConversation from '~/hooks/Conversations/useGetConversation';
+import store, { useGetEphemeralAgent, contextSourcesAtom } from '~/store';
 import useCodeApprovalMode from '~/hooks/Agents/useCodeApprovalMode';
 import useSetFilesToDelete from '~/hooks/Files/useSetFilesToDelete';
 import useCodeWorkspace from '~/hooks/Agents/useCodeWorkspace';
 import useGetSender from '~/hooks/Conversations/useGetSender';
 import { revealedQueuedTurnFamily } from '~/store/steer';
-import store, { useGetEphemeralAgent } from '~/store';
 import { startupConfigKey } from '~/data-provider';
 import useUserKey from '~/hooks/Input/useUserKey';
 import { useAuthContext } from '~/hooks';
@@ -237,6 +237,43 @@ export default function useChatFunctions({
     addedConversation,
   );
   const codeWorkspaceState = useCodeWorkspace(immutableConversation, addedConversation);
+
+  const getNativeKnobs = useRecoilCallback(
+    ({ snapshot }) =>
+      (conversationId?: string | null) => {
+        const uiKey = store.conversationUiStateKey(conversationId, index);
+        const loadable = snapshot.getLoadable(store.nativeKnobsByIndex(uiKey));
+        return loadable.state === 'hasValue' ? loadable.contents : null;
+      },
+    [index],
+  );
+
+  const getResponseFormat = useRecoilCallback(
+    ({ snapshot }) =>
+      (conversationId?: string | null) => {
+        const uiKey = store.conversationUiStateKey(conversationId, index);
+        const loadable = snapshot.getLoadable(store.responseFormatByIndex(uiKey));
+        return loadable.state === 'hasValue' ? loadable.contents : 'default';
+      },
+    [index],
+  );
+
+  const getReadyContextSourceIds = useRecoilCallback(
+    ({ snapshot }) =>
+      () => {
+        const ids = new Set<string>();
+        const loadable = snapshot.getLoadable(contextSourcesAtom);
+        if (loadable.state === 'hasValue' && Array.isArray(loadable.contents)) {
+          for (const source of loadable.contents) {
+            if (source.status === 'ready' && source.id) {
+              ids.add(source.id);
+            }
+          }
+        }
+        return Array.from(ids);
+      },
+    [],
+  );
 
   /**
    * Atomically read + reset the per-conversation queue of manually-invoked
@@ -768,6 +805,9 @@ export default function useChatFunctions({
       editPrefixLength,
       addedConvo,
       manualSkills: manualSkills.length > 0 ? manualSkills : undefined,
+      nativeKnobs: getNativeKnobs(conversationId),
+      responseFormat: getResponseFormat(conversationId),
+      contextSourceIds: getReadyContextSourceIds(),
       codeApprovalMode,
       codeEnvironmentMode,
       codeWorkspaces,

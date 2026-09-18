@@ -2,8 +2,10 @@ import { expect, test } from '@playwright/test';
 import type { Page, Response } from '@playwright/test';
 import {
   NEW_CHAT_PATH,
+  closeSessionSheet,
   isAgentsStream,
   mockReply,
+  openSessionSheet,
   selectMockEndpoint,
   sendMessage,
 } from './helpers';
@@ -19,17 +21,39 @@ const MCP_SERVER_TITLE = 'E2E Memory';
 
 const uniqueText = (prefix: string) => `${prefix} ${Date.now()}-${Math.floor(Math.random() * 1e4)}`;
 
-const mcpBadge = (page: Page) => page.getByRole('button', { name: new RegExp(MCP_SERVER_TITLE) });
+/** Dense v5: MCP lives under Session → Tools → MCP Servers (no composer badge row). */
+async function expectMcpSelected(page: Page) {
+  await openSessionSheet(page);
+  const sheet = page.getByTestId('session-sheet');
+  const mcpSection = sheet.getByTestId('session-menu-mcp');
+  if (!(await mcpSection.isVisible().catch(() => false))) {
+    await sheet.getByRole('button', { name: /MCP Servers/ }).click();
+    await expect(mcpSection).toBeVisible();
+  }
+  const menuButton = mcpSection.getByRole('button', { name: /MCP Servers|E2E Memory/ }).first();
+  await menuButton.click();
+  const serverItem = page.getByRole('menuitemcheckbox', { name: new RegExp(MCP_SERVER_TITLE) });
+  await expect(serverItem).toHaveAttribute('aria-checked', 'true');
+  await page.keyboard.press('Escape');
+  await closeSessionSheet(page);
+}
 
-/** Select the MCP server from the composer's ephemeral MCP dropdown. */
+/** Select the MCP server from Session chrome. */
 async function selectEphemeralMCP(page: Page) {
-  await page.getByRole('button', { name: 'MCP Servers', exact: true }).click();
+  await openSessionSheet(page);
+  const sheet = page.getByTestId('session-sheet');
+  await sheet.getByRole('button', { name: /MCP Servers/ }).click();
+  const mcpSection = sheet.getByTestId('session-menu-mcp');
+  await expect(mcpSection).toBeVisible();
+
+  const menuButton = mcpSection.getByRole('button', { name: /MCP Servers/ }).first();
+  await menuButton.click();
   const serverItem = page.getByRole('menuitemcheckbox', { name: new RegExp(MCP_SERVER_TITLE) });
   await expect(serverItem).toBeVisible();
   await serverItem.click();
   await expect(serverItem).toHaveAttribute('aria-checked', 'true');
   await page.keyboard.press('Escape');
-  await expect(mcpBadge(page)).toBeVisible();
+  await closeSessionSheet(page);
 }
 
 /** The `ephemeralAgent.mcp` array sent with a chat request. */
@@ -47,7 +71,7 @@ test.describe('ephemeral MCP selection persistence', () => {
     await selectEphemeralMCP(page);
 
     await selectMockEndpoint(page, PROVIDER_D);
-    await expect(mcpBadge(page)).toBeVisible();
+    await expectMcpSelected(page);
 
     const response = await sendMessage(page, uniqueText('mcp new chat switch'));
     expect(response.ok()).toBeTruthy();
@@ -70,7 +94,7 @@ test.describe('ephemeral MCP selection persistence', () => {
     await expect(page).toHaveURL(/\/c\/(?!new)/, { timeout: 15000 });
 
     await selectMockEndpoint(page, PROVIDER_D);
-    await expect(mcpBadge(page)).toBeVisible();
+    await expectMcpSelected(page);
 
     const [regenerated] = await Promise.all([
       page.waitForResponse(isAgentsStream, { timeout: 30000 }),

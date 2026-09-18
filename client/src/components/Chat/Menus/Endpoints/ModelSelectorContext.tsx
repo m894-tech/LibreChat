@@ -79,6 +79,16 @@ export function ModelSelectorProvider({ children, startupConfig }: ModelSelector
      * Use agentsMap which already contains permission-filtered agents (consistent with other components).
      */
     return specs.filter((spec) => {
+      // Orch modes live in Session ⚙ Off/Auto/Team — hide fake picker specs.
+      if (
+        spec.name === 'relay-auto' ||
+        spec.name === 'relay-team' ||
+        spec.name === 'relay-compare' ||
+        spec.name === 'relay-swarm' ||
+        spec.preset?.endpoint === 'Relay-Orchestrator'
+      ) {
+        return false;
+      }
       if (spec.preset?.endpoint === EModelEndpoint.agents && spec.preset?.agent_id) {
         return spec.preset.agent_id in agentsMap;
       }
