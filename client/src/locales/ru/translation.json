@@ -1349,7 +1349,7 @@
   "com_ui_session_more": "Ещё",
   "com_ui_session_private": "Приватный",
   "com_ui_session_private_hint": "Не сохраняется в историю · не шарится · не используется для обучения",
-  "com_ui_session_sheet_now_hint": "Модель, профиль, оркестрация и формат — здесь, не в шапке.",
+  "com_ui_session_sheet_now_hint": "Профиль, оркестрация и формат — здесь; модель выбирайте в чипе композера.",
   "com_ui_session_automations": "Автоматизации",
   "com_ui_session_private_locked": "Заблокировано после первого сообщения — смените в новом чате",
   "com_ui_skills_manage": "Управление скиллами",

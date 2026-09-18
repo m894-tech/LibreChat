@@ -5,8 +5,9 @@ import {
   closeSessionSheet,
   isAgentsStream,
   mockReply,
-  openSessionSheet,
+  openSessionMcpMenu,
   selectMockEndpoint,
+  selectSessionMcpServer,
   sendMessage,
 } from './helpers';
 
@@ -23,15 +24,7 @@ const uniqueText = (prefix: string) => `${prefix} ${Date.now()}-${Math.floor(Mat
 
 /** Dense v5: MCP lives under Session → Tools → MCP Servers (no composer badge row). */
 async function expectMcpSelected(page: Page) {
-  await openSessionSheet(page);
-  const sheet = page.getByTestId('session-sheet');
-  const mcpSection = sheet.getByTestId('session-menu-mcp');
-  if (!(await mcpSection.isVisible().catch(() => false))) {
-    await sheet.getByRole('button', { name: /MCP Servers/ }).click();
-    await expect(mcpSection).toBeVisible();
-  }
-  const menuButton = mcpSection.getByRole('button', { name: /MCP Servers|E2E Memory/ }).first();
-  await menuButton.click();
+  await openSessionMcpMenu(page);
   const serverItem = page.getByRole('menuitemcheckbox', { name: new RegExp(MCP_SERVER_TITLE) });
   await expect(serverItem).toHaveAttribute('aria-checked', 'true');
   await page.keyboard.press('Escape');
@@ -40,20 +33,7 @@ async function expectMcpSelected(page: Page) {
 
 /** Select the MCP server from Session chrome. */
 async function selectEphemeralMCP(page: Page) {
-  await openSessionSheet(page);
-  const sheet = page.getByTestId('session-sheet');
-  await sheet.getByRole('button', { name: /MCP Servers/ }).click();
-  const mcpSection = sheet.getByTestId('session-menu-mcp');
-  await expect(mcpSection).toBeVisible();
-
-  const menuButton = mcpSection.getByRole('button', { name: /MCP Servers/ }).first();
-  await menuButton.click();
-  const serverItem = page.getByRole('menuitemcheckbox', { name: new RegExp(MCP_SERVER_TITLE) });
-  await expect(serverItem).toBeVisible();
-  await serverItem.click();
-  await expect(serverItem).toHaveAttribute('aria-checked', 'true');
-  await page.keyboard.press('Escape');
-  await closeSessionSheet(page);
+  await selectSessionMcpServer(page, MCP_SERVER_TITLE);
 }
 
 /** The `ephemeralAgent.mcp` array sent with a chat request. */

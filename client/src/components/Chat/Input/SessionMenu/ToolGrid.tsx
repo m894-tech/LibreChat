@@ -1,13 +1,19 @@
 import React, { useCallback, useMemo } from 'react';
 import { PinIcon, Switch, VectorIcon } from '@librechat/client';
-import { Box, ChevronRight, Globe, TerminalSquareIcon } from 'lucide-react';
+import { Box, Brain, ChevronRight, Globe, TerminalSquareIcon } from 'lucide-react';
 import {
   ArtifactModes,
   Permissions,
   PermissionTypes,
   defaultAgentCapabilities,
 } from 'librechat-data-provider';
-import { useLocalize, useHasAccess, useAgentCapabilities } from '~/hooks';
+import {
+  useLocalize,
+  useHasAccess,
+  useHasMemoryAccess,
+  useAgentCapabilities,
+  useAuthContext,
+} from '~/hooks';
 import { useBadgeRowContext } from '~/Providers';
 import ChipScroller from './ChipScroller';
 import { cn } from '~/utils';
@@ -125,12 +131,13 @@ function ModeChip({
 /** Dense 2-col tool toggles. State is BadgeRowContext — same as SessionModeList. */
 export default function ToolGrid({ onOpenMcp }: ToolGridProps) {
   const localize = useLocalize();
+  const { user } = useAuthContext();
   const context = useBadgeRowContext();
   const capabilities = useMemo(() => {
     const fromConfig = context?.agentsConfig?.capabilities ?? [];
     return [...new Set([...defaultAgentCapabilities, ...fromConfig])];
   }, [context?.agentsConfig?.capabilities]);
-  const { codeEnabled, webSearchEnabled, artifactsEnabled, fileSearchEnabled } =
+  const { codeEnabled, webSearchEnabled, artifactsEnabled, fileSearchEnabled, memoryEnabled } =
     useAgentCapabilities(capabilities);
 
   const canUseWebSearch = useHasAccess({
@@ -149,14 +156,17 @@ export default function ToolGrid({ onOpenMcp }: ToolGridProps) {
     permissionType: PermissionTypes.MCP_SERVERS,
     permission: Permissions.USE,
   });
+  const canUseMemory = useHasMemoryAccess();
+  const showMemory = canUseMemory && memoryEnabled && user?.personalization?.memories !== false;
 
-  const { webSearch, artifacts, fileSearch, codeInterpreter } = context ?? {};
+  const { webSearch, artifacts, fileSearch, codeInterpreter, memory } = context ?? {};
   const { availableMCPServers } = context?.mcpServerManager ?? {};
 
   const { isPinned: isSearchPinned, setIsPinned: setIsSearchPinned } = webSearch ?? {};
   const { isPinned: isCodePinned, setIsPinned: setIsCodePinned } = codeInterpreter ?? {};
   const { isPinned: isFileSearchPinned, setIsPinned: setIsFileSearchPinned } = fileSearch ?? {};
   const { isPinned: isArtifactsPinned, setIsPinned: setIsArtifactsPinned } = artifacts ?? {};
+  const { isPinned: isMemoryPinned, setIsPinned: setIsMemoryPinned } = memory ?? {};
 
   const handleWebSearchToggle = useCallback(() => {
     webSearch?.debouncedChange({ value: !webSearch?.toggleState });
@@ -167,6 +177,9 @@ export default function ToolGrid({ onOpenMcp }: ToolGridProps) {
   const handleFileSearchToggle = useCallback(() => {
     fileSearch?.debouncedChange({ value: !fileSearch?.toggleState });
   }, [fileSearch]);
+  const handleMemoryToggle = useCallback(() => {
+    memory?.debouncedChange({ value: !memory?.toggleState });
+  }, [memory]);
   const handleArtifactsToggle = useCallback(() => {
     const currentState = artifacts?.toggleState;
     if (!currentState || currentState === '') {
@@ -227,6 +240,20 @@ export default function ToolGrid({ onOpenMcp }: ToolGridProps) {
         pinned={isCodePinned}
         onPinToggle={setIsCodePinned}
         pinLabel={pinLabel(isCodePinned)}
+      />,
+    );
+  }
+  if (showMemory) {
+    cells.push(
+      <ToolCell
+        key="memory"
+        icon={<Brain className="size-3.5" aria-hidden="true" />}
+        label={localize('com_ui_memory')}
+        checked={Boolean(memory?.toggleState)}
+        onToggle={handleMemoryToggle}
+        pinned={isMemoryPinned}
+        onPinToggle={setIsMemoryPinned}
+        pinLabel={pinLabel(isMemoryPinned)}
       />,
     );
   }

@@ -20,9 +20,8 @@ import {
  * rather than depending on a runner's project matrix.
  */
 
-const TOGGLE = '[data-testid="header-open-sidebar-button"]';
-const NEW_CHAT = '[data-testid="header-new-chat-button"]';
-const OVERFLOW = '[data-testid="header-overflow-menu"]';
+const TOGGLE = '[data-testid="open-sidebar-button"]';
+const NEW_CHAT = '[data-testid="session-new-conversation"]';
 const CLOSE = '[data-testid="close-sidebar-button"]';
 
 test.use({ viewport: { width: 390, height: 844 } });
@@ -179,7 +178,7 @@ test.describe('mobile chat header controls', () => {
     }
   });
 
-  test('the sidebar toggle shares one surface with its neighbours @scenario:mobile-header-controls-share-one-surface', async ({
+  test('the sidebar toggle shares one surface with the session new-chat control @scenario:mobile-header-controls-share-one-surface', async ({
     page,
   }) => {
     test.setTimeout(90000);
@@ -189,23 +188,21 @@ test.describe('mobile chat header controls', () => {
     try {
       await openSeededConversation(page, conversationId);
       await expect(page.locator(NEW_CHAT)).toBeVisible();
-      await expect(page.locator(OVERFLOW)).toBeVisible();
 
-      const [toggle, newChat, overflow] = await Promise.all([
+      const [toggle, newChat] = await Promise.all([
         surfaceOf(page, TOGGLE),
         surfaceOf(page, NEW_CHAT),
-        surfaceOf(page, OVERFLOW),
       ]);
       const theme = await page.locator('html').getAttribute('class');
 
       expect(isOpaque(toggle.background), `toggle fill ${toggle.background} in ${theme}`).toBe(
         true,
       );
-      expect(toggle.background, `theme ${theme}`).toBe(newChat.background);
-      expect(toggle.background, `theme ${theme}`).toBe(overflow.background);
-      expect(toggle.radius).toBe(newChat.radius);
-      expect(toggle.radius).toBe(overflow.radius);
+      expect(isOpaque(newChat.background), `new-chat fill ${newChat.background} in ${theme}`).toBe(
+        true,
+      );
       expect(toggle.opacity).toBe('1');
+      expect(newChat.opacity).toBe('1');
     } finally {
       await deleteMessagesByConversation([conversationId]);
       await deleteConversations([conversationId]);

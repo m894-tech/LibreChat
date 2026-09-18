@@ -77,10 +77,48 @@ export function sessionBookmarkButton(page: Page) {
 
 /** Export/Share trigger inside Session → More. */
 export function sessionExportButton(page: Page) {
-  return page.getByTestId('session-more-chrome').getByRole('button', { name: 'Export options' });
+  return page.getByTestId('session-more-chrome').getByRole('button', { name: /Export\/Share/ });
 }
 
 export const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * Open Session → Tools → MCP Servers menu (dense v5; MCP is no longer a composer badge).
+ * Leaves the sheet on the MCP view with the server menu open.
+ */
+export async function openSessionMcpMenu(page: Page) {
+  await openSessionSheet(page);
+  const sheet = page.getByTestId('session-sheet');
+  const mcpSection = sheet.getByTestId('session-menu-mcp');
+  if (!(await mcpSection.isVisible().catch(() => false))) {
+    await sheet.getByRole('button', { name: /MCP Servers/ }).click();
+    await expect(mcpSection).toBeVisible();
+  }
+  const menuOpen = await page
+    .getByRole('menuitemcheckbox')
+    .first()
+    .isVisible()
+    .catch(() => false);
+  if (!menuOpen) {
+    await mcpSection
+      .getByRole('button', { name: /MCP Servers|E2E Memory/ })
+      .first()
+      .click();
+  }
+}
+
+/** Select an ephemeral MCP server from Session → Tools → MCP, then close the sheet. */
+export async function selectSessionMcpServer(page: Page, serverTitle: string) {
+  await openSessionMcpMenu(page);
+  const serverItem = page.getByRole('menuitemcheckbox', { name: new RegExp(serverTitle) });
+  await expect(serverItem).toBeVisible();
+  if ((await serverItem.getAttribute('aria-checked')) !== 'true') {
+    await serverItem.click();
+  }
+  await expect(serverItem).toHaveAttribute('aria-checked', 'true');
+  await page.keyboard.press('Escape');
+  await closeSessionSheet(page);
+}
 
 /** Open the model selector, choose an endpoint, then its model (committed on the model click). */
 export async function selectMockEndpoint(page: Page, endpoint: MockEndpoint) {
@@ -129,24 +167,60 @@ export async function enableSkills(page: Page) {
   await expect(page.getByRole('button', { name: 'Skills' })).toBeVisible();
 }
 
-/** Enable the ephemeral Memory capability from the composer tool menu. */
+/** Enable Memory from Session → Tools (dense v5); fall back to Tools Options. */
 export async function enableMemory(page: Page) {
+  const sessionPill = page.getByTestId('session-summary-pill');
+  if (await sessionPill.isVisible().catch(() => false)) {
+    await openSessionSheet(page);
+    const toggle = page.getByTestId('session-sheet').getByRole('switch', { name: 'Memory' });
+    await expect(toggle).toBeVisible();
+    if ((await toggle.getAttribute('aria-checked')) !== 'true') {
+      await toggle.click();
+    }
+    await expect(toggle).toHaveAttribute('aria-checked', 'true');
+    await closeSessionSheet(page);
+    return;
+  }
   await page.getByRole('button', { name: 'Tools Options' }).click();
   await page.getByTestId('tools-menu-memory').click();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('checkbox', { name: 'Memory' })).toBeVisible();
 }
 
-/** Enable the ephemeral Code Interpreter (execute_code) capability from the tool menu. */
+/** Enable Code Interpreter from Session → Tools (dense v5); fall back to Tools Options. */
 export async function enableCodeInterpreter(page: Page) {
+  const sessionPill = page.getByTestId('session-summary-pill');
+  if (await sessionPill.isVisible().catch(() => false)) {
+    await openSessionSheet(page);
+    const toggle = page.getByTestId('session-sheet').getByRole('switch', { name: 'Run Code' });
+    await expect(toggle).toBeVisible();
+    if ((await toggle.getAttribute('aria-checked')) !== 'true') {
+      await toggle.click();
+    }
+    await expect(toggle).toHaveAttribute('aria-checked', 'true');
+    await closeSessionSheet(page);
+    return;
+  }
   await page.getByRole('button', { name: 'Tools Options' }).click();
   await page.getByTestId('tools-menu-run-code').click();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('checkbox', { name: 'Run Code' })).toBeVisible();
 }
 
-/** Enable the ephemeral File Search capability from the composer tool menu. */
+/** Enable File Search from Session → Tools (dense v5); fall back to Tools Options. */
 export async function enableFileSearch(page: Page) {
+  const sessionPill = page.getByTestId('session-summary-pill');
+  if (await sessionPill.isVisible().catch(() => false)) {
+    await openSessionSheet(page);
+    const toggle = page.getByTestId('session-sheet').getByRole('switch', { name: 'File Search' });
+    await expect(toggle).toBeVisible();
+    if ((await toggle.getAttribute('aria-checked')) !== 'true') {
+      await toggle.click();
+    }
+    await expect(toggle).toHaveAttribute('aria-checked', 'true');
+    await closeSessionSheet(page);
+    return;
+  }
   await page.getByRole('button', { name: 'Tools Options' }).click();
   await page.getByTestId('tools-menu-file-search').click();
   await page.keyboard.press('Escape');

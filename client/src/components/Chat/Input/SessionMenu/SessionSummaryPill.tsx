@@ -101,6 +101,21 @@ export default function SessionSummaryPill({
     setSheetOpen(true);
   }, [setSheetOpen]);
 
+  const sessionMenuEnabled = startupConfig?.interface?.sessionMenu !== false;
+
+  if (!sessionMenuEnabled) {
+    return (
+      <div className={cn('flex max-w-full items-center gap-1.5 px-1', className)}>
+        <div
+          className="min-w-0 shrink [&_.relative]:w-auto [&_.relative]:max-w-none [&_.relative]:items-start [&_[data-testid=model-selector-button]]:my-0 [&_[data-testid=model-selector-button]]:h-7 [&_[data-testid=model-selector-button]]:w-auto [&_[data-testid=model-selector-button]]:max-w-[12rem] [&_[data-testid=model-selector-button]]:rounded-full [&_[data-testid=model-selector-button]]:px-2.5 [&_[data-testid=model-selector-button]]:py-0 [&_[data-testid=model-selector-button]]:text-[11px]"
+          data-testid="session-model-chip"
+        >
+          <ModelSelector startupConfig={startupConfig} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cn('flex max-w-full items-center gap-1.5 px-1', className)}>
       <div

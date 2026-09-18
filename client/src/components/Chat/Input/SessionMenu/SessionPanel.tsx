@@ -1,8 +1,10 @@
 import React, { useMemo } from 'react';
+import { useRecoilValue } from 'recoil';
 import { ChevronRight } from 'lucide-react';
 import { getConfigDefaults, PermissionTypes, Permissions } from 'librechat-data-provider';
 import type { TConversation } from 'librechat-data-provider';
 import type { NativeModelControls } from '~/hooks/Input/useNativeModelControls';
+import { TraceButton, useTraceControl } from '~/components/Chat/Trace';
 import ExportAndShareMenu from '~/components/Chat/ExportAndShareMenu';
 import { SessionAutomationsSection } from '~/components/Automations';
 import SessionNativeKnobsSection from './SessionNativeKnobsSection';
@@ -20,6 +22,7 @@ import AgentPickerButton from './AgentPickerButton';
 import SessionMCPSection from './SessionMCPSection';
 import PrivateToggle from './PrivateToggle';
 import ToolGrid from './ToolGrid';
+import store from '~/store';
 
 export type SessionPanelView = 'main' | 'mcp' | 'skills' | 'automations' | 'context';
 
@@ -68,6 +71,12 @@ export default function SessionPanel({
     () => startupConfig?.interface ?? getConfigDefaults().interface,
     [startupConfig],
   );
+  const isSubmitting = useRecoilValue(store.isSubmittingFamily(index));
+  const trace = useTraceControl({
+    conversationId: conversation?.conversationId,
+    traceViewer: interfaceConfig.traceViewer,
+    isSubmitting,
+  });
   const hasAccessToBookmarks = useHasAccess({
     permissionType: PermissionTypes.BOOKMARKS,
     permission: Permissions.USE,
@@ -131,6 +140,7 @@ export default function SessionPanel({
                 className="flex flex-wrap items-center gap-1 border-t border-border-light px-2 py-1.5"
                 data-testid="session-more-chrome"
               >
+                {trace.show ? <TraceButton onClick={trace.open} /> : null}
                 <ExportAndShareMenu
                   isSharedButtonEnabled={startupConfig?.sharedLinksEnabled ?? false}
                 />
