@@ -145,3 +145,31 @@ export function filterNativeKnobFamilyForModel(
       .filter((group) => group.chips.length > 0),
   };
 }
+
+/** Groups that mirror SessionEffortSection (conversation.effort SoT). */
+export function isEffortKnobGroup(group: NativeKnobGroup): boolean {
+  const id = group.id.toLowerCase();
+  const label = (group.label ?? '').toLowerCase();
+  if (id.includes('effort') || label.includes('effort')) {
+    return true;
+  }
+  return group.chips.some((chip) =>
+    Object.keys(chip.apply).some((key) => key.toLowerCase() === 'effort'),
+  );
+}
+
+/**
+ * Dense v5.1: Effort Low/Mid/High lives only in SessionEffortSection.
+ * Strip overlapping native-knob effort groups so the sheet cannot show two
+ * desynced Effort controls (conversation.effort vs localStorage knobs).
+ */
+export function withoutEffortKnobGroups(family: NativeKnobFamily | null): NativeKnobFamily | null {
+  if (!family) {
+    return null;
+  }
+  const groups = family.groups.filter((group) => !isEffortKnobGroup(group));
+  if (groups.length === 0) {
+    return null;
+  }
+  return { ...family, groups };
+}

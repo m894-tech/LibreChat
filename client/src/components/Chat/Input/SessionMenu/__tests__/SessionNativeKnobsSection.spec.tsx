@@ -50,4 +50,32 @@ describe('SessionNativeKnobsSection', () => {
     expect(applyChip).toHaveBeenCalledWith(controls.family?.groups[0].chips[1]);
     expect(screen.getByTestId('session-native-knobs')).toBeInTheDocument();
   });
+
+  it('hides effort-only families owned by SessionEffortSection', () => {
+    const effortControls: NativeModelControls = {
+      family: {
+        id: 'claude-adaptive',
+        label: 'Claude effort',
+        kind: 'text',
+        match: ['claude-opus-5'],
+        defaults: { effort: 'high' },
+        groups: [
+          {
+            id: 'effort',
+            label: 'Effort',
+            chips: [
+              { id: 'low', label: 'Low', apply: { effort: 'low' } },
+              { id: 'high', label: 'High', apply: { effort: 'high' } },
+            ],
+          },
+        ],
+      },
+      values: { effort: 'high' },
+      payload: { family: 'claude-adaptive', effort: 'high' },
+      applyChip,
+    };
+    const { container } = render(<SessionNativeKnobsSection controls={effortControls} />);
+    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByTestId('session-native-knobs')).not.toBeInTheDocument();
+  });
 });

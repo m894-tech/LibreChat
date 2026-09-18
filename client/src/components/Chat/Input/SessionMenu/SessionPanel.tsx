@@ -101,10 +101,10 @@ export default function SessionPanel({
               >
                 <ModelSelector startupConfig={startupConfig} />
               </div>
+              <SessionEffortSection conversation={conversation} index={index} />
               <SessionProfileSection conversationId={conversation?.conversationId} compact />
               <SessionOrchSection conversation={conversation} compact />
               <ResponseFormatSection conversation={conversation} index={index} compact />
-              <SessionEffortSection conversation={conversation} index={index} />
               {modelControls ? (
                 <SessionNativeKnobsSection conversation={conversation} controls={modelControls} />
               ) : null}

@@ -2981,7 +2981,7 @@
   "com_ui_session_more": "More",
   "com_ui_session_private": "Private",
   "com_ui_session_private_hint": "Not saved to history · not shared · not used for training",
-  "com_ui_session_sheet_now_hint": "EFFORT only here — not a full-width segment on the composer.",
+  "com_ui_session_sheet_now_hint": "Model, profile, orch, format, and effort live here — not on a separate composer chip.",
   "com_ui_session_effort": "Effort",
   "com_ui_session_effort_low": "Low",
   "com_ui_session_effort_mid": "Mid",
