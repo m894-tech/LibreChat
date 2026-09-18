@@ -18,7 +18,7 @@ import { useLocalize } from '~/hooks';
 
 const defaultInterface = getConfigDefaults().interface;
 
-function ModelSelectorContent() {
+function ModelSelectorContent({ portal = true }: { portal?: boolean }) {
   const localize = useLocalize();
   const modelSelectorHint = useShortcutHint('openModelSelector', localize('com_ui_select_model'));
   const modelSelectorAriaKey = useShortcutAriaKey('openModelSelector');
@@ -102,6 +102,7 @@ function ModelSelectorContent() {
         combobox={<input id="model-search" placeholder=" " />}
         comboboxLabel={localize('com_endpoint_search_models')}
         trigger={trigger}
+        portal={portal}
       >
         {searchResults ? (
           renderSearchResults(searchResults, localize, searchValue)
@@ -129,7 +130,7 @@ function ModelSelectorContent() {
   );
 }
 
-export default function ModelSelector({ startupConfig }: ModelSelectorProps) {
+export default function ModelSelector({ startupConfig, portal }: ModelSelectorProps) {
   const interfaceConfig = startupConfig?.interface ?? defaultInterface;
   const modelSpecs = startupConfig?.modelSpecs?.list ?? [];
 
@@ -141,7 +142,7 @@ export default function ModelSelector({ startupConfig }: ModelSelectorProps) {
   return (
     <ModelSelectorChatProvider>
       <ModelSelectorProvider startupConfig={startupConfig}>
-        <ModelSelectorContent />
+        <ModelSelectorContent portal={portal} />
       </ModelSelectorProvider>
     </ModelSelectorChatProvider>
   );

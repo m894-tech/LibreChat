@@ -22,4 +22,9 @@ export interface SelectedValues {
 
 export interface ModelSelectorProps {
   startupConfig: TStartupConfig | undefined;
+  /**
+   * Forwarded to CustomMenu. Session sheet passes `false` so search options stay
+   * inside the dialog a11y tree (see CustomMenu `portal` docs).
+   */
+  portal?: boolean;
 }

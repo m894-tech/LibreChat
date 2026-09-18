@@ -13,6 +13,14 @@ export interface CustomMenuProps extends Ariakit.MenuButtonProps<'div'> {
   comboboxLabel?: string;
   trigger?: Ariakit.MenuButtonProps['render'];
   defaultOpen?: boolean;
+  /**
+   * Body-portal is the standalone default. Inside a Session / OGDialog host,
+   * pass `false` so ComboboxList options stay in the dialog DOM and a11y tree
+   * (portaled siblings stay invisible to getByRole when a modal layer is up,
+   * and remain flaky under `modal={false}` alone). Host must not clip with
+   * overflow-hidden — same contract as ControlCombobox in EditPresetDialog.
+   */
+  portal?: boolean;
 }
 
 export const CustomMenu = React.forwardRef<HTMLDivElement, CustomMenuProps>(function CustomMenu(
@@ -27,6 +35,7 @@ export const CustomMenu = React.forwardRef<HTMLDivElement, CustomMenuProps>(func
     comboboxLabel,
     trigger,
     defaultOpen,
+    portal = true,
     ...props
   },
   ref,
@@ -74,7 +83,7 @@ export const CustomMenu = React.forwardRef<HTMLDivElement, CustomMenuProps>(func
       </Ariakit.MenuButton>
       <Ariakit.Menu
         open={isOpen}
-        portal
+        portal={portal}
         overlap
         unmountOnHide
         gutter={parent ? -4 : 4}
@@ -125,8 +134,11 @@ export const CustomMenu = React.forwardRef<HTMLDivElement, CustomMenuProps>(func
       <Ariakit.ComboboxProvider
         resetValueOnHide
         includesBaseElement={false}
-        value={searchValue}
         setValue={onSearch}
+        /** Omit `value` when uncontrolled so a parent that only passes `onSearch`
+         *  (ModelSelector) does not force controlled mode with `value={undefined}`
+         *  and wipe typed queries on every searchResults re-render. */
+        {...(searchValue != null ? { value: searchValue } : {})}
       >
         {element}
       </Ariakit.ComboboxProvider>

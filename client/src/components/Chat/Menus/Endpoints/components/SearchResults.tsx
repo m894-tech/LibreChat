@@ -189,6 +189,7 @@ export function SearchResults({ results, localize, searchValue }: SearchResultsP
                       key={`${endpoint.value}-${modelId}-search-${i}`}
                       onClick={() => handleSelectModel(endpoint, modelId)}
                       aria-selected={isModelSelected || undefined}
+                      data-testid={`model-search-option-${modelId}`}
                       className="flex w-full cursor-pointer items-center justify-start rounded-lg px-3 py-2 pl-6 text-sm"
                     >
                       <div className="flex items-center gap-2">

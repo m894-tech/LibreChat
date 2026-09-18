@@ -27,10 +27,12 @@ type SessionSheetProps = {
  * Dense Session chrome — same panel tree at every breakpoint.
  * Small screens: bottom sheet. Desktop: composer-anchored panel (no separate toolbar IA).
  *
- * `modal={false}`: the sheet hosts body-portaled Ariakit menus (ModelSelector
- * ComboboxList). A modal dialog aria-hides siblings and parks pointer-events on
- * body, so search options never reach getByRole / stay clickable — same class of
- * failure as nested MCPSubMenu under OGDialog.
+ * `modal={false}` plus ModelSelector `portal={false}`: the sheet hosts a searchable
+ * Ariakit menu. A modal dialog aria-hides body-portaled siblings, and even with
+ * `modal={false}` a body-portaled ComboboxList stays outside the sheet DOM so
+ * Playwright getByRole('option') never sees mock-model-* rows. Keep the list in
+ * the sheet (portal=false) and use overflow-visible so the popover is not clipped
+ * — same contract as ControlCombobox inside EditPresetDialog.
  */
 export default function SessionSheet({
   conversation,
@@ -70,7 +72,8 @@ export default function SessionSheet({
       <OGDialogContent
         showCloseButton={false}
         className={cn(
-          'flex max-h-[58vh] flex-col gap-0 overflow-hidden border border-border-light bg-surface-primary p-0 shadow-lg',
+          /** overflow-visible: ModelSelector portal={false} list must not be clipped */
+          'flex max-h-[58vh] flex-col gap-0 overflow-visible border border-border-light bg-surface-primary p-0 shadow-lg',
           view !== 'main' && 'max-h-[72vh]',
           isMobile
             ? 'fixed inset-x-0 bottom-0 top-auto w-full max-w-full translate-x-0 translate-y-0 rounded-t-2xl'

@@ -64,9 +64,9 @@ export async function openSessionSheet(page: Page) {
  * Nested endpoint→model Ariakit flyouts do not stay open under Session's OGDialog
  * (same class of bug as MCPSubMenu) — callers should pick via root `#model-search`.
  *
- * SessionSheet uses `modal={false}` so the body-portaled ComboboxList stays in the
- * a11y tree (modal dialogs aria-hide siblings, which hides `role=option` from
- * getByRole even when `#model-search` is CSS-visible).
+ * Session ModelSelector uses `portal={false}` so ComboboxList options stay inside
+ * the sheet DOM/a11y tree (body-portaled options stay invisible to getByRole even
+ * when `#model-search` is CSS-visible under a dialog layer).
  */
 async function openModelSelector(page: Page) {
   const chipTrigger = page.getByTestId('session-model-chip').getByTestId('model-selector-button');
@@ -76,9 +76,7 @@ async function openModelSelector(page: Page) {
   }
 
   await openSessionSheet(page);
-  const sheetTrigger = page
-    .getByTestId('session-sheet-model')
-    .getByTestId('model-selector-button');
+  const sheetTrigger = page.getByTestId('session-sheet-model').getByTestId('model-selector-button');
   await expect(sheetTrigger).toBeVisible({ timeout: 15000 });
   await sheetTrigger.scrollIntoViewIfNeeded();
   await sheetTrigger.click({ timeout: 10000 });
@@ -96,20 +94,25 @@ async function selectModelSearchOption(
   await search.click({ timeout: 5000 });
   await expect(page.getByRole('listbox')).toBeVisible({ timeout: 10000 });
 
-  const option =
+  const byTestId = page.getByTestId(`model-search-option-${query}`);
+  const byRole =
     typeof optionName === 'string'
       ? page.getByRole('option', { name: optionName, exact: true })
       : page.getByRole('option', { name: optionName });
+  /** Prefer stable test id (model id), then role name, then exact text in the listbox. */
+  const option = byTestId
+    .or(byRole)
+    .or(page.getByRole('listbox').getByText(optionName, { exact: typeof optionName === 'string' }));
 
   /** Search is debounced 200ms; remounts on each committed query. */
   await expect(async () => {
     await search.fill('');
     await search.pressSequentially(query, { delay: 15 });
-    await expect(option).toBeVisible({ timeout: 2500 });
+    await expect(option.first()).toBeVisible({ timeout: 2500 });
   }).toPass({ timeout: 15000 });
 
-  await option.scrollIntoViewIfNeeded();
-  await option.click({ timeout: 10000 });
+  await option.first().scrollIntoViewIfNeeded();
+  await option.first().click({ timeout: 10000 });
 }
 
 async function assertModelSelection(page: Page, expectedText: string) {
@@ -252,7 +255,12 @@ export async function selectModelSpec(page: Page, label: string) {
 export async function enableSkills(page: Page) {
   await openSessionSheet(page);
   const sheet = page.getByTestId('session-sheet');
-  if (!(await sheet.getByTestId('session-menu-skills').isVisible().catch(() => false))) {
+  if (
+    !(await sheet
+      .getByTestId('session-menu-skills')
+      .isVisible()
+      .catch(() => false))
+  ) {
     await sheet.getByRole('button', { name: 'Skills' }).click();
     await expect(sheet.getByTestId('session-menu-skills')).toBeVisible();
   }
