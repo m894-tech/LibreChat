@@ -51,7 +51,7 @@ export default function NewConversationButton({
           disabled={disabled}
           onClick={onClick}
           className={cn(
-            'flex size-8 shrink-0 items-center justify-center rounded-[10px] border border-dashed border-border-medium bg-surface-secondary text-text-primary hover:bg-surface-hover disabled:opacity-50',
+            'flex size-[30px] shrink-0 items-center justify-center rounded-[9px] border border-dashed border-border-medium bg-surface-secondary text-text-primary hover:bg-surface-hover disabled:opacity-50',
             className,
           )}
         >

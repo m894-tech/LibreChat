@@ -26,14 +26,16 @@ export default function SessionNativeKnobsSection({
   }
 
   return (
-    <div className={cn('w-full rounded-lg p-2', className)} data-testid="session-native-knobs">
-      <div className="mb-1.5 text-xs text-text-secondary">
+    <div className={cn('w-full px-0.5', className)} data-testid="session-native-knobs">
+      <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.06em] text-text-secondary">
         {localize('com_ui_native_knobs')} · {family.label}
       </div>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1.5">
         {family.groups.map((group) => (
-          <div key={group.id} className="flex flex-col gap-1">
-            <div className="px-1 text-[11px] text-text-secondary">{group.label ?? group.id}</div>
+          <div key={group.id} className="flex flex-wrap items-center gap-1.5">
+            <div className="shrink-0 text-[10px] text-text-secondary">
+              {group.label ?? group.id}
+            </div>
             <div
               className="flex flex-wrap gap-1"
               role="radiogroup"
@@ -54,10 +56,10 @@ export default function SessionNativeKnobsSection({
                       resolved.applyChip(chip);
                     }}
                     className={cn(
-                      'rounded-full border px-2 py-0.5 text-xs',
+                      'rounded-md border px-2 py-0.5 text-[11px] leading-snug',
                       active
                         ? 'border-border-heavy bg-surface-hover text-text-primary'
-                        : 'border-border-light text-text-secondary hover:border-border-heavy hover:text-text-primary',
+                        : 'border-border-light bg-surface-tertiary text-text-secondary hover:border-border-heavy hover:text-text-primary',
                     )}
                   >
                     {chip.label}
@@ -67,7 +69,7 @@ export default function SessionNativeKnobsSection({
             </div>
           </div>
         ))}
-        {family.note ? <p className="px-1 text-[11px] text-text-secondary">{family.note}</p> : null}
+        {family.note ? <p className="text-[10px] text-text-secondary">{family.note}</p> : null}
       </div>
     </div>
   );

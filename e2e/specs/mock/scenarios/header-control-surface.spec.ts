@@ -21,7 +21,8 @@ import {
  */
 
 const TOGGLE = '[data-testid="header-open-sidebar-button"]';
-const NEW_CHAT = '[data-testid="header-new-chat-button"]';
+/** SoT new-conversation control: dashed + on the composer tools row only. */
+const NEW_CHAT = '[data-testid="session-new-conversation"]';
 const CLOSE = '[data-testid="close-sidebar-button"]';
 
 test.use({ viewport: { width: 390, height: 844 } });
@@ -178,7 +179,7 @@ test.describe('mobile chat header controls', () => {
     }
   });
 
-  test('the sidebar toggle shares one surface with the session new-chat control @scenario:mobile-header-controls-share-one-surface', async ({
+  test('the sidebar toggle and tools-row new-conversation control stay opaque @scenario:mobile-header-controls-share-one-surface', async ({
     page,
   }) => {
     test.setTimeout(90000);
@@ -188,6 +189,7 @@ test.describe('mobile chat header controls', () => {
     try {
       await openSeededConversation(page, conversationId);
       await expect(page.locator(NEW_CHAT)).toBeVisible();
+      await expect(page.locator('[data-testid="header-new-chat-button"]')).toHaveCount(0);
 
       const [toggle, newChat] = await Promise.all([
         surfaceOf(page, TOGGLE),

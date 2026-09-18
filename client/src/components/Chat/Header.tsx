@@ -1,27 +1,25 @@
 import { memo } from 'react';
 import { useRecoilValue } from 'recoil';
-import { useParams } from 'react-router-dom';
-import { Constants, PermissionTypes, Permissions } from 'librechat-data-provider';
+import { PermissionTypes, Permissions } from 'librechat-data-provider';
 import { TemporaryChat, TemporaryChatIndicator } from './TemporaryChat';
 import SubagentThreadLink from './SubagentThreadLink';
-import { OpenSidebar, NewChat } from './Menus';
+import { OpenSidebar } from './Menus';
 import { useHasAccess } from '~/hooks';
 import { cn } from '~/utils';
 import store from '~/store';
 
 /**
  * Session chrome owns model / bookmarks / export / private at every breakpoint
- * (SessionPanel → More). The header keeps the mobile sidebar opener, new-chat,
- * temporary-chat mark, and optional subagent title — controls the e2e header
- * surface and temporary-chat scenarios still drive.
+ * (SessionPanel → More). New conversation is the dashed control on the composer
+ * tools row (`session-new-conversation`). The header keeps the mobile sidebar
+ * opener, temporary-chat mark, and optional subagent title — controls the e2e
+ * header surface and temporary-chat scenarios still drive.
  *
  * `header-open-sidebar-button` stays distinct from the rail's `open-sidebar-button`
  * so `getByTestId('open-sidebar-button')` resolves to one element.
  */
 function Header({ parentConversationId }: { parentConversationId?: string; readOnly?: boolean }) {
   const navVisible = useRecoilValue(store.sidebarExpanded);
-  const { conversationId: routeConversationId } = useParams();
-  const isNewChat = routeConversationId == null || routeConversationId === Constants.NEW_CONVO;
   const hasAccessToTemporaryChat = useHasAccess({
     permissionType: PermissionTypes.TEMPORARY_CHAT,
     permission: Permissions.USE,
@@ -49,7 +47,6 @@ function Header({ parentConversationId }: { parentConversationId?: string; readO
 
       <div className={cn('flex flex-shrink-0 items-center gap-2', hiddenBehindNav)}>
         {hasAccessToTemporaryChat === true && <TemporaryChatIndicator />}
-        {!isNewChat && <NewChat className="md:hidden" />}
         <div className="hidden items-center gap-2 md:flex">
           {hasAccessToTemporaryChat === true && <TemporaryChat />}
         </div>

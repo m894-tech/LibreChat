@@ -11,6 +11,7 @@ export { default as SessionProfileSection } from './SessionProfileSection';
 export { default as SessionOrchSection } from './SessionOrchSection';
 export { default as ContextUsageRow } from './ContextUsageRow';
 export { default as SessionNativeKnobsSection } from './SessionNativeKnobsSection';
+export { default as SessionEffortSection } from './SessionEffortSection';
 export { default as SessionSummaryPill } from './SessionSummaryPill';
 export { default as SessionSheet } from './SessionSheet';
 export { default as SessionPanel } from './SessionPanel';

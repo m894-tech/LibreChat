@@ -4,12 +4,12 @@
 const PINNED_ROW_SELECTOR = '[data-testid="convo-item"],[data-testid="favorite-item"]';
 
 /** Where focus goes when a removed row has no neighbour left. In sidebar order:
- *  the expanded panel's own control, the mobile drawer's, then the chat
- *  header's. */
+ *  the expanded panel's own control, the mobile drawer's, then the composer
+ *  tools-row dashed new-conversation control. */
 const NEW_CHAT_CONTROLS = [
   '[data-testid="new-chat-button"]',
   '[data-testid="nav-new-chat-fab"]',
-  '[data-testid="header-new-chat-button"]',
+  '[data-testid="session-new-conversation"]',
 ];
 
 const findNewChatControl = (): HTMLElement | null => {
