@@ -60,4 +60,4 @@ Future inheritance (for example, permissions flowing from a parent folder or pro
 - `packages/data-schemas/src/admin/capabilities.ts` — `ResourceCapabilityMap`
 - `packages/data-schemas/src/schema/aclEntry.ts`
 - `packages/data-provider/src/accessPermissions.ts`
-- `docs/ops/tenant-isolation-strict-verify.md` — `TENANT_ISOLATION_STRICT` fail-closed checklist (live monetka/netcup evidence; do not assume strict without Fixit confirm)
+- `docs/ops/tenant-isolation-strict-verify.md` — `TENANT_ISOLATION_STRICT` fail-closed checklist (monetka/netcup **live=strict** after Denis-approved enable + Fixit confirm)
