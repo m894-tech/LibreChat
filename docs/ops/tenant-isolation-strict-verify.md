@@ -56,10 +56,14 @@ Expect 403 responses when an authenticated user lacks `tenantId` while `TENANT_I
 3. Hit a route that reads ACL or other tenant-isolated data.
 4. Expect success and results limited to that tenant (no cross-tenant rows).
 
-## Live monetka verification (blocked)
+## Live monetka verification (Fixit / netcup)
 
-End-to-end verification on the monetka deployment requires SSH access and environment secrets that are not available in this repository or to automated agents.
+Monetka LibreChat runs on the **netcup** host (same fleet as Contour). Live `TENANT_ISOLATION_STRICT` confirmation is owned by **Fixit**, not by this PR.
 
-**Owner: Denis.** After secrets are available, repeat sections 1, 4, and 5 against monetka with a real tenant-bound user and confirm no cross-tenant ACL leakage under strict mode.
+**Owner: Fixit (evidence for Denis).** On netcup, with existing ops credentials (not invented here):
 
-Do not invent or commit monetka credentials in this repo.
+1. Confirm `TENANT_ISOLATION_STRICT=true` in the running environment.
+2. Repeat sections 4 and 5 against a real tenant-bound user.
+3. Confirm missing ALS or missing `tenantId` fails closed (throw / HTTP 403), and ACL reads do not leak across tenants.
+
+Do not invent or commit monetka or netcup credentials in this repo. Automated agents stop at this checklist.
