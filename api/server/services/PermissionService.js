@@ -690,7 +690,9 @@ const maybeSyncUserEntraGroupMemberships = async (user, accessToken, options = {
     const parsedTtl = rawTtl != null && rawTtl !== '' ? Number(rawTtl) : NaN;
     const ttlMinutes =
       options.ttlMinutes ??
-      (Number.isFinite(parsedTtl) && parsedTtl > 0 ? parsedTtl : DEFAULT_ENTRA_GROUP_SYNC_TTL_MINUTES);
+      (Number.isFinite(parsedTtl) && parsedTtl > 0
+        ? parsedTtl
+        : DEFAULT_ENTRA_GROUP_SYNC_TTL_MINUTES);
 
     if (!isEntraGroupSyncDue(user.entraGroupLastSyncedAt, ttlMinutes)) {
       return 'skipped';

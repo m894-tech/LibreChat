@@ -8,7 +8,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { QueryKeys, FileSources, EModelEndpoint } from 'librechat-data-provider';
-import { render, screen, within, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, within, waitFor, fireEvent, cleanup } from '@testing-library/react';
 import type { TFile, TFileUpload, TConversation } from 'librechat-data-provider';
 import type { ChatFormValues } from '~/common';
 import ChatForm, { toRestoredComposerFile } from '../ChatForm';
@@ -29,6 +29,16 @@ jest.mock('librechat-data-provider', () => {
     },
   };
 });
+
+/** Session chrome ToolsDropdown loads native knobs via fetch; stub for jsdom. */
+jest.mock('~/hooks/Input/useNativeModelControls', () => ({
+  useNativeModelControls: () => ({
+    family: null,
+    values: {},
+    payload: undefined,
+    applyChip: jest.fn(),
+  }),
+}));
 
 const conversation = {
   conversationId: 'new',
@@ -178,6 +188,11 @@ describe('ChatForm attachments', () => {
     );
   });
 
+  afterEach(async () => {
+    cleanup();
+    await Promise.resolve();
+  });
+
   test('preserves extracted-text delivery when restoring a queued attachment', () => {
     expect(
       toRestoredComposerFile({
@@ -312,9 +327,16 @@ describe('ChatForm attachments', () => {
 
   test('does not raise the keyboard when a quote removal collapses the popup on touch', async () => {
     const matchMedia = window.matchMedia;
-    window.matchMedia = jest
-      .fn()
-      .mockReturnValue({ matches: true }) as unknown as typeof matchMedia;
+    window.matchMedia = jest.fn().mockImplementation((query: string) => ({
+      matches: true,
+      media: query,
+      onchange: null,
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    })) as unknown as typeof matchMedia;
     try {
       renderComposer({ quotes: ['alpha', 'beta'] });
       const textarea = await screen.findByTestId('text-input');

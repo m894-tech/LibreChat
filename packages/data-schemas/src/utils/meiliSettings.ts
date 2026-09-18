@@ -20,9 +20,7 @@ type MeiliSettingsClient = {
 };
 
 type MeiliSettingsIndex = {
-  updateSettings: (settings: {
-    filterableAttributes: string[];
-  }) => Promise<{ taskUid: number }>;
+  updateSettings: (settings: { filterableAttributes: string[] }) => Promise<{ taskUid: number }>;
 };
 
 /**
