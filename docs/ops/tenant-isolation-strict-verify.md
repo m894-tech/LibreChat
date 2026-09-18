@@ -86,12 +86,12 @@ Do not treat monetka as already strict. Code is fail-closed only when the flag i
 
 ### Expected fail-closed signals after enable
 
-- **Mongoose / ACL reads without ALS:** `TenantIsolationError` with message shaped like  
-  `[TenantIsolation] Query attempted without tenant context in strict mode`  
-  (from `resolveTenantScope` via `packages/data-schemas/src/models/plugins/tenantIsolation.ts`).
+- **Mongoose / ACL reads without ALS:** `TenantIsolationError` whose message matches  
+  `[TenantIsolation] <operation> attempted without tenant context in strict mode`  
+  (for example `Query`). Thrown from `resolveTenantScope` in `packages/data-schemas/src/tenant/policy.ts`, invoked by `applyTenantIsolation` on `AclEntry` queries.
 - **HTTP, authenticated user without `tenantId`:** **403** with  
   `{ "error": "Tenant context required in strict isolation mode" }`  
-  (from `tenantContextMiddleware`).
+  (from `tenantContextMiddleware` in `packages/api/src/middleware/tenant.ts`).
 
 ### Post-enable smoke (Fixit evidence for Denis)
 
