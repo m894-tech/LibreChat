@@ -91,18 +91,25 @@ export async function openSessionMcpMenu(page: Page) {
   const sheet = page.getByTestId('session-sheet');
   const mcpSection = sheet.getByTestId('session-menu-mcp');
   if (!(await mcpSection.isVisible().catch(() => false))) {
-    await sheet.getByRole('button', { name: /MCP Servers/ }).click();
-    await expect(mcpSection).toBeVisible();
+    /** Wait for the MCP catalog (stdio e2e-memory included) before navigating. */
+    const mcpNav = sheet.getByRole('button', { name: /MCP Servers/ });
+    await expect(mcpNav).toBeVisible({ timeout: 30000 });
+    await mcpNav.click();
+    await expect(mcpSection).toBeVisible({ timeout: 15000 });
   }
-  await expect(sheet.getByTestId('session-mcp-server-list')).toBeVisible();
+  await expect(sheet.getByTestId('session-mcp-server-list')).toBeVisible({
+    timeout: 15000,
+  });
 }
 
 /** Select an ephemeral MCP server from Session → Tools → MCP, then close the sheet. */
 export async function selectSessionMcpServer(page: Page, serverTitle: string) {
   await openSessionMcpMenu(page);
   const sheet = page.getByTestId('session-sheet');
-  const serverItem = sheet.getByRole('checkbox', { name: new RegExp(serverTitle) });
-  await expect(serverItem).toBeVisible();
+  const serverItem = sheet.getByRole('checkbox', {
+    name: new RegExp(escapeRegExp(serverTitle)),
+  });
+  await expect(serverItem).toBeVisible({ timeout: 15000 });
   if ((await serverItem.getAttribute('aria-checked')) !== 'true') {
     await serverItem.click();
   }

@@ -29,10 +29,10 @@ memory:
   tokenLimit: 10000
 
 mcpSettings:
-  # `e2e-http` (8765) is allowlisted so Session MCP selection and steering specs can
-  # reach the URL fixture. mcp-allowlist-override.spec.ts still proves admin overrides
-  # by first installing a restrictive override that drops 8765, then restoring it.
-  # stdio servers (`e2e-memory`) skip the domain check.
+  # stdio `e2e-memory` (title: E2E Memory) is what Session MCP selection / steering /
+  # tool-context specs pick — domain allowlists do not gate it. `e2e-http` (8765) is
+  # still allowlisted so URL fixtures initialize cleanly; mcp-allowlist-override.spec.ts
+  # proves admin overrides by first dropping 8765, then restoring it.
   allowedDomains:
     - https://allowed.example.com
     - http://127.0.0.1:8765

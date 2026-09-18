@@ -7,9 +7,10 @@ export const CLOSE_SIDEBAR_ID = 'close-sidebar-button';
 export const OPEN_SIDEBAR_ID = 'open-sidebar-button';
 
 /**
- * `testId` exists because the sidebar rail publishes `open-sidebar-button` for its own
- * collapsed toggle. Any caller that can stay mounted alongside the rail must claim a
- * distinct id, or `getByTestId` resolves to two elements.
+ * `testId` (and matching `id`) exist because the sidebar rail publishes
+ * `open-sidebar-button` for its own collapsed toggle. Callers that stay mounted
+ * alongside the rail (e.g. the chat header) must pass a distinct value —
+ * otherwise `getByTestId` / `getElementById` resolve to two elements.
  */
 export default function OpenSidebar({
   className,
@@ -41,7 +42,7 @@ export default function OpenSidebar({
       description={tooltipDescription}
       render={
         <Button
-          id={OPEN_SIDEBAR_ID}
+          id={testId}
           size="icon"
           variant="header-action"
           data-testid={testId}

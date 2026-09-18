@@ -6,9 +6,10 @@ import { getPrimaryE2EUser } from '../../setup/users.mock';
  * Proves the #13809 fix end to end: an admin-panel `mcpSettings.allowedDomains`
  * override is honored by MCP inspection/connection without a restart.
  *
- * The YAML allowlist includes `e2e-http`'s origin so Session MCP selection works
- * for the rest of the suite. This spec first installs a restrictive override that
- * drops that origin (server fails reinit), then replaces it with an allow override
+ * The YAML allowlist includes `e2e-http`'s origin so that URL fixture initializes.
+ * Session MCP selection for steering / tool-context still picks stdio `e2e-memory`
+ * (domain-agnostic). This spec first installs a restrictive override that
+ * drops the HTTP origin (server fails reinit), then replaces it with an allow override
  * and asserts reinitialize succeeds — proving the admin override is what the
  * inspection path reads, not a frozen YAML snapshot.
  *

@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { PinIcon } from '@librechat/client';
 import { Permissions, PermissionTypes } from 'librechat-data-provider';
 import MCPServerMenuItem from '~/components/MCP/MCPServerMenuItem';
 import MCPConfigDialog from '~/components/MCP/MCPConfigDialog';
 import { useMCPRefresh } from '~/hooks/MCP/useMCPRefresh';
+import { activateCatalog, useHasAccess, useLocalize } from '~/hooks';
 import { useGetStartupConfig } from '~/data-provider';
-import { useHasAccess, useLocalize } from '~/hooks';
 import { useBadgeRowContext } from '~/Providers';
 import { cn } from '~/utils';
 
@@ -17,6 +17,8 @@ type SessionMCPSectionProps = {
 /**
  * Session MCP list. Always a plain DOM list (no Ariakit Menu): nested menus
  * inside OGDialog can leave the mcp view blank / steal dismiss.
+ * Catalog warmup is released on mount so YAML servers (e.g. E2E Memory)
+ * appear without waiting for the idle stagger.
  */
 export default function SessionMCPSection({ drill = false }: SessionMCPSectionProps) {
   const localize = useLocalize();
@@ -28,6 +30,10 @@ export default function SessionMCPSection({ drill = false }: SessionMCPSectionPr
   });
   const { conversationId, storageContextKey, mcpServerManager } = context ?? {};
   const placeholder = startupConfig?.interface?.mcpServers?.placeholder;
+
+  useEffect(() => {
+    activateCatalog('mcpServers');
+  }, []);
 
   const configDialogOpen = mcpServerManager?.getConfigDialogProps()?.isOpen === true;
   const serverCount = mcpServerManager?.selectableServers.length ?? 0;
