@@ -1,9 +1,11 @@
 const { ResourceType } = require('librechat-data-provider');
 const { canAccessResource } = require('./canAccessResource');
+const { findCodeEnvironmentByEnvironmentId } = require('~/models');
 
 /**
- * Code-environment middleware factory. Route params carry Mongo ObjectIds, so
- * no id resolver is required (unlike agents).
+ * Code-environment middleware factory. Routes carry the public `environmentId` string while
+ * ACL entries are keyed by the document `_id`, so the id is resolved the same way the registry
+ * handlers resolve it before their own permission check.
  *
  * @param {Object} options
  * @param {number} options.requiredPermission - Permission bit (1=view, 2=edit, 4=delete, 8=share)
@@ -23,6 +25,7 @@ const canAccessCodeEnvironmentResource = (options) => {
     resourceType: ResourceType.CODE_ENVIRONMENT,
     requiredPermission,
     resourceIdParam,
+    idResolver: findCodeEnvironmentByEnvironmentId,
   });
 };
 
