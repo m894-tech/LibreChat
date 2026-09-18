@@ -7,6 +7,7 @@ const {
   createAgentManagementAuth,
   createCheckAgentTriggerAccess,
   createCheckRemoteAgentAccess,
+  createCheckResponseAgentAccess,
 } = require('@librechat/api');
 const { getEffectivePermissions } = require('~/server/services/PermissionService');
 const { getAppConfig } = require('~/server/services/Config');
@@ -46,6 +47,10 @@ const agentAccessDependencies = {
 
 const checkAgentPermission = createCheckRemoteAgentAccess(agentAccessDependencies);
 const checkAgentTriggerPermission = createCheckAgentTriggerAccess(agentAccessDependencies);
+const checkResponseAgentPermission = createCheckResponseAgentAccess({
+  ...agentAccessDependencies,
+  getConvo: db.getConvo,
+});
 
 /**
  * GET /responses/:id is conversation-owner scoped. Also require REMOTE_AGENT VIEW
