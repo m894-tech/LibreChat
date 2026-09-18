@@ -62,15 +62,17 @@ export default function SessionProjectSection({ conversation }: SessionProjectSe
 
   const selectProject = useCallback(
     (projectId: string | null) => {
-      if (projectId === selectedProjectId) {
+      /** Clicking the active project again clears the binding. */
+      const nextProjectId = projectId === selectedProjectId ? null : projectId;
+      if (nextProjectId === selectedProjectId) {
         return;
       }
       if (isNewConvo) {
-        applyDraftProject(projectId);
+        applyDraftProject(nextProjectId);
         return;
       }
       assignConversation.mutate(
-        { conversationId, projectId },
+        { conversationId, projectId: nextProjectId },
         {
           onSuccess: () => {
             showToast({

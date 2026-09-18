@@ -12,7 +12,7 @@ import ResponseFormatSection from './ResponseFormatSection';
 import SessionProfileSection from './SessionProfileSection';
 import SessionEffortSection from './SessionEffortSection';
 import SessionSkillsSection from './SessionSkillsSection';
-import { useGetStartupConfig } from '~/data-provider';
+import { useGetStartupConfig, useProjectQuery } from '~/data-provider';
 import SessionOrchSection from './SessionOrchSection';
 import { PresetsMenu } from '~/components/Chat/Menus';
 import AgentPickerButton from './AgentPickerButton';
@@ -41,7 +41,15 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function NavRow({ label, onClick }: { label: string; onClick: () => void }) {
+function NavRow({
+  label,
+  meta,
+  onClick,
+}: {
+  label: string;
+  meta?: string | null;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"
@@ -49,6 +57,9 @@ function NavRow({ label, onClick }: { label: string; onClick: () => void }) {
       className="flex w-full items-center gap-2 border-b border-border-light px-2.5 py-2 text-left text-[12.5px] last:border-b-0 hover:bg-surface-hover"
     >
       <span className="min-w-0 flex-1 truncate">{label}</span>
+      {meta ? (
+        <span className="max-w-[40%] shrink-0 truncate text-[11px] text-text-secondary">{meta}</span>
+      ) : null}
       <ChevronRight className="size-3.5 shrink-0 text-text-secondary" aria-hidden="true" />
     </button>
   );
@@ -77,6 +88,7 @@ export default function SessionPanel({
   });
   const showMoreChrome =
     trace.show || (interfaceConfig.presets === true && interfaceConfig.modelSelect);
+  const { data: boundProject } = useProjectQuery(conversation?.chatProjectId);
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto px-2.5 py-2" data-testid="session-panel">
@@ -132,6 +144,7 @@ export default function SessionPanel({
               />
               <NavRow
                 label={localize('com_ui_session_select_project')}
+                meta={boundProject?.name}
                 onClick={() => onViewChange('project')}
               />
               {showMoreChrome ? (

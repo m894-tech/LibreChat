@@ -101,4 +101,34 @@ describe('SessionProjectSection', () => {
     });
     expect(mockSetSearchParams).toHaveBeenCalled();
   });
+
+  it('clears the assignment when the active project is clicked again', async () => {
+    const user = userEvent.setup();
+    render(
+      <SessionProjectSection
+        conversation={{ conversationId: 'convo-1', chatProjectId: 'proj-a' } as never}
+      />,
+    );
+
+    await user.click(screen.getByRole('radio', { name: 'Alpha' }));
+    expect(mockMutate).toHaveBeenCalledWith(
+      { conversationId: 'convo-1', projectId: null },
+      expect.any(Object),
+    );
+  });
+
+  it('clears via the No project row', async () => {
+    const user = userEvent.setup();
+    render(
+      <SessionProjectSection
+        conversation={{ conversationId: 'convo-1', chatProjectId: 'proj-b' } as never}
+      />,
+    );
+
+    await user.click(screen.getByRole('radio', { name: 'com_ui_schedule_project_none' }));
+    expect(mockMutate).toHaveBeenCalledWith(
+      { conversationId: 'convo-1', projectId: null },
+      expect.any(Object),
+    );
+  });
 });

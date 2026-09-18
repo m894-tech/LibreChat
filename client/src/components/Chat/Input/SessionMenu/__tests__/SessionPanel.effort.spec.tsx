@@ -10,6 +10,7 @@ jest.mock('~/hooks', () => ({
 
 jest.mock('~/data-provider', () => ({
   useGetStartupConfig: () => ({ data: { interface: { modelSelect: true } } }),
+  useProjectQuery: () => ({ data: undefined }),
 }));
 
 jest.mock('~/store', () => ({
