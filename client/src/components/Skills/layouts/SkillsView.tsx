@@ -2,6 +2,7 @@ import { Spinner, useMediaQuery } from '@librechat/client';
 import { PermissionTypes, Permissions } from 'librechat-data-provider';
 import { Navigate, useNavigate, useParams, useLocation, useSearchParams } from 'react-router-dom';
 import SkillFileViewer from '~/components/Skills/display/SkillFileViewer';
+import SkillsSidePanel from '~/components/Skills/sidebar/SkillsSidePanel';
 import { CreateSkillForm, SkillForm } from '~/components/Skills/forms';
 import { useHasAccess, useAuthContext, useLocalize } from '~/hooks';
 import SkillDetail from '~/components/Skills/display/SkillDetail';
@@ -56,16 +57,23 @@ export default function SkillsView() {
     return <CreateView />;
   }
 
-  // No skill selected — empty state
+  /**
+   * No skill selected — show the catalog in the main pane.
+   * Manage from Session lands here; relying only on the left rail failed when
+   * the rail stayed on Projects+Chats (or omitted the skills link).
+   */
   if (!skillId) {
     return (
-      <div className="flex h-full w-full flex-col bg-presentation">
+      <div
+        className="flex h-full w-full flex-col bg-presentation"
+        data-testid="skills-management-catalog"
+      >
         <MobileSidebarToggle />
-        <div className="flex flex-1 flex-col items-center justify-center">
-          <SkillState
-            title={localize('com_ui_skill_no_selection')}
-            description={localize('com_ui_skill_no_selection_desc')}
-          />
+        <div className="mx-auto flex h-full w-full max-w-xl flex-col px-2 pt-3 md:px-4">
+          <h1 className="shrink-0 px-3 pb-2 text-lg font-semibold text-text-primary">
+            {localize('com_ui_skills')}
+          </h1>
+          <SkillsSidePanel className="min-h-0 flex-1 border-r-0" alwaysActive />
         </div>
       </div>
     );

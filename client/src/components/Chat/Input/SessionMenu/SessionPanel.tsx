@@ -6,18 +6,18 @@ import type { TConversation } from 'librechat-data-provider';
 import type { NativeModelControls } from '~/hooks/Input/useNativeModelControls';
 import ModelSelector from '~/components/Chat/Menus/Endpoints/ModelSelector';
 import { TraceButton, useTraceControl } from '~/components/Chat/Trace';
+import { useGetStartupConfig, useProjectQuery } from '~/data-provider';
 import { SessionAutomationsSection } from '~/components/Automations';
 import SessionNativeKnobsSection from './SessionNativeKnobsSection';
 import ResponseFormatSection from './ResponseFormatSection';
 import SessionProfileSection from './SessionProfileSection';
+import SessionProjectSection from './SessionProjectSection';
 import SessionEffortSection from './SessionEffortSection';
 import SessionSkillsSection from './SessionSkillsSection';
-import { useGetStartupConfig, useProjectQuery } from '~/data-provider';
 import SessionOrchSection from './SessionOrchSection';
 import { PresetsMenu } from '~/components/Chat/Menus';
 import AgentPickerButton from './AgentPickerButton';
 import SessionMCPSection from './SessionMCPSection';
-import SessionProjectSection from './SessionProjectSection';
 import { useLocalize } from '~/hooks';
 import ToolGrid from './ToolGrid';
 import store from '~/store';
@@ -164,7 +164,9 @@ export default function SessionPanel({
       ) : null}
 
       {view === 'mcp' ? <SessionMCPSection drill /> : null}
-      {view === 'skills' ? <SessionSkillsSection agentId={conversation?.agent_id} drill /> : null}
+      {view === 'skills' ? (
+        <SessionSkillsSection agentId={conversation?.agent_id} drill index={index} />
+      ) : null}
       {view === 'automations' ? (
         <SessionAutomationsSection conversationId={conversation?.conversationId} />
       ) : null}

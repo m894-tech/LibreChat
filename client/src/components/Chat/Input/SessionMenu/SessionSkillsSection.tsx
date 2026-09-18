@@ -7,6 +7,7 @@ import { Constants, Permissions, PermissionTypes } from 'librechat-data-provider
 import type { TSkillSummary } from 'librechat-data-provider';
 import { useLocalize, useHasAccess, useSkillActiveState } from '~/hooks';
 import { useAgentsMapContext, useBadgeRowContext } from '~/Providers';
+import useSidebarToggle from '~/hooks/Nav/useSidebarToggle';
 import { useSkillsInfiniteQuery } from '~/data-provider';
 import { ephemeralAgentByConvoId } from '~/store';
 import { isEphemeralAgent } from '~/common';
@@ -25,14 +26,19 @@ type SessionSkillsSectionProps = {
   agentId?: string | null;
   /** Inline drill inside Session sheet — list always open; Manage → full page only. */
   drill?: boolean;
+  /** Composer index — closes the matching Session sheet on Manage. */
+  index?: number;
 };
 
 export default function SessionSkillsSection({
   agentId,
   drill = false,
+  index = 0,
 }: SessionSkillsSectionProps) {
   const localize = useLocalize();
   const navigate = useNavigate();
+  const { setSidebarOpen } = useSidebarToggle();
+  const setSheetOpen = useSetRecoilState(store.sessionSheetOpenByIndex(index));
   const context = useBadgeRowContext();
   const agentsMap = useAgentsMapContext();
   const canUseSkills = useHasAccess({
@@ -57,8 +63,10 @@ export default function SessionSkillsSection({
   }, [skills]);
 
   const goManage = useCallback(() => {
+    setSheetOpen(false);
+    setSidebarOpen(true);
     navigate('/skills');
-  }, [navigate]);
+  }, [navigate, setSidebarOpen, setSheetOpen]);
 
   const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useSkillsInfiniteQuery({ limit: 50 }, { enabled: canUseSkills === true });
