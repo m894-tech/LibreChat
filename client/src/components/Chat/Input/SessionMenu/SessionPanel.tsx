@@ -4,6 +4,7 @@ import { ChevronRight } from 'lucide-react';
 import { getConfigDefaults, PermissionTypes, Permissions } from 'librechat-data-provider';
 import type { TConversation } from 'librechat-data-provider';
 import type { NativeModelControls } from '~/hooks/Input/useNativeModelControls';
+import ModelSelector from '~/components/Chat/Menus/Endpoints/ModelSelector';
 import { TraceButton, useTraceControl } from '~/components/Chat/Trace';
 import ExportAndShareMenu from '~/components/Chat/ExportAndShareMenu';
 import { SessionAutomationsSection } from '~/components/Automations';
@@ -13,6 +14,7 @@ import ResponseFormatSection from './ResponseFormatSection';
 import ContextSourcesSection from './ContextSourcesSection';
 import SessionProfileSection from './SessionProfileSection';
 import AddMultiConvo from '~/components/Chat/AddMultiConvo';
+import SessionEffortSection from './SessionEffortSection';
 import SessionSkillsSection from './SessionSkillsSection';
 import { useGetStartupConfig } from '~/data-provider';
 import SessionOrchSection from './SessionOrchSection';
@@ -93,9 +95,16 @@ export default function SessionPanel({
           <section>
             <SectionLabel>{localize('com_ui_session_now')}</SectionLabel>
             <div className="flex flex-col gap-1.5">
+              <div
+                className="min-w-0 [&_.relative]:w-auto [&_.relative]:max-w-none [&_.relative]:items-start [&_[data-testid=model-selector-button]]:my-0 [&_[data-testid=model-selector-button]]:h-7 [&_[data-testid=model-selector-button]]:w-auto [&_[data-testid=model-selector-button]]:max-w-[14rem] [&_[data-testid=model-selector-button]]:rounded-full [&_[data-testid=model-selector-button]]:border-border-light [&_[data-testid=model-selector-button]]:bg-surface-secondary [&_[data-testid=model-selector-button]]:px-2.5 [&_[data-testid=model-selector-button]]:py-0 [&_[data-testid=model-selector-button]]:text-[11px]"
+                data-testid="session-sheet-model"
+              >
+                <ModelSelector startupConfig={startupConfig} />
+              </div>
               <SessionProfileSection conversationId={conversation?.conversationId} compact />
               <SessionOrchSection conversation={conversation} compact />
               <ResponseFormatSection conversation={conversation} index={index} compact />
+              <SessionEffortSection conversation={conversation} index={index} />
               {modelControls ? (
                 <SessionNativeKnobsSection conversation={conversation} controls={modelControls} />
               ) : null}
@@ -156,7 +165,7 @@ export default function SessionPanel({
       ) : null}
 
       {view === 'mcp' ? <SessionMCPSection /> : null}
-      {view === 'skills' ? <SessionSkillsSection agentId={conversation?.agent_id} /> : null}
+      {view === 'skills' ? <SessionSkillsSection agentId={conversation?.agent_id} drill /> : null}
       {view === 'automations' ? (
         <SessionAutomationsSection conversationId={conversation?.conversationId} />
       ) : null}

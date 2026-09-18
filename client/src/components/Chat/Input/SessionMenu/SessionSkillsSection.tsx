@@ -21,7 +21,16 @@ function isUserInvocable(skill: TSkillSummary): boolean {
   return skill.userInvocable !== false;
 }
 
-export default function SessionSkillsSection({ agentId }: { agentId?: string | null }) {
+type SessionSkillsSectionProps = {
+  agentId?: string | null;
+  /** Inline drill inside Session sheet — list always open; Manage → full page only. */
+  drill?: boolean;
+};
+
+export default function SessionSkillsSection({
+  agentId,
+  drill = false,
+}: SessionSkillsSectionProps) {
   const localize = useLocalize();
   const navigate = useNavigate();
   const context = useBadgeRowContext();
@@ -35,16 +44,21 @@ export default function SessionSkillsSection({ agentId }: { agentId?: string | n
   const { isPinned: isSkillsPinned, setIsPinned: setIsSkillsPinned, toggleState } = skills ?? {};
   const { isActive } = useSkillActiveState();
   const [search, setSearch] = useState('');
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(drill);
   const setEphemeralAgent = useSetRecoilState(ephemeralAgentByConvoId(conversationId));
   const setPendingManualSkills = useSetRecoilState(
     store.pendingManualSkillsByConvoId(conversationId),
   );
   const pending = useRecoilValue(store.pendingManualSkillsByConvoId(conversationId));
+  const showCatalog = drill || isExpanded;
 
   const handleSkillsToggle = useCallback(() => {
     skills?.debouncedChange({ value: !skills?.toggleState });
   }, [skills]);
+
+  const goManage = useCallback(() => {
+    navigate('/skills');
+  }, [navigate]);
 
   const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useSkillsInfiniteQuery({ limit: 50 }, { enabled: canUseSkills === true });
@@ -124,87 +138,95 @@ export default function SessionSkillsSection({ agentId }: { agentId?: string | n
 
   return (
     <div className="flex flex-col gap-1" data-testid="session-menu-skills">
-      <button
-        type="button"
-        onClick={() => setIsExpanded((prev) => !prev)}
-        aria-expanded={isExpanded}
-        className="flex items-center justify-between px-2 pb-0.5"
-      >
-        <span className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-text-secondary">
-          {isExpanded ? (
-            <ChevronDown className="h-3 w-3" aria-hidden="true" />
-          ) : (
-            <ChevronRight className="h-3 w-3" aria-hidden="true" />
-          )}
-          {localize('com_ui_skills')}
-        </span>
-        <span
-          role="link"
-          tabIndex={0}
-          className="text-[11px] text-text-secondary hover:text-text-primary"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            navigate('/skills');
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
+      {drill ? (
+        <p className="px-0.5 pb-1 text-[10px] leading-snug text-text-secondary">
+          {localize('com_ui_session_skills_drill_hint')}
+        </p>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setIsExpanded((prev) => !prev)}
+          aria-expanded={isExpanded}
+          className="flex items-center justify-between px-2 pb-0.5"
+        >
+          <span className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-text-secondary">
+            {isExpanded ? (
+              <ChevronDown className="h-3 w-3" aria-hidden="true" />
+            ) : (
+              <ChevronRight className="h-3 w-3" aria-hidden="true" />
+            )}
+            {localize('com_ui_skills')}
+          </span>
+          <span
+            role="link"
+            tabIndex={0}
+            className="text-[11px] text-text-secondary hover:text-text-primary"
+            onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              navigate('/skills');
-            }
-          }}
-        >
-          {localize('com_ui_skills_manage')}
-        </span>
-      </button>
-      <div
-        data-testid="tools-menu-skills"
-        className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-sm hover:bg-surface-hover"
-      >
-        <button
-          type="button"
-          onClick={handleSkillsToggle}
-          className="flex min-w-0 flex-1 items-center gap-2 text-left"
-        >
-          <ScrollText className="icon-md" aria-hidden="true" />
-          <span>{localize('com_ui_skills')}</span>
-          {toggleState ? (
-            <span className="text-[10px] uppercase text-text-secondary">
-              {localize('com_ui_on')}
-            </span>
-          ) : null}
+              goManage();
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                goManage();
+              }
+            }}
+          >
+            {localize('com_ui_skills_manage')}
+          </span>
         </button>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setIsSkillsPinned?.(!isSkillsPinned);
-          }}
-          className={cn(
-            'rounded p-1 transition-all duration-200',
-            'hover:bg-surface-secondary hover:shadow-sm',
-            !isSkillsPinned && 'text-text-secondary hover:text-text-primary',
-          )}
-          aria-label={isSkillsPinned ? localize('com_ui_unpin') : localize('com_ui_pin')}
+      )}
+      {!drill ? (
+        <div
+          data-testid="tools-menu-skills"
+          className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-sm hover:bg-surface-hover"
         >
-          <div className="h-4 w-4">
-            <PinIcon unpin={Boolean(isSkillsPinned)} />
-          </div>
-        </button>
-        <Switch
-          checked={Boolean(toggleState)}
-          onCheckedChange={() => handleSkillsToggle()}
-          aria-label={localize('com_ui_skills')}
-        />
-      </div>
+          <button
+            type="button"
+            onClick={handleSkillsToggle}
+            className="flex min-w-0 flex-1 items-center gap-2 text-left"
+          >
+            <ScrollText className="icon-md" aria-hidden="true" />
+            <span>{localize('com_ui_skills')}</span>
+            {toggleState ? (
+              <span className="text-[10px] uppercase text-text-secondary">
+                {localize('com_ui_on')}
+              </span>
+            ) : null}
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsSkillsPinned?.(!isSkillsPinned);
+            }}
+            className={cn(
+              'rounded p-1 transition-all duration-200',
+              'hover:bg-surface-secondary hover:shadow-sm',
+              !isSkillsPinned && 'text-text-secondary hover:text-text-primary',
+            )}
+            aria-label={isSkillsPinned ? localize('com_ui_unpin') : localize('com_ui_pin')}
+          >
+            <div className="h-4 w-4">
+              <PinIcon unpin={Boolean(isSkillsPinned)} />
+            </div>
+          </button>
+          <Switch
+            checked={Boolean(toggleState)}
+            onCheckedChange={() => handleSkillsToggle()}
+            aria-label={localize('com_ui_skills')}
+          />
+        </div>
+      ) : null}
       {agentSkillsOff ? (
         <p className="px-2 text-[11px] text-text-secondary">
           {localize('com_ui_skills_disabled_hint')}
         </p>
       ) : null}
-      {isExpanded ? (
+      {showCatalog ? (
         <>
           <div className="px-2">
             <input
@@ -239,7 +261,15 @@ export default function SessionSkillsSection({ agentId }: { agentId?: string | n
               ))}
             </div>
           ) : null}
-          <div className="max-h-40 overflow-y-auto px-1">
+          <div
+            className={cn(
+              'overflow-y-auto px-1',
+              drill
+                ? 'max-h-[min(50vh,22rem)] rounded-xl border border-border-light bg-surface-secondary'
+                : 'max-h-40',
+            )}
+            data-testid="session-skills-catalog"
+          >
             {isLoading ? (
               <div className="px-2 py-1.5 text-xs text-text-secondary">
                 {localize('com_ui_loading')}
@@ -259,33 +289,58 @@ export default function SessionSkillsSection({ agentId }: { agentId?: string | n
               ? catalog.map((skill) => {
                   const queued = pending.includes(skill.name);
                   return (
-                    <button
+                    <div
                       key={skill._id}
-                      type="button"
-                      title={skill.description || skillLabel(skill)}
-                      onClick={() => {
-                        if (queued) {
-                          unqueueSkill(skill.name);
-                        } else {
-                          queueSkill(skill.name);
-                        }
-                      }}
                       className={cn(
-                        'flex w-full items-center justify-between rounded-lg px-2 py-1 text-left text-xs hover:bg-surface-hover',
+                        'flex w-full items-center justify-between gap-2 border-b border-border-light px-2.5 py-2 text-left text-xs last:border-b-0',
                         queued && 'bg-surface-hover',
                       )}
                     >
-                      <span className="min-w-0 truncate">{skillLabel(skill)}</span>
-                      {queued ? (
-                        <span className="ml-2 shrink-0 text-[10px] uppercase text-text-secondary">
-                          {localize('com_ui_on')}
-                        </span>
-                      ) : null}
-                    </button>
+                      <button
+                        type="button"
+                        title={skill.description || skillLabel(skill)}
+                        onClick={() => {
+                          if (queued) {
+                            unqueueSkill(skill.name);
+                          } else {
+                            queueSkill(skill.name);
+                          }
+                        }}
+                        className="flex min-w-0 flex-1 items-center gap-2 text-left hover:text-text-primary"
+                      >
+                        <span className="min-w-0 truncate">{skillLabel(skill)}</span>
+                        {queued ? (
+                          <span className="shrink-0 rounded bg-surface-tertiary px-1.5 py-0.5 text-[10px] uppercase text-text-secondary">
+                            {localize('com_ui_on')}
+                          </span>
+                        ) : null}
+                      </button>
+                      <Switch
+                        checked={queued}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            queueSkill(skill.name);
+                          } else {
+                            unqueueSkill(skill.name);
+                          }
+                        }}
+                        aria-label={skillLabel(skill)}
+                      />
+                    </div>
                   );
                 })
               : null}
           </div>
+          {drill ? (
+            <button
+              type="button"
+              data-testid="session-skills-manage"
+              onClick={goManage}
+              className="mt-2 w-full rounded-[10px] border border-dashed border-border-medium px-2 py-2 text-center text-xs text-text-primary hover:border-border-heavy hover:bg-surface-hover"
+            >
+              {localize('com_ui_session_skills_manage_full')}
+            </button>
+          ) : null}
         </>
       ) : null}
     </div>

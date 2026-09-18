@@ -65,7 +65,8 @@ export default function SessionSheet({
       <OGDialogContent
         showCloseButton={false}
         className={cn(
-          'flex max-h-[50vh] flex-col gap-0 overflow-hidden border border-border-light bg-surface-primary p-0 shadow-lg',
+          'flex max-h-[58vh] flex-col gap-0 overflow-hidden border border-border-light bg-surface-primary p-0 shadow-lg',
+          view !== 'main' && 'max-h-[72vh]',
           isMobile
             ? 'fixed inset-x-0 bottom-0 top-auto w-full max-w-full translate-x-0 translate-y-0 rounded-t-2xl'
             : 'fixed bottom-[5.5rem] left-1/2 top-auto w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 translate-y-0 rounded-2xl sm:bottom-28',

@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ChevronDown, Sparkles } from 'lucide-react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import type { TConversation } from 'librechat-data-provider';
+import type { TConversation, TModelSpec } from 'librechat-data-provider';
 import type {
   SessionOrchMode,
   SessionProfileChangedDetail,
@@ -51,9 +51,32 @@ type SessionSummaryPillProps = {
   className?: string;
 };
 
+function resolveModelLabel(
+  conversation: TConversation | null | undefined,
+  modelSpecs: TModelSpec[] | undefined,
+  fallback: string,
+): string {
+  if (conversation?.spec) {
+    const spec = modelSpecs?.find((candidate) => candidate.name === conversation.spec);
+    if (spec?.label) {
+      return spec.label;
+    }
+    if (spec?.name) {
+      return spec.name;
+    }
+  }
+  if (conversation?.modelLabel) {
+    return conversation.modelLabel;
+  }
+  if (conversation?.model) {
+    return conversation.model;
+  }
+  return fallback;
+}
+
 /**
- * Dense Session composer chrome: visible ModelSelector (aria-label Select a model)
- * plus Profile · Orch summary that opens SessionSheet.
+ * Dense v5.1 composer chrome: one SessionSummaryPill
+ * `Model · Profile · Orch · Format` plus Private chip. No second model chip.
  */
 export default function SessionSummaryPill({
   conversation,
@@ -90,6 +113,15 @@ export default function SessionSummaryPill({
     };
   }, [conversation?.conversationId]);
 
+  const modelLabel = useMemo(
+    () =>
+      resolveModelLabel(
+        conversation,
+        startupConfig?.modelSpecs?.list as TModelSpec[] | undefined,
+        localize('com_ui_select_model'),
+      ),
+    [conversation, localize, startupConfig?.modelSpecs?.list],
+  );
   const profileLabel = localize(
     PROFILE_LABEL[profileState.profile] ?? 'com_ui_session_profile_fast',
   );
@@ -117,13 +149,7 @@ export default function SessionSummaryPill({
   }
 
   return (
-    <div className={cn('flex max-w-full items-center gap-1.5 px-1', className)}>
-      <div
-        className="min-w-0 shrink [&_.relative]:w-auto [&_.relative]:max-w-none [&_.relative]:items-start [&_[data-testid=model-selector-button]]:my-0 [&_[data-testid=model-selector-button]]:h-7 [&_[data-testid=model-selector-button]]:w-auto [&_[data-testid=model-selector-button]]:max-w-[12rem] [&_[data-testid=model-selector-button]]:rounded-full [&_[data-testid=model-selector-button]]:px-2.5 [&_[data-testid=model-selector-button]]:py-0 [&_[data-testid=model-selector-button]]:text-[11px]"
-        data-testid="session-model-chip"
-      >
-        <ModelSelector startupConfig={startupConfig} />
-      </div>
+    <div className={cn('flex max-w-full items-center gap-1.5 px-0.5', className)}>
       <button
         type="button"
         data-testid="session-summary-pill"
@@ -131,8 +157,16 @@ export default function SessionSummaryPill({
         aria-haspopup="dialog"
         aria-expanded={sheetOpen}
         onClick={openSheet}
-        className="inline-flex min-w-0 max-w-[calc(100%-4.5rem)] items-center gap-1 rounded-full border border-border-light bg-surface-secondary px-2.5 py-1 text-[11px] text-text-secondary"
+        className="inline-flex min-w-0 max-w-[calc(100%-5.5rem)] items-center gap-1 rounded-full border border-border-light bg-surface-secondary px-2.5 py-1 text-[11px] text-text-secondary"
       >
+        <Sparkles className="size-3 shrink-0 text-text-primary" aria-hidden="true" />
+        <span
+          className="shrink-0 truncate font-semibold text-text-primary"
+          data-testid="session-summary-model"
+        >
+          {modelLabel}
+        </span>
+        <span className="shrink-0 opacity-60">·</span>
         <span className="shrink-0 truncate">{profileLabel}</span>
         <span className="shrink-0 opacity-60">·</span>
         <span className="shrink-0 truncate">{orchLabel}</span>

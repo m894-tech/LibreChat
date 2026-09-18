@@ -3,8 +3,12 @@ import userEvent from '@testing-library/user-event';
 import { render, screen } from '@testing-library/react';
 
 const mockSetSheetOpen = jest.fn();
-let mockStartupConfig: { interface?: { sessionMenu?: boolean } } = {
+let mockStartupConfig: {
+  interface?: { sessionMenu?: boolean };
+  modelSpecs?: { list?: Array<{ name: string; label: string }> };
+} = {
   interface: { sessionMenu: true },
+  modelSpecs: { list: [{ name: 'gemini-3.8', label: 'Gemini 3.8' }] },
 };
 
 jest.mock('~/hooks', () => ({
@@ -50,7 +54,7 @@ jest.mock('~/utils/sessionProfiles', () => ({
 }));
 
 jest.mock('~/utils/responseFormat', () => ({
-  normalizeResponseFormat: () => 'default',
+  normalizeResponseFormat: () => 'detailed',
 }));
 
 import SessionSummaryPill from '../SessionSummaryPill';
@@ -58,27 +62,39 @@ import SessionSummaryPill from '../SessionSummaryPill';
 describe('SessionSummaryPill', () => {
   beforeEach(() => {
     mockSetSheetOpen.mockClear();
-    mockStartupConfig = { interface: { sessionMenu: true } };
+    mockStartupConfig = {
+      interface: { sessionMenu: true },
+      modelSpecs: { list: [{ name: 'gemini-3.8', label: 'Gemini 3.8' }] },
+    };
   });
 
-  it('renders model selector with Select a model a11y name plus profile · orch sheet trigger', async () => {
+  it('renders one Model · Profile · Orch · Format pill without a second model chip', async () => {
     const user = userEvent.setup();
     render(
       <SessionSummaryPill
-        conversation={{ conversationId: 'c1', model: 'gemini-3.8', spec: null } as never}
+        conversation={
+          {
+            conversationId: 'c1',
+            model: 'gemini-3.8',
+            modelLabel: 'Gemini 3.8',
+            spec: 'gemini-3.8',
+          } as never
+        }
         index={0}
       />,
     );
 
-    const modelTrigger = screen.getByRole('button', { name: 'Select a model' });
-    expect(modelTrigger).toBeVisible();
-    expect(screen.getByTestId('session-model-chip')).toContainElement(modelTrigger);
+    expect(screen.queryByTestId('session-model-chip')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Select a model' })).not.toBeInTheDocument();
 
     const pill = screen.getByTestId('session-summary-pill');
+    expect(screen.getByTestId('session-summary-model')).toHaveTextContent('Gemini 3.8');
     expect(pill).toHaveTextContent('com_ui_session_profile_research');
     expect(pill).toHaveTextContent('com_ui_session_orch_off');
+    expect(pill).toHaveTextContent('com_ui_response_format_detailed');
     expect(pill).toHaveAttribute('aria-haspopup', 'dialog');
     expect(pill).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByTestId('session-private-chip')).toBeVisible();
 
     await user.click(pill);
     expect(mockSetSheetOpen).toHaveBeenCalledWith(true);
