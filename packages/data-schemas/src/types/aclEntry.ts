@@ -16,8 +16,6 @@ export type AclEntry = {
   permBits: number;
   /** Optional role ID for predefined roles */
   roleId?: Types.ObjectId;
-  /** ID of the resource this permission is inherited from */
-  inheritedFrom?: Types.ObjectId;
   /** ID of the user who granted this permission */
   grantedBy?: Types.ObjectId;
   /** When this permission was granted */
