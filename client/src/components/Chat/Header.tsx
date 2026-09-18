@@ -3,8 +3,8 @@ import { useRecoilValue } from 'recoil';
 import { PermissionTypes, Permissions } from 'librechat-data-provider';
 import { TemporaryChat, TemporaryChatIndicator } from './TemporaryChat';
 import SubagentThreadLink from './SubagentThreadLink';
-import { OpenSidebar } from './Menus';
 import { useHasAccess } from '~/hooks';
+import { OpenSidebar } from './Menus';
 import { cn } from '~/utils';
 import store from '~/store';
 
