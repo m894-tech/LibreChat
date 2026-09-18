@@ -30,7 +30,7 @@ export interface ResponseAgentAccessDependencies extends RemoteAgentAccessDepend
   getConvo: (
     userId: string,
     conversationId: string,
-  ) => Promise<Pick<IConversation, 'agent_id'> | null>;
+  ) => Promise<(Pick<IConversation, 'agent_id'> & { agentId?: string; model?: string }) | null>;
 }
 
 export interface ApiKeyAuthRequest extends Request {
@@ -229,7 +229,7 @@ export function createCheckResponseAgentAccess(
         });
         return;
       }
-      agentId = conversation.agent_id;
+      agentId = conversation.agent_id || conversation.agentId || conversation.model;
     } catch (error) {
       logger.error('[checkResponseAgentAccess] Error loading conversation:', error);
       res.status(500).json({
