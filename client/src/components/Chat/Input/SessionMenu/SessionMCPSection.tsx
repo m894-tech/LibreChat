@@ -4,8 +4,8 @@ import { Permissions, PermissionTypes } from 'librechat-data-provider';
 import MCPServerMenuItem from '~/components/MCP/MCPServerMenuItem';
 import MCPConfigDialog from '~/components/MCP/MCPConfigDialog';
 import { useMCPRefresh } from '~/hooks/MCP/useMCPRefresh';
-import { activateCatalog, useHasAccess, useLocalize } from '~/hooks';
 import { useGetStartupConfig } from '~/data-provider';
+import { activateCatalog, useHasAccess, useLocalize } from '~/hooks';
 import { useBadgeRowContext } from '~/Providers';
 import { cn } from '~/utils';
 

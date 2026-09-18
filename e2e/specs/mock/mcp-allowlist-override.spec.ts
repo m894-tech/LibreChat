@@ -6,12 +6,14 @@ import { getPrimaryE2EUser } from '../../setup/users.mock';
  * Proves the #13809 fix end to end: an admin-panel `mcpSettings.allowedDomains`
  * override is honored by MCP inspection/connection without a restart.
  *
- * The YAML allowlist includes `e2e-http`'s origin so that URL fixture initializes.
- * Session MCP selection for steering / tool-context still picks stdio `e2e-memory`
- * (domain-agnostic). This spec first installs a restrictive override that
- * drops the HTTP origin (server fails reinit), then replaces it with an allow override
- * and asserts reinitialize succeeds — proving the admin override is what the
- * inspection path reads, not a frozen YAML snapshot.
+ * `e2e-http` (a URL-based MCP fixture) boots `inspectionFailed` because its origin
+ * is absent from the YAML allowlist. Adding that origin via an admin config override
+ * must let the server reinitialize. Before the fix, reinspection used the frozen
+ * YAML allowlist and the server stayed unreachable.
+ *
+ * Steering / tool-context specs select stdio `e2e-memory` (domain-agnostic), so
+ * 8765 stays off the YAML allowlist — that keeps this baseline meaningful without
+ * blocking Session MCP selection for Memory.
  *
  * Pure-API e2e against the real backend + DB: the JWT comes from the Authorization
  * header (`ExtractJwt.fromAuthHeaderAsBearerToken`), so we log in for a token rather
@@ -21,8 +23,6 @@ import { getPrimaryE2EUser } from '../../setup/users.mock';
 const SERVER_NAME = 'e2e-http';
 /** Must match the `e2e-http` URL origin in e2e/config/librechat.e2e.yaml. */
 const FIXTURE_ORIGIN = `http://127.0.0.1:${process.env.E2E_MCP_HTTP_PORT || '8765'}`;
-/** Present in the YAML allowlist but not the fixture origin — used to block 8765. */
-const RESTRICTIVE_ORIGIN = 'https://allowed.example.com';
 
 async function reinitialize(
   request: APIRequestContext,
@@ -34,18 +34,6 @@ async function reinitialize(
   }
   const body = (await res.json()) as { success?: boolean };
   return { status: res.status(), success: body.success === true };
-}
-
-async function putAllowedDomains(
-  request: APIRequestContext,
-  headers: Record<string, string>,
-  userId: string,
-  allowedDomains: string[],
-) {
-  return request.put(`/api/admin/config/user/${userId}`, {
-    headers,
-    data: { overrides: { mcpSettings: { allowedDomains } } },
-  });
 }
 
 test.describe('MCP admin-panel allowlist override', () => {
@@ -72,27 +60,32 @@ test.describe('MCP admin-panel allowlist override', () => {
 
     /**
      * The override is per-USER and this is the shared primary user, so it must
-     * not outlive the test: a restrictive list that omits other fixture origins
-     * would poison the shard (`e2e-oauth` fails inspection and agents expecting
-     * its tools 503). Cleanup always runs in `finally`.
+     * not outlive the test: the list holds only this fixture's origin and
+     * allowlist matching is port-inclusive, so every other MCP fixture would be
+     * blocked for the rest of the shard (`e2e-oauth` fails inspection and an
+     * agent expecting its tools 503s with AGENT_EXPECTED_MCP_TOOLS_UNAVAILABLE).
+     * The baseline assertion sits inside the cleanup scope on purpose: if an
+     * interrupted earlier attempt left the override behind, the baseline is
+     * what fails, and the `finally` is the only thing that can un-poison the
+     * shard for the retry and for every spec after it.
      */
     try {
-      // Restrictive override: drop the fixture origin so reinit fails.
-      const block = await putAllowedDomains(request, headers, userId, [RESTRICTIVE_ORIGIN]);
-      expect(block.ok()).toBeTruthy();
+      // Baseline: the fixture's origin is not in the YAML allowlist, so reinit fails.
+      const before = await reinitialize(request, headers);
+      expect(before.status).toBe(200);
+      expect(before.success).toBe(false);
+
+      // Admin-panel override: allow the fixture's origin for this user.
+      const put = await request.put(`/api/admin/config/user/${userId}`, {
+        headers,
+        data: { overrides: { mcpSettings: { allowedDomains: [FIXTURE_ORIGIN] } } },
+      });
+      expect(put.ok()).toBeTruthy();
       installed = true;
 
-      await expect
-        .poll(async () => (await reinitialize(request, headers)).success, {
-          timeout: 30000,
-          intervals: [1000, 2000, 3000],
-        })
-        .toBe(false);
-
-      // Allowing override: restore the fixture origin; reinit must succeed.
-      const allow = await putAllowedDomains(request, headers, userId, [FIXTURE_ORIGIN]);
-      expect(allow.ok()).toBeTruthy();
-
+      // The override is honored on reinit: the server now connects. The handler
+      // invalidates config caches asynchronously after responding, so poll until
+      // the merged allowlist has actually landed.
       await expect
         .poll(async () => (await reinitialize(request, headers)).success, {
           timeout: 30000,

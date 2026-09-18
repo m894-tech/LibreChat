@@ -66,8 +66,17 @@ export async function closeSessionSheet(page: Page) {
   if (!(await sheet.isVisible().catch(() => false))) {
     return;
   }
-  await sheet.getByRole('button', { name: 'Close' }).click();
-  await expect(sheet).toBeHidden();
+  /**
+   * Session chrome remounts during MCP catalog warmup / nested menus, so the
+   * Close control is often "not stable" or detaches under a direct click.
+   * Escape closes the sheet (and any leftover menu) without waiting on that
+   * button; force-click is only a fallback if Escape was consumed by a child.
+   */
+  await page.keyboard.press('Escape');
+  if (await sheet.isVisible().catch(() => false)) {
+    await sheet.getByRole('button', { name: 'Close' }).click({ force: true });
+  }
+  await expect(sheet).toBeHidden({ timeout: 15000 });
 }
 
 /** Bookmark control in the composer chrome cluster (dense v5.1). */
@@ -94,8 +103,15 @@ export async function openSessionMcpMenu(page: Page) {
     /** Wait for the MCP catalog (stdio e2e-memory included) before navigating. */
     const mcpNav = sheet.getByRole('button', { name: /MCP Servers/ });
     await expect(mcpNav).toBeVisible({ timeout: 30000 });
-    await mcpNav.click();
-    await expect(mcpSection).toBeVisible({ timeout: 15000 });
+    /**
+     * ToolGrid remounts the MCP nav as `availableMCPServers` warms; a single
+     * click often hits "not stable" / detached. Retry with force until the
+     * inline server list is actually mounted.
+     */
+    await expect(async () => {
+      await mcpNav.click({ force: true, timeout: 5000 });
+      await expect(mcpSection).toBeVisible({ timeout: 5000 });
+    }).toPass({ timeout: 30000 });
   }
   await expect(sheet.getByTestId('session-mcp-server-list')).toBeVisible({
     timeout: 15000,
