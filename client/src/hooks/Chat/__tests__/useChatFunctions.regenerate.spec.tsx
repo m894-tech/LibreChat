@@ -80,6 +80,10 @@ jest.mock('~/store', () => ({
     pendingQuotesByConvoId: () => 'pendingQuotes',
     messagesSiblingIdxFamily: () => 'messagesSiblingIdx',
     conversationByKeySelector: () => 'conversation',
+    conversationUiStateKey: (conversationId: string, index: number) =>
+      `${conversationId ?? 'new'}__${index}`,
+    nativeKnobsByIndex: (key: string) => `knobs:${key}`,
+    responseFormatByIndex: (key: string) => `format:${key}`,
   },
   useGetEphemeralAgent: () => mockGetEphemeralAgent,
 }));

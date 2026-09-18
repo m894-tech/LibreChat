@@ -540,32 +540,6 @@ describe('PermissionService', () => {
         accessRoleId: AccessRoleIds.AGENT_VIEWER,
         grantedBy: grantedById,
       });
-
-      // Setup a resource with inherited permission
-      const parentResourceId = new mongoose.Types.ObjectId();
-      const childResourceId = new mongoose.Types.ObjectId();
-
-      await grantPermission({
-        principalType: PrincipalType.USER,
-        principalId: userId,
-        resourceType: ResourceType.PROMPTGROUP,
-        resourceId: parentResourceId,
-        accessRoleId: AccessRoleIds.PROMPTGROUP_VIEWER,
-        grantedBy: grantedById,
-      });
-
-      await AclEntry.create({
-        principalType: PrincipalType.USER,
-        principalId: userId,
-        principalModel: PrincipalModel.USER,
-        resourceType: ResourceType.AGENT,
-        resourceId: childResourceId,
-        permBits: RoleBits.VIEWER,
-        roleId: (await findRoleByIdentifier(AccessRoleIds.AGENT_VIEWER))._id,
-        grantedBy: grantedById,
-        grantedAt: new Date(),
-        inheritedFrom: parentResourceId,
-      });
     });
 
     test('should get effective permissions from multiple sources', async () => {
@@ -584,26 +558,6 @@ describe('PermissionService', () => {
       // Should return the combined permission bits from both user (VIEWER=1) and group (EDITOR=3)
       // EDITOR includes VIEWER, so result should be 3 (VIEW + EDIT)
       expect(effective).toBe(RoleBits.EDITOR); // 3 = VIEW + EDIT
-    });
-
-    test('should get effective permissions from inherited permissions', async () => {
-      // Find the child resource ID
-      const inheritedEntry = await AclEntry.findOne({ inheritedFrom: { $exists: true } });
-      const childResourceId = inheritedEntry.resourceId;
-
-      // Mock getUserPrincipals to return user principal
-      getUserPrincipals.mockResolvedValue([
-        { principalType: PrincipalType.USER, principalId: userId },
-      ]);
-
-      const effective = await getEffectivePermissions({
-        userId,
-        resourceType: ResourceType.AGENT,
-        resourceId: childResourceId,
-      });
-
-      // Should return VIEWER permission bits from inherited permission
-      expect(effective).toBe(RoleBits.VIEWER); // 1 = VIEW
     });
 
     test('should return 0 for non-existent permissions', async () => {

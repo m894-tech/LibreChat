@@ -103,5 +103,16 @@ export default function useSelectAgent() {
     [agentsMap, updateConversation, queryClient],
   );
 
-  return { onSelect };
+  const onClear = useCallback(async () => {
+    const conversation = await getConversation();
+    const template: Partial<TPreset | TConversation> = {
+      endpoint: conversation?.endpoint ?? EModelEndpoint.agents,
+      agent_id: undefined,
+      conversationId: conversation?.conversationId ?? (Constants.NEW_CONVO as string),
+      ...specDisplayFieldReset,
+    };
+    await updateConversation({}, template, true);
+  }, [getConversation, updateConversation]);
+
+  return { onSelect, onClear };
 }

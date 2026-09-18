@@ -1,7 +1,7 @@
 import { logger } from '@librechat/data-schemas';
 import { ResourceType, PermissionBits, hasPermissions } from 'librechat-data-provider';
 import type { Request, Response, NextFunction, RequestHandler } from 'express';
-import type { IUser } from '@librechat/data-schemas';
+import type { IUser, IConversation } from '@librechat/data-schemas';
 import type { Types } from 'mongoose';
 import { getRemoteAgentPermissions } from './service';
 
@@ -24,6 +24,13 @@ export interface RemoteAgentAccessDependencies {
     resourceType: ResourceType;
     resourceId: string | Types.ObjectId;
   }) => Promise<number>;
+}
+
+export interface ResponseAgentAccessDependencies extends RemoteAgentAccessDependencies {
+  getConvo: (
+    userId: string,
+    conversationId: string,
+  ) => Promise<(Pick<IConversation, 'agent_id'> & { agentId?: string; model?: string }) | null>;
 }
 
 export interface ApiKeyAuthRequest extends Request {
@@ -195,4 +202,51 @@ export function createCheckRemoteAgentAccess(deps: RemoteAgentAccessDependencies
 
 export function createCheckAgentTriggerAccess(deps: RemoteAgentAccessDependencies): RequestHandler {
   return createAgentAccessMiddleware(deps, (req) => req.body?.target?.agentId);
+}
+
+/**
+ * `GET /responses/:id` is scoped to the conversation owner. The conversation's agent must also
+ * still grant REMOTE_AGENT VIEW, so a revoked share cannot be read back through a response id.
+ * A conversation without an agent has nothing to gate and passes through.
+ */
+export function createCheckResponseAgentAccess(
+  deps: ResponseAgentAccessDependencies,
+): RequestHandler {
+  return async (baseReq, res, next): Promise<void> => {
+    const req = baseReq as RemoteAgentAccessRequest;
+    const responseId = req.params.id;
+    let agentId: string | undefined;
+
+    try {
+      const conversation = await deps.getConvo(req.user?.id ?? '', responseId);
+      if (!conversation) {
+        res.status(404).json({
+          error: {
+            message: `Response not found: ${responseId}`,
+            type: 'not_found',
+            code: 'response_not_found',
+          },
+        });
+        return;
+      }
+      agentId = conversation.agent_id || conversation.agentId || conversation.model;
+    } catch (error) {
+      logger.error('[checkResponseAgentAccess] Error loading conversation:', error);
+      res.status(500).json({
+        error: {
+          message: 'Internal server error while checking agent access',
+          type: 'server_error',
+          code: 'internal_error',
+        },
+      });
+      return;
+    }
+
+    if (!agentId) {
+      next();
+      return;
+    }
+
+    await createAgentAccessMiddleware(deps, () => agentId)(req, res, next);
+  };
 }

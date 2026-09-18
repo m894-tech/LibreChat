@@ -29,12 +29,13 @@ memory:
   tokenLimit: 10000
 
 mcpSettings:
-  # Deliberately excludes 127.0.0.1, so the URL-based `e2e-http` server below is blocked
-  # at boot (stored as inspectionFailed). mcp-allowlist-override.spec.ts adds that origin
-  # via an admin-panel config override and asserts the server reinitializes — proving the
-  # admin override is honored by inspection/connection. stdio servers skip this check.
+  # `e2e-http` (8765) is allowlisted so Session MCP selection and steering specs can
+  # reach the URL fixture. mcp-allowlist-override.spec.ts still proves admin overrides
+  # by first installing a restrictive override that drops 8765, then restoring it.
+  # stdio servers (`e2e-memory`) skip the domain check.
   allowedDomains:
     - https://allowed.example.com
+    - http://127.0.0.1:8765
     - http://127.0.0.1:8767
     # __E2E_DYNAMIC_MCP_ALLOWED_DOMAIN__
 
@@ -56,7 +57,7 @@ mcpServers:
     type: streamable-http
     url: http://127.0.0.1:8765/mcp
     title: E2E HTTP
-    description: Local HTTP MCP fixture for allowlist-override e2e tests.
+    description: Local HTTP MCP fixture for Session selection and allowlist-override e2e tests.
     timeout: 30000
   e2e-oauth:
     type: streamable-http

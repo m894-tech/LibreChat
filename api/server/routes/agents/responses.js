@@ -28,6 +28,7 @@ const {
 const { configMiddleware } = require('~/server/middleware');
 const {
   checkAgentPermission,
+  checkResponseAgentPermission,
   preAuthTenantMiddleware,
   requireRemoteAgentAuth,
   checkRemoteAgentsFeature,
@@ -120,6 +121,6 @@ router.get('/models', listModels);
  *   "usage": { ... }
  * }
  */
-router.get('/:id', getResponse);
+router.get('/:id', checkResponseAgentPermission, getResponse);
 
 module.exports = router;

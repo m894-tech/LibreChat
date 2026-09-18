@@ -7,6 +7,7 @@ const {
   createAgentManagementAuth,
   createCheckAgentTriggerAccess,
   createCheckRemoteAgentAccess,
+  createCheckResponseAgentAccess,
 } = require('@librechat/api');
 const { getEffectivePermissions } = require('~/server/services/PermissionService');
 const { getAppConfig } = require('~/server/services/Config');
@@ -47,9 +48,20 @@ const agentAccessDependencies = {
 const checkAgentPermission = createCheckRemoteAgentAccess(agentAccessDependencies);
 const checkAgentTriggerPermission = createCheckAgentTriggerAccess(agentAccessDependencies);
 
+/**
+ * GET /responses/:id is conversation-owner scoped. Also require REMOTE_AGENT VIEW
+ * on the conversation's agent so share revocation cannot be bypassed via response id.
+ * Conversations without an agent pass through (nothing to gate).
+ */
+const checkResponseAgentPermission = createCheckResponseAgentAccess({
+  ...agentAccessDependencies,
+  getConvo: db.getConvo,
+});
+
 module.exports = {
   checkAgentPermission,
   checkAgentTriggerPermission,
+  checkResponseAgentPermission,
   preAuthTenantMiddleware,
   requireRemoteAgentAuth,
   requireAgentManagementAuth,

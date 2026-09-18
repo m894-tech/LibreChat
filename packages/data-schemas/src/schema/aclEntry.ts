@@ -49,11 +49,6 @@ const aclEntrySchema: Schema<IAclEntry> = new Schema<IAclEntry>(
       type: Schema.Types.ObjectId,
       ref: 'AccessRole',
     },
-    inheritedFrom: {
-      type: Schema.Types.ObjectId,
-      sparse: true,
-      index: true,
-    },
     grantedBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',

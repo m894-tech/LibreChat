@@ -1,6 +1,12 @@
 import { expect, test } from '@playwright/test';
 import type { APIRequestContext, Page } from '@playwright/test';
-import { NEW_CHAT_PATH, messagesView, selectMockEndpoint, sendMessage } from './helpers';
+import {
+  NEW_CHAT_PATH,
+  messagesView,
+  selectMockEndpoint,
+  selectSessionMcpServer,
+  sendMessage,
+} from './helpers';
 
 /** The endpoint dedicated to child-only `activityLabel` coverage. A label
  *  auto-collapses its tool group, hiding the tool cards other specs assert on.
@@ -54,13 +60,7 @@ async function getLabelRequestsFor(
 
 /** Select the MCP server whose `remember_fact` tool creates the batch boundary. */
 async function selectEphemeralMCP(page: Page) {
-  await page.getByRole('button', { name: 'MCP Servers', exact: true }).click();
-  const serverItem = page.getByRole('menuitemcheckbox', { name: new RegExp(MCP_SERVER_TITLE) });
-  await expect(serverItem).toBeVisible();
-  await serverItem.click();
-  await expect(serverItem).toHaveAttribute('aria-checked', 'true');
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('button', { name: new RegExp(MCP_SERVER_TITLE) })).toBeVisible();
+  await selectSessionMcpServer(page, MCP_SERVER_TITLE);
 }
 
 /** Run one labeled turn: two parallel tool calls => exactly one PostToolBatch. */
