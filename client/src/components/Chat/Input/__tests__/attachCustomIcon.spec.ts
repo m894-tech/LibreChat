@@ -25,6 +25,21 @@ describe('Composer attach custom glyph', () => {
     expect(contents).not.toMatch(/\bPaperclip\b/);
     expect(contents).toContain("from './AttachFileMenu'");
     expect(contents).toContain("from './AttachFile'");
+    expect(contents).toContain('isUnifiedMode={false}');
+    expect(contents).not.toContain('isUnifiedUploadMode');
+  });
+
+  it('AttachFileMenu keeps the M894 custom popover (no unified collapse)', () => {
+    const contents = source('Files/AttachFileMenu.tsx');
+    expect(contents).toContain('com_ui_upload_add_file');
+    expect(contents).toContain('com_ui_upload_folder');
+    expect(contents).toContain('com_ui_upload_github');
+    expect(contents).toContain('com_ui_upload_dropbox');
+    expect(contents).toContain('com_ui_upload_cloud_disk');
+    expect(contents).toContain('FolderPreviewDialog');
+    expect(contents).toContain('GitHubImportDialog');
+    expect(contents).toContain('DropboxImportDialog');
+    expect(contents).not.toMatch(/if\s*\(\s*isUnifiedMode\s*\)/);
   });
 
   it('AttachmentIcon ships the pre-meili filled clip marker', () => {
