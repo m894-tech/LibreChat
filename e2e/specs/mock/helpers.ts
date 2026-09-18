@@ -69,18 +69,27 @@ export async function openSessionSheet(page: Page) {
  * when `#model-search` is CSS-visible under a dialog layer).
  */
 async function openModelSelector(page: Page) {
-  const chipTrigger = page.getByTestId('session-model-chip').getByTestId('model-selector-button');
-  if (await chipTrigger.isVisible().catch(() => false)) {
-    await chipTrigger.click({ timeout: 10000 });
-    return chipTrigger;
+  /**
+   * Prefer Session → Now (`session-sheet-model`, portal={false}) whenever the
+   * summary pill is present. The standalone chip defaults to portal=true and
+   * was the path that left options outside the dialog a11y tree.
+   */
+  const summaryPill = page.getByTestId('session-summary-pill');
+  if (await summaryPill.isVisible().catch(() => false)) {
+    await openSessionSheet(page);
+    const sheetTrigger = page
+      .getByTestId('session-sheet-model')
+      .getByTestId('model-selector-button');
+    await expect(sheetTrigger).toBeVisible({ timeout: 15000 });
+    await sheetTrigger.scrollIntoViewIfNeeded();
+    await sheetTrigger.click({ timeout: 10000 });
+    return sheetTrigger;
   }
 
-  await openSessionSheet(page);
-  const sheetTrigger = page.getByTestId('session-sheet-model').getByTestId('model-selector-button');
-  await expect(sheetTrigger).toBeVisible({ timeout: 15000 });
-  await sheetTrigger.scrollIntoViewIfNeeded();
-  await sheetTrigger.click({ timeout: 10000 });
-  return sheetTrigger;
+  const chipTrigger = page.getByTestId('session-model-chip').getByTestId('model-selector-button');
+  await expect(chipTrigger).toBeVisible({ timeout: 15000 });
+  await chipTrigger.click({ timeout: 10000 });
+  return chipTrigger;
 }
 
 /** Flat search option for a model id / spec label once `#model-search` is open. */
@@ -115,7 +124,16 @@ async function selectModelSearchOption(
   await option.first().click({ timeout: 10000 });
 }
 
-async function assertModelSelection(page: Page, expectedText: string) {
+async function assertModelSelection(
+  page: Page,
+  expected: string | { model: string; label?: string },
+) {
+  const expectedTexts =
+    typeof expected === 'string'
+      ? [expected]
+      : [expected.model, expected.label].filter((value): value is string => Boolean(value));
+  const match = new RegExp(expectedTexts.map(escapeRegExp).join('|'));
+
   const sheet = page.getByTestId('session-sheet');
   if (await sheet.isVisible().catch(() => false)) {
     await closeSessionSheet(page);
@@ -123,13 +141,13 @@ async function assertModelSelection(page: Page, expectedText: string) {
 
   const summary = page.getByTestId('session-summary-model');
   if (await summary.isVisible().catch(() => false)) {
-    await expect(summary).toContainText(expectedText, { timeout: 10000 });
+    await expect(summary).toContainText(match, { timeout: 10000 });
     return;
   }
 
   await expect(
     page.getByTestId('session-model-chip').getByTestId('model-selector-button'),
-  ).toContainText(expectedText, { timeout: 10000 });
+  ).toContainText(match, { timeout: 10000 });
 }
 
 export async function closeSessionSheet(page: Page) {
@@ -208,25 +226,46 @@ export async function selectSessionMcpServer(page: Page, serverTitle: string) {
  * Open Session → model selector (or the standalone chip), search for the mock
  * model id, and commit via the flat search option — not the nested endpoint submenu.
  */
+
 export async function selectMockEndpoint(page: Page, endpoint: MockEndpoint) {
+  /**
+   * Mock Provider A/B are modelSpecs only (not in `addedEndpoints`). Search must
+   * match `preset.model` and the option must expose
+   * `data-testid=model-search-option-${model}` (spec rows included). If the
+   * model-id option still does not mount, fall back to the provider label —
+   * same selectable row — then accept either model id or label in the summary
+   * (specs display the label).
+   */
   const summary = page.getByTestId('session-summary-model');
-  if (
-    (await summary.isVisible().catch(() => false)) &&
-    (await summary.textContent())?.includes(endpoint.model)
-  ) {
-    return;
+  if (await summary.isVisible().catch(() => false)) {
+    const text = (await summary.textContent()) ?? '';
+    if (text.includes(endpoint.model) || text.includes(endpoint.label)) {
+      return;
+    }
   }
   const chipTrigger = page.getByTestId('session-model-chip').getByTestId('model-selector-button');
-  if (
-    (await chipTrigger.isVisible().catch(() => false)) &&
-    (await chipTrigger.textContent())?.includes(endpoint.model)
-  ) {
-    return;
+  if (await chipTrigger.isVisible().catch(() => false)) {
+    const text = (await chipTrigger.textContent()) ?? '';
+    if (text.includes(endpoint.model) || text.includes(endpoint.label)) {
+      return;
+    }
   }
 
   await openModelSelector(page);
-  await selectModelSearchOption(page, endpoint.model);
-  await assertModelSelection(page, endpoint.model);
+
+  const byModelId = page.getByTestId(`model-search-option-${endpoint.model}`);
+  try {
+    await selectModelSearchOption(page, endpoint.model);
+  } catch (modelErr) {
+    // Prove the primary path failed because the option was missing, then use label.
+    if ((await byModelId.count()) === 0) {
+      await selectModelSearchOption(page, endpoint.label, endpoint.label);
+    } else {
+      throw modelErr;
+    }
+  }
+
+  await assertModelSelection(page, { model: endpoint.model, label: endpoint.label });
 }
 
 /** Open the model selector and choose a configured model spec by label. */

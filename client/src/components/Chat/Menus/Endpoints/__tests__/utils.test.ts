@@ -43,4 +43,24 @@ describe('model selector utilities', () => {
     const results = filterItems([disabledAgentsEndpoint], 'my agents', undefined, undefined);
     expect(results).toEqual([]);
   });
+
+  it('matches modelSpecs by preset.model so mock-model search finds specs-only providers', () => {
+    const mockSpec = {
+      name: 'e2e-mock-provider-a',
+      label: 'Mock Provider A',
+      preset: { endpoint: 'Mock Provider A', model: 'mock-model-a' },
+    };
+    const results = filterItems([mockSpec], 'mock-model-a', undefined, undefined);
+    expect(results).toEqual([mockSpec]);
+  });
+
+  it('matches modelSpecs by preset.endpoint when label/name do not match', () => {
+    const mockSpec = {
+      name: 'e2e-friendly',
+      label: 'Friendly Name',
+      preset: { endpoint: 'Mock Provider A', model: 'mock-model-a' },
+    };
+    const results = filterItems([mockSpec], 'mock provider a', undefined, undefined);
+    expect(results).toEqual([mockSpec]);
+  });
 });

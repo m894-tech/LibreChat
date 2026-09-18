@@ -108,7 +108,7 @@ test.describe('MCP OAuth readiness', () => {
     await page.goto('/c/new', { timeout: 10000 });
     await openSessionMcpMenu(page);
     const serverItem = page.getByRole('checkbox', { name: new RegExp(SERVER_TITLE) });
-    await expect(serverItem).toHaveAttribute('aria-checked', 'false');
+    await expect(serverItem).toBeChecked({ checked: false });
     await serverItem.getByRole('button', { name: `Connect ${SERVER_NAME}` }).click();
 
     await page.getByRole('button', { name: 'Authenticate', exact: true }).click();
@@ -124,7 +124,7 @@ test.describe('MCP OAuth readiness', () => {
 
     await page.keyboard.press('Escape');
     await openSessionMcpMenu(page);
-    await expect(serverItem).toHaveAttribute('aria-checked', 'false');
+    await expect(serverItem).toBeChecked({ checked: false });
     await expect(serverItem.getByRole('button', { name: 'Cancel' })).toBeVisible();
     await expect(
       page.getByText(`MCP server '${SERVER_NAME}' authenticated successfully`),
@@ -135,7 +135,7 @@ test.describe('MCP OAuth readiness', () => {
     await expect(
       page.getByText(`MCP server '${SERVER_NAME}' authenticated successfully`).first(),
     ).toBeVisible();
-    await expect(serverItem).toHaveAttribute('aria-checked', 'true');
+    await expect(serverItem).toBeChecked({ checked: true });
     expect(reinitializeCalls).toBe(2);
   });
 
@@ -412,7 +412,7 @@ test.describe('MCP OAuth readiness', () => {
     await expect(
       page.getByText(`MCP server '${SERVER_NAME}' authenticated successfully`).first(),
     ).toBeVisible({ timeout: 20000 });
-    await expect(serverItem).toHaveAttribute('aria-checked', 'true');
+    await expect(serverItem).toBeChecked({ checked: true });
     expect(flowStatusCalls).toBeGreaterThanOrEqual(2);
   });
 });
