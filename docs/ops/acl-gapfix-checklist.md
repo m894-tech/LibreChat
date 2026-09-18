@@ -35,7 +35,9 @@ Remote agents are the **API-key invoke plane** (`openai.js` / `responses.js`), n
 | create writes owner `AclEntry` | **Done** | agent v1 create grants `REMOTE_AGENT_OWNER` |
 | share path = `ResourceType.REMOTE_AGENT` | **Done** | `accessPermissions.js` |
 
-**Hole closed this PR:** capability without per-id ACL on `GET /models/:model` and `GET /responses/:id`.
+**Hole closed on main (prior PR):** capability without per-id ACL on `GET /models/:model` and `GET /responses/:id`.
+
+**This PR:** move the response-agent VIEW gate into `createCheckResponseAgentAccess` (`@librechat/api`) and wire `checkResponseAgentPermission` through it so the route file stays thin.
 
 **Explicit N/A (not a hole):** separate remoteAgent management CRUD mirroring agent v1 GET-full / PATCH / DELETE — product model is invoke-plane + agent v1 ownership, not a second CRUD surface.
 
