@@ -158,7 +158,7 @@ export default function SessionPanel({
         </div>
       ) : null}
 
-      {view === 'mcp' ? <SessionMCPSection /> : null}
+      {view === 'mcp' ? <SessionMCPSection drill /> : null}
       {view === 'skills' ? <SessionSkillsSection agentId={conversation?.agent_id} drill /> : null}
       {view === 'automations' ? (
         <SessionAutomationsSection conversationId={conversation?.conversationId} />
