@@ -147,15 +147,17 @@ export async function selectModelSpec(page: Page, label: string) {
 /** Enable Skills from Session → Skills (dense Session chrome). */
 export async function enableSkills(page: Page) {
   await openSessionSheet(page);
-  await page.getByRole('button', { name: 'Skills' }).click();
   const sheet = page.getByTestId('session-sheet');
-  const toggle = sheet.getByRole('switch').first();
-  if (await toggle.isVisible().catch(() => false)) {
-    const checked = await toggle.getAttribute('aria-checked');
-    if (checked !== 'true') {
-      await toggle.click();
-    }
+  if (!(await sheet.getByTestId('session-menu-skills').isVisible().catch(() => false))) {
+    await sheet.getByRole('button', { name: 'Skills' }).click();
+    await expect(sheet.getByTestId('session-menu-skills')).toBeVisible();
   }
+  const toggle = sheet.getByRole('switch', { name: 'Skills' });
+  await expect(toggle).toBeVisible();
+  if ((await toggle.getAttribute('aria-checked')) !== 'true') {
+    await toggle.click();
+  }
+  await expect(toggle).toHaveAttribute('aria-checked', 'true');
   await closeSessionSheet(page);
 }
 

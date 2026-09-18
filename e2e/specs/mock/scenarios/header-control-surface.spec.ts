@@ -20,8 +20,8 @@ import {
  * rather than depending on a runner's project matrix.
  */
 
-const TOGGLE = '[data-testid="open-sidebar-button"]';
-const NEW_CHAT = '[data-testid="session-new-conversation"]';
+const TOGGLE = '[data-testid="header-open-sidebar-button"]';
+const NEW_CHAT = '[data-testid="header-new-chat-button"]';
 const CLOSE = '[data-testid="close-sidebar-button"]';
 
 test.use({ viewport: { width: 390, height: 844 } });

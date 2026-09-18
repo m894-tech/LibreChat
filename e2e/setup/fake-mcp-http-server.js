@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 
 /**
- * Streamable-HTTP MCP fixture for the allowlist-override e2e spec.
+ * Streamable-HTTP MCP fixture for Session MCP selection and the allowlist-override
+ * e2e spec.
  *
  * Unlike the stdio `fake-mcp-server.js`, this one is reachable over a URL so it
  * exercises the `mcpSettings.allowedDomains` check (stdio transports skip it). The
- * e2e config deliberately omits this server's origin from `allowedDomains`, so it
- * boots as `inspectionFailed`; `mcp-allowlist-override.spec.ts` then adds the origin
- * via an admin-panel config override and asserts the server reinitializes.
+ * e2e YAML allowlists this origin so steering / tool-context specs can select it;
+ * `mcp-allowlist-override.spec.ts` still proves admin overrides by installing a
+ * restrictive override that drops the origin, then restoring it.
  *
  * Mirrors the stateful streamable-HTTP pattern in
  * packages/api/src/mcp/__tests__/helpers/oauthTestServer.ts (without OAuth).

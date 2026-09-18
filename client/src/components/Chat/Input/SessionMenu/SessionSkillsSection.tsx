@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { PinIcon } from '@librechat/client';
 import { useNavigate } from 'react-router-dom';
+import { PinIcon, Switch } from '@librechat/client';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { ChevronDown, ChevronRight, ScrollText, X } from 'lucide-react';
 import { Constants, Permissions, PermissionTypes } from 'librechat-data-provider';
@@ -193,6 +193,11 @@ export default function SessionSkillsSection({ agentId }: { agentId?: string | n
             <PinIcon unpin={Boolean(isSkillsPinned)} />
           </div>
         </button>
+        <Switch
+          checked={Boolean(toggleState)}
+          onCheckedChange={() => handleSkillsToggle()}
+          aria-label={localize('com_ui_skills')}
+        />
       </div>
       {agentSkillsOff ? (
         <p className="px-2 text-[11px] text-text-secondary">
