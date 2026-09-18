@@ -195,6 +195,10 @@ const userSchema: Schema<IUser> = new Schema<IUser>(
       type: String,
       sparse: true,
     },
+    /** Last successful Entra group membership sync (Graph). Used for TTL refresh outside login. */
+    entraGroupLastSyncedAt: {
+      type: Date,
+    },
     tenantId: {
       type: String,
       index: true,

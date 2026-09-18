@@ -49,26 +49,42 @@ const mockModels = {
   replaceConvoCodeEnvironmentDecision: jest.fn(),
 };
 
-jest.mock('@librechat/data-schemas', () => ({
-  SystemCapabilities: { MANAGE_CODE_ENVIRONMENTS: 'manage:code_environments' },
-}));
-
-jest.mock('@librechat/api', () => ({
-  GenerationJobManager: mockGenerationJobManager,
-  createCodeEnvironmentRegistry: jest.fn(() => mockRegistry),
-  createCodeEnvironmentHttpHandlers: jest.fn((deps) => {
-    mockHandlerDeps = deps;
-    return mockHandlers;
+jest.mock(
+  '@librechat/data-schemas',
+  () => ({
+    SystemCapabilities: { MANAGE_CODE_ENVIRONMENTS: 'manage:code_environments' },
   }),
-  codeEnvironmentPairingLimiter: mockCodeEnvironmentPairingLimiter,
-  codeEnvironmentStatusIpLimiter: mockCodeEnvironmentStatusIpLimiter,
-  codeEnvironmentStatusLimiter: mockCodeEnvironmentStatusLimiter,
-}));
+  { virtual: true },
+);
+
+jest.mock(
+  '@librechat/api',
+  () => ({
+    GenerationJobManager: mockGenerationJobManager,
+    createCodeEnvironmentRegistry: jest.fn(() => mockRegistry),
+    createCodeEnvironmentHttpHandlers: jest.fn((deps) => {
+      mockHandlerDeps = deps;
+      return mockHandlers;
+    }),
+    codeEnvironmentPairingLimiter: mockCodeEnvironmentPairingLimiter,
+    codeEnvironmentStatusIpLimiter: mockCodeEnvironmentStatusIpLimiter,
+    codeEnvironmentStatusLimiter: mockCodeEnvironmentStatusLimiter,
+  }),
+  { virtual: true },
+);
 
 jest.mock('~/server/middleware/roles/capabilities', () => ({
   requireCapability: mockRequireCapability,
 }));
-jest.mock('~/server/middleware', () => ({ requireJwtAuth: mockRequireJwtAuth }));
+const mockCanAccessCodeEnvironmentResource = jest.fn((options) => (req, _res, next) => {
+  middlewareCalls.push(`acl:${options.requiredPermission}`);
+  next();
+});
+
+jest.mock('~/server/middleware', () => ({
+  requireJwtAuth: mockRequireJwtAuth,
+  canAccessCodeEnvironmentResource: mockCanAccessCodeEnvironmentResource,
+}));
 jest.mock('~/server/services/Config', () => ({
   getAppConfig: jest.fn(),
   getCodeEnvironmentRegistry: mockGetCodeEnvironmentRegistry,
@@ -123,30 +139,30 @@ describe('code environment routes', () => {
     expect(mockHandlers.pair).toHaveBeenCalledTimes(1);
   });
 
-  it('allows an authenticated owner to remove an environment', async () => {
+  it('requires DELETE ACL before removing an environment', async () => {
     await request(createApp()).delete('/api/code-environments/code-1').expect(200);
 
-    expect(middlewareCalls).toEqual(['jwt']);
+    expect(middlewareCalls).toEqual(['jwt', 'acl:4']);
     expect(mockHandlers.remove).toHaveBeenCalledTimes(1);
   });
 
-  it('allows an authenticated principal to read environment status', async () => {
+  it('requires VIEW ACL before reading environment status', async () => {
     await request(createApp()).get('/api/code-environments/code-1/status').expect(200, {
       environmentId: 'code-1',
       status: 'ready',
     });
 
-    expect(middlewareCalls).toEqual(['jwt', 'status-ip-limit', 'status-limit']);
+    expect(middlewareCalls).toEqual(['jwt', 'status-ip-limit', 'status-limit', 'acl:1']);
     expect(mockHandlers.status).toHaveBeenCalledTimes(1);
   });
 
-  it('allows an authenticated owner to update exposed environment settings', async () => {
+  it('requires EDIT ACL before updating exposed environment settings', async () => {
     await request(createApp())
       .patch('/api/code-environments/code-1/settings')
       .send({ settings: { permissions: { fileWrite: 'ask' } } })
       .expect(200);
 
-    expect(middlewareCalls).toEqual(['jwt']);
+    expect(middlewareCalls).toEqual(['jwt', 'acl:2']);
     expect(mockHandlers.updateSettings).toHaveBeenCalledTimes(1);
   });
 
