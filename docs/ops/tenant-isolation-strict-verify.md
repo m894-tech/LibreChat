@@ -58,12 +58,45 @@ Expect 403 responses when an authenticated user lacks `tenantId` while `TENANT_I
 
 ## Live monetka verification (Fixit / netcup)
 
-Monetka LibreChat runs on the **netcup** host (same fleet as Contour). Live `TENANT_ISOLATION_STRICT` confirmation is owned by **Fixit**, not by this PR.
+Monetka LibreChat runs on the **netcup** host (same fleet as Contour). Live confirmation is owned by **Fixit**; enablement is a **Denis** ops decision. Automated agents stop at this checklist and must not invent credentials.
 
-**Owner: Fixit (evidence for Denis).** On netcup, with existing ops credentials (not invented here):
+### Observed state (Fixit, netcup)
 
-1. Confirm `TENANT_ISOLATION_STRICT=true` in the running environment.
-2. Repeat sections 4 and 5 against a real tenant-bound user.
-3. Confirm missing ALS or missing `tenantId` fails closed (throw / HTTP 403), and ACL reads do not leak across tenants.
+| Item | Value |
+|---|---|
+| Env file | `/opt/librechat-mcp/LibreChat-src/.env` |
+| `TENANT_ISOLATION_STRICT` | **missing** → effective **false** (only the string `"true"` enables strict mode) |
+| API | `librechat-mcp.service` on `:3080` |
+| Missing ALS today | pass-through (non-strict transitional behavior) |
+| Fail-closed smoke | **blocked** until the flag is set to `true` and the service restarts |
 
-Do not invent or commit monetka or netcup credentials in this repo. Automated agents stop at this checklist.
+Do not treat monetka as already strict. Code is fail-closed only when the flag is explicitly `"true"`.
+
+### Enable steps (Denis / Fixit)
+
+1. On netcup, set in `/opt/librechat-mcp/LibreChat-src/.env`:
+
+   ```bash
+   TENANT_ISOLATION_STRICT=true
+   ```
+
+2. Restart: `systemctl restart librechat-mcp.service`
+
+3. Confirm the process sees the flag (env dump or startup log). Cached policy reads the env once per process.
+
+### Expected fail-closed signals after enable
+
+- **Mongoose / ACL reads without ALS:** `TenantIsolationError` with message shaped like  
+  `[TenantIsolation] Query attempted without tenant context in strict mode`  
+  (from `resolveTenantScope` via `packages/data-schemas/src/models/plugins/tenantIsolation.ts`).
+- **HTTP, authenticated user without `tenantId`:** **403** with  
+  `{ "error": "Tenant context required in strict isolation mode" }`  
+  (from `tenantContextMiddleware`).
+
+### Post-enable smoke (Fixit evidence for Denis)
+
+1. Repeat sections 4 and 5 against a real tenant-bound user.
+2. Confirm missing ALS or missing `tenantId` fails closed (throw / HTTP 403).
+3. Confirm ACL reads do not leak across tenants.
+
+Do not invent or commit monetka or netcup credentials in this repo.
