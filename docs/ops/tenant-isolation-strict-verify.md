@@ -67,30 +67,32 @@ Expect 403 responses when an authenticated user lacks `tenantId` while `TENANT_I
 3. Hit a route that reads ACL or other tenant-isolated data.
 4. Expect success and results limited to that tenant (no cross-tenant rows).
 
-## Live monetka (Fixit / netcup)
+## Live monetka (Fixit / netcup) — live=strict
 
 Monetka LibreChat runs on the **netcup** host (same fleet as Contour). Env file: `/opt/librechat-mcp/LibreChat-src/.env`. Service: `librechat-mcp.service` on `:3080`.
 
-### Fixit observation — current = non-strict
+### Prior observation (pre-enable) — non-strict
 
 | Item | Value |
 |---|---|
 | Env file | `/opt/librechat-mcp/LibreChat-src/.env` |
-| `TENANT_ISOLATION_STRICT` | **missing** → effective **false** (only `=== 'true'` enables) |
+| `TENANT_ISOLATION_STRICT` | was **missing** → effective **false** (only `=== 'true'` enables) |
 | Service | `librechat-mcp.service` up on `:3080` |
 | Missing ALS | **pass-through** (non-strict) |
-| Fail-closed smoke | **blocked** until the flag is enabled |
+| Fail-closed smoke | blocked until Denis approved enable |
 
-Do **not** treat this observation as live-strict. Missing or any value other than the string `true` leaves fail-closed off.
+That observation alone must not be read as live-strict.
 
 ### Enable steps (operator)
+
+Denis approved: set `TENANT_ISOLATION_STRICT=true` and restart on monetka/netcup.
 
 1. Set `TENANT_ISOLATION_STRICT=true` in `/opt/librechat-mcp/LibreChat-src/.env`.
 2. `systemctl restart librechat-mcp.service`.
 3. Confirm health on `:3080`.
 4. Re-check missing-ALS path: expect fail-closed (policy throw / HTTP 403), not pass-through.
 
-Expected policy message after enable (from `tenantIsolation` / `resolveTenantScope`):
+Expected policy message after enable (from `resolveTenantScope` in `packages/data-schemas/src/tenant/policy.ts`):
 
 ```text
 [TenantIsolation] <operation> attempted without tenant context in strict mode
@@ -102,15 +104,17 @@ Expected HTTP without `tenantId` on an authenticated user:
 { "error": "Tenant context required in strict isolation mode" }
 ```
 
-### Live evidence after enable (Fixit)
+### Fixit confirm — live=strict
 
-Denis approved enable. Fixit applied and confirmed:
+Fixit applied Denis's approval and verified:
 
-1. `TENANT_ISOLATION_STRICT=true` in `/opt/librechat-mcp/LibreChat-src/.env`
-2. Backup: `.env.bak-tenant-strict-20260918T063632Z`
-3. `systemctl restart librechat-mcp.service` — health **200**
-4. Missing ALS → **DENIED** (fail-closed; Fixit label `TENANT_CONTEXT_REQUIRED`) matching the policy/HTTP shapes above
+| Item | Value |
+|---|---|
+| `TENANT_ISOLATION_STRICT` | `true` in `/opt/librechat-mcp/LibreChat-src/.env` |
+| Backup | `.env.bak-tenant-strict-20260918T063632Z` |
+| Restart | `librechat-mcp.service` — health **200** |
+| Missing ALS | **DENIED** (fail-closed; Fixit label `TENANT_CONTEXT_REQUIRED`) |
 
-Live monetka is **strict** only after this enable evidence — not from the earlier missing-flag observation.
+**live=strict** on monetka/netcup after this Fixit confirm only.
 
 Do not invent or commit monetka or netcup credentials in this repo.
