@@ -1,0 +1,11 @@
+'use strict';
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const { normalizeOwner, isOwnerOf, toView, capabilities } = require('./owner-cron.cjs');
+const mine={id:'c1',name:'mine',targetType:'session_todo',userId:'user-alice',conv:'11111111-1111-4111-8111-111111111111',payload:{text:'hello'},status:'active',history:[]};
+const other={...mine,id:'c2',userId:'user-bob'};
+const legacy={...mine,id:'c3',userId:null};
+test('owner normalization is strict',()=>{assert.equal(normalizeOwner('{{MCP_USER_ID}}'),'');assert.equal(normalizeOwner('bad owner'),'');assert.equal(normalizeOwner('user-alice'),'user-alice')});
+test('all target types are scoped by stored owner',()=>{assert.equal(isOwnerOf(mine,'user-alice'),true);assert.equal(isOwnerOf(other,'user-alice'),false);assert.equal(isOwnerOf(legacy,'user-alice'),false)});
+test('view exposes safe payload and never binding values',()=>{const v=toView({...mine,secretBindings:[{id:'b',vault:'v',item:'i',field:'f',destination:'env',key:'X',value:'do-not-leak'}]});assert.equal(v.payload.text,'hello');assert.equal(v.secret_bindings[0].value,undefined);assert.equal(JSON.stringify(v).includes('do-not-leak'),false)});
+test('capabilities match route actions',()=>{const user=capabilities('user-alice');assert.deepEqual(user.sources.cron.commands,{list:true,status:true,create:true,pause:true,resume:true,cancel:true,run_now:true});assert.equal(user.sources.cron.action_types.session_todo,true);assert.equal(user.sources.cron.action_types.script,false);const host=capabilities('user-alice',{isHost:true});assert.equal(host.sources.cron.action_types.script,true);assert.equal(host.sources.cron.action_types.webhook,true)});
