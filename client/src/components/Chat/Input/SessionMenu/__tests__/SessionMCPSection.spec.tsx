@@ -46,6 +46,7 @@ jest.mock('~/data-provider', () => ({
 jest.mock('~/hooks', () => ({
   useLocalize: () => (key: string) => key,
   useHasAccess: () => mockCanUseMcp,
+  activateCatalog: jest.fn(),
 }));
 
 jest.mock('@librechat/client', () => {
