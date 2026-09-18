@@ -777,6 +777,9 @@ const ChatForm = memo(function ChatForm({
                 onClose={pastedTextEdit.closeEditor}
                 onSave={pastedTextEdit.saveEdit}
               />
+              <div className="px-2 pb-0.5 pt-0.5">
+                <SessionSummaryPill conversation={conversation} index={index} />
+              </div>
               {endpoint && (
                 <div className={cn('flex', isRTL ? 'flex-row-reverse' : 'flex-row')}>
                   <div
@@ -837,9 +840,6 @@ const ChatForm = memo(function ChatForm({
                   </div>
                 </div>
               )}
-              <div className="px-2 pb-0.5 pt-0.5">
-                <SessionSummaryPill conversation={conversation} index={index} />
-              </div>
               <SessionAgentsBar
                 activeAgentId={conversation?.agent_id}
                 conversationId={conversationId}
