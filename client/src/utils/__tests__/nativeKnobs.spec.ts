@@ -5,6 +5,7 @@ import {
   isNativeKnobChipActive,
   matchNativeKnobFamily,
   mergeNativeKnobValues,
+  withoutEffortKnobGroups,
 } from '../nativeKnobs';
 
 const video: NativeKnobFamily = {
@@ -167,5 +168,50 @@ describe('native model controls', () => {
     expect(
       matchNativeKnobFamily([claude], { model: 'claude-opus-5', spec: 'cc-claude-opus-5' })?.id,
     ).toBe('claude-adaptive');
+  });
+
+  it('strips effort groups so SessionEffortSection stays the sole Effort UI', () => {
+    const claude: NativeKnobFamily = {
+      id: 'claude-adaptive',
+      label: 'Claude effort',
+      kind: 'text',
+      match: ['claude-opus-5'],
+      defaults: { effort: 'high' },
+      groups: [
+        {
+          id: 'effort',
+          label: 'Effort',
+          chips: [
+            { id: 'low', label: 'Low', apply: { effort: 'low' } },
+            { id: 'mid', label: 'Mid', apply: { effort: 'medium' } },
+            { id: 'high', label: 'High', apply: { effort: 'high' } },
+          ],
+        },
+      ],
+    };
+    const mixed: NativeKnobFamily = {
+      id: 'mixed',
+      label: 'Mixed',
+      kind: 'text',
+      match: ['mixed'],
+      defaults: { effort: 'high', resolution: '720p' },
+      groups: [
+        {
+          id: 'effort',
+          label: 'Effort',
+          chips: [{ id: 'high', label: 'High', apply: { effort: 'high' } }],
+        },
+        {
+          id: 'resolution',
+          label: 'Resolution',
+          chips: [{ id: '720p', label: '720p', apply: { resolution: '720p' } }],
+        },
+      ],
+    };
+
+    expect(withoutEffortKnobGroups(claude)).toBeNull();
+    expect(withoutEffortKnobGroups(mixed)?.groups.map((group) => group.id)).toEqual([
+      'resolution',
+    ]);
   });
 });

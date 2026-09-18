@@ -12,7 +12,6 @@ import type { TConversation } from 'librechat-data-provider';
 import type { ExtendedFile, FileSetter } from '~/common';
 import useAgentUploadTarget from '~/hooks/Agents/useAgentUploadTarget';
 import { useGetFileConfig } from '~/data-provider';
-import { isUnifiedUploadMode } from '~/utils';
 import AttachFileMenu from './AttachFileMenu';
 import AttachFile from './AttachFile';
 
@@ -70,13 +69,6 @@ function AttachFileChat({
     isAgents && conversation?.agent_id != null && !isEphemeralAgentId(conversation.agent_id);
   const isPolicyResolved = isFileConfigLoaded && (!isSavedAgent || agentProvider != null);
 
-  /* Resolved here rather than in the menu: an unresolved config reads as unified, which
-   * would show the wrong uploader on a legacy deployment. */
-  const isUnifiedMode = useMemo(
-    () => isUnifiedUploadMode(endpointFileConfig, isPolicyResolved),
-    [endpointFileConfig, isPolicyResolved],
-  );
-
   if (isAssistants && endpointSupportsFiles && !isUploadDisabled) {
     return (
       <AttachFile
@@ -99,7 +91,7 @@ function AttachFileChat({
         conversationId={conversationId}
         agentId={conversation?.agent_id}
         endpointFileConfig={endpointFileConfig}
-        isUnifiedMode={isUnifiedMode}
+        isUnifiedMode={false}
         useResponsesApi={useResponsesApi}
         files={files}
         setFiles={setFiles}

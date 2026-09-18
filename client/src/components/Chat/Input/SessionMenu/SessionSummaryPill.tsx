@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ChevronDown, Sparkles } from 'lucide-react';
+import { ChevronDown, Folder, Sparkles } from 'lucide-react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import type { TConversation, TModelSpec } from 'librechat-data-provider';
 import type {
@@ -12,7 +12,7 @@ import type { TranslationKeys } from '~/hooks';
 import { SESSION_PROFILE_CHANGED_EVENT, loadSessionProfile } from '~/utils/sessionProfiles';
 import ModelSelector from '~/components/Chat/Menus/Endpoints/ModelSelector';
 import { normalizeResponseFormat } from '~/utils/responseFormat';
-import { useGetStartupConfig } from '~/data-provider';
+import { useGetStartupConfig, useProjectQuery } from '~/data-provider';
 import { useLocalize } from '~/hooks';
 import { cn } from '~/utils';
 import store from '~/store';
@@ -76,7 +76,9 @@ function resolveModelLabel(
 
 /**
  * Dense v5.1 composer chrome: one SessionSummaryPill
- * `Model · Profile · Orch · Format` plus Private chip. No second model chip.
+ * `Model · [Project] · Profile · Orch · Format`. Project appears when
+ * `conversation.chatProjectId` is bound (reload-safe via assign API).
+ * Private is a composer icon beside TokenUsage.
  */
 export default function SessionSummaryPill({
   conversation,
@@ -86,9 +88,10 @@ export default function SessionSummaryPill({
   const localize = useLocalize();
   const { data: startupConfig } = useGetStartupConfig();
   const [sheetOpen, setSheetOpen] = useRecoilState(store.sessionSheetOpenByIndex(index));
-  const isTemporary = useRecoilValue(store.isTemporary);
   const uiKey = store.conversationUiStateKey(conversation?.conversationId, index);
   const responseFormat = useRecoilValue(store.responseFormatByIndex(uiKey));
+  const chatProjectId = conversation?.chatProjectId ?? null;
+  const { data: boundProject } = useProjectQuery(chatProjectId);
   const [profileState, setProfileState] = useState<SessionProfileState>(() =>
     loadSessionProfile(conversation?.conversationId),
   );
@@ -157,7 +160,7 @@ export default function SessionSummaryPill({
         aria-haspopup="dialog"
         aria-expanded={sheetOpen}
         onClick={openSheet}
-        className="inline-flex min-w-0 max-w-[calc(100%-5.5rem)] items-center gap-1 rounded-full border border-border-light bg-surface-secondary px-2.5 py-1 text-[11px] text-text-secondary"
+        className="inline-flex min-w-0 max-w-full items-center gap-1 rounded-full border border-border-light bg-surface-secondary px-2.5 py-1 text-[11px] text-text-secondary"
       >
         <Sparkles className="size-3 shrink-0 text-text-primary" aria-hidden="true" />
         <span
@@ -166,6 +169,19 @@ export default function SessionSummaryPill({
         >
           {modelLabel}
         </span>
+        {boundProject?.name ? (
+          <>
+            <span className="shrink-0 opacity-60">·</span>
+            <span
+              className="inline-flex min-w-0 max-w-[7rem] shrink items-center gap-0.5 truncate text-text-primary"
+              data-testid="session-summary-project"
+              title={boundProject.name}
+            >
+              <Folder className="size-3 shrink-0 opacity-80" aria-hidden="true" />
+              <span className="truncate">{boundProject.name}</span>
+            </span>
+          </>
+        ) : null}
         <span className="shrink-0 opacity-60">·</span>
         <span className="shrink-0 truncate">{profileLabel}</span>
         <span className="shrink-0 opacity-60">·</span>
@@ -173,21 +189,6 @@ export default function SessionSummaryPill({
         <span className="hidden shrink-0 opacity-60 sm:inline">·</span>
         <span className="hidden shrink-0 truncate sm:inline">{formatLabel}</span>
         <ChevronDown className="size-3.5 shrink-0 opacity-60" aria-hidden="true" />
-      </button>
-      <button
-        type="button"
-        data-testid="session-private-chip"
-        aria-label={localize('com_ui_session_private')}
-        aria-pressed={isTemporary}
-        onClick={openSheet}
-        className={cn(
-          'inline-flex shrink-0 items-center rounded-full border px-2 py-1 text-[11px]',
-          isTemporary
-            ? 'border-violet-400/50 bg-violet-500/15 text-violet-200'
-            : 'border-border-light bg-surface-secondary text-text-secondary hover:border-border-medium hover:text-text-primary',
-        )}
-      >
-        {localize('com_ui_session_private')}
       </button>
     </div>
   );

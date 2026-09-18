@@ -107,7 +107,7 @@ test.describe('MCP OAuth readiness', () => {
 
     await page.goto('/c/new', { timeout: 10000 });
     await openSessionMcpMenu(page);
-    const serverItem = page.getByRole('menuitemcheckbox', { name: new RegExp(SERVER_TITLE) });
+    const serverItem = page.getByRole('checkbox', { name: new RegExp(SERVER_TITLE) });
     await expect(serverItem).toHaveAttribute('aria-checked', 'false');
     await serverItem.getByRole('button', { name: `Connect ${SERVER_NAME}` }).click();
 
@@ -186,7 +186,7 @@ test.describe('MCP OAuth readiness', () => {
 
     await page.goto('/c/new', { timeout: 10000 });
     await openSessionMcpMenu(page);
-    const serverItem = page.getByRole('menuitemcheckbox', { name: new RegExp(SERVER_TITLE) });
+    const serverItem = page.getByRole('checkbox', { name: new RegExp(SERVER_TITLE) });
     await serverItem.getByRole('button', { name: `Connect ${SERVER_NAME}` }).click();
     await page.getByRole('button', { name: 'Authenticate', exact: true }).click();
 
@@ -261,7 +261,7 @@ test.describe('MCP OAuth readiness', () => {
 
     await page.goto('/c/new', { timeout: 10000 });
     await openSessionMcpMenu(page);
-    const serverItem = page.getByRole('menuitemcheckbox', { name: new RegExp(SERVER_TITLE) });
+    const serverItem = page.getByRole('checkbox', { name: new RegExp(SERVER_TITLE) });
     await serverItem.getByRole('button', { name: `Connect ${SERVER_NAME}` }).click();
     await page.getByRole('button', { name: 'Authenticate', exact: true }).click();
 
@@ -270,7 +270,7 @@ test.describe('MCP OAuth readiness', () => {
     ).toBeVisible({ timeout: 15000 });
     await expect(page.getByText(`OAuth login timed out for ${SERVER_NAME}`)).toHaveCount(0);
     await expect(
-      page.getByRole('menuitemcheckbox', {
+      page.getByRole('checkbox', {
         name: new RegExp(SERVER_TITLE),
         includeHidden: true,
       }),
@@ -328,7 +328,7 @@ test.describe('MCP OAuth readiness', () => {
 
     await page.goto('/c/new', { timeout: 10000 });
     await openSessionMcpMenu(page);
-    const serverItem = page.getByRole('menuitemcheckbox', { name: new RegExp(SERVER_TITLE) });
+    const serverItem = page.getByRole('checkbox', { name: new RegExp(SERVER_TITLE) });
     await serverItem.getByRole('button', { name: `Connect ${SERVER_NAME}` }).click();
     await page.getByRole('button', { name: 'Authenticate', exact: true }).click();
 
@@ -399,7 +399,7 @@ test.describe('MCP OAuth readiness', () => {
 
     await page.goto('/c/new', { timeout: 10000 });
     await openSessionMcpMenu(page);
-    const serverItem = page.getByRole('menuitemcheckbox', { name: new RegExp(SERVER_TITLE) });
+    const serverItem = page.getByRole('checkbox', { name: new RegExp(SERVER_TITLE) });
     await serverItem.getByRole('button', { name: `Connect ${SERVER_NAME}` }).click();
     await page.getByRole('button', { name: 'Authenticate', exact: true }).click();
 

@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { TConversation } from 'librechat-data-provider';
 import type { NativeModelControls } from '~/hooks/Input/useNativeModelControls';
-import { isNativeKnobChipActive } from '~/utils/nativeKnobs';
+import { isNativeKnobChipActive, withoutEffortKnobGroups } from '~/utils/nativeKnobs';
 import { useLocalize } from '~/hooks';
 import { cn } from '~/utils';
 
@@ -16,14 +16,14 @@ export default function SessionNativeKnobsSection({
   className,
 }: SessionNativeKnobsSectionProps) {
   const localize = useLocalize();
-  if (controls == null || controls.family == null) {
+  const family = useMemo(
+    () => withoutEffortKnobGroups(controls?.family ?? null),
+    [controls?.family],
+  );
+  if (controls == null || family == null) {
     return null;
   }
   const resolved = controls;
-  const family = resolved.family;
-  if (family == null) {
-    return null;
-  }
 
   return (
     <div className={cn('w-full px-0.5', className)} data-testid="session-native-knobs">

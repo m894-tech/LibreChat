@@ -8,6 +8,24 @@ function getInitialActivePanel(): string {
   return saved ? saved : DEFAULT_PANEL;
 }
 
+/**
+ * Route-owned sidebar panels. When the main pane is Skills / Prompts / Insights
+ * management chrome, the left list must match — otherwise `/skills` shows
+ * "Select a skill" while Projects+Chats stay in the rail (Manage from Session).
+ */
+export function getRouteActivePanel(pathname: string): string | undefined {
+  if (pathname.startsWith('/insights')) {
+    return 'insights';
+  }
+  if (pathname.startsWith('/skills')) {
+    return 'skills';
+  }
+  if (pathname === '/prompts' || pathname.startsWith('/prompts/')) {
+    return 'prompts';
+  }
+  return undefined;
+}
+
 interface ActivePanelContextType {
   active: string;
   setActive: (id: string) => void;
@@ -42,4 +60,17 @@ export function resolveActivePanel(active: string, links: { id: string }[]): str
     return active;
   }
   return links[0]?.id ?? active;
+}
+
+/** Prefer a route-owned panel when that link exists in the rail. */
+export function resolveEffectivePanel(
+  pathname: string,
+  active: string,
+  links: { id: string }[],
+): string {
+  const routePanel = getRouteActivePanel(pathname);
+  if (routePanel != null && links.some((link) => link.id === routePanel)) {
+    return routePanel;
+  }
+  return resolveActivePanel(active, links);
 }

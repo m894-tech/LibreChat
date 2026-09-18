@@ -56,8 +56,8 @@ export default function SessionSheet({
     title = localize('com_ui_skills');
   } else if (view === 'automations') {
     title = localize('com_ui_session_automations');
-  } else if (view === 'context') {
-    title = localize('com_ui_context_sources');
+  } else if (view === 'project') {
+    title = localize('com_ui_session_select_project');
   }
 
   return (

@@ -23,6 +23,7 @@ jest.mock('@librechat/client', () => ({
   DropdownPopup: ({ trigger }: { trigger: React.ReactNode }) => trigger,
   TooltipAnchor: ({ render }: { render: React.ReactNode }) => render,
   useMediaQuery: () => false,
+  composerControlClasses: () => 'composer-control',
 }));
 
 jest.mock('~/hooks', () => ({

@@ -10,6 +10,7 @@ export * from './svg';
 export * from './email';
 export * from './share';
 export * from './files';
+export * from './folderUpload';
 export * from './media';
 export * from './greeting';
 export * from './latex';

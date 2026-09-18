@@ -25,7 +25,7 @@ const uniqueText = (prefix: string) => `${prefix} ${Date.now()}-${Math.floor(Mat
 /** Dense v5: MCP lives under Session → Tools → MCP Servers (no composer badge row). */
 async function expectMcpSelected(page: Page) {
   await openSessionMcpMenu(page);
-  const serverItem = page.getByRole('menuitemcheckbox', { name: new RegExp(MCP_SERVER_TITLE) });
+  const serverItem = page.getByRole('checkbox', { name: new RegExp(MCP_SERVER_TITLE) });
   await expect(serverItem).toHaveAttribute('aria-checked', 'true');
   await page.keyboard.press('Escape');
   await closeSessionSheet(page);

@@ -39,8 +39,9 @@ function normalizeEffort(value: unknown): SessionEffortLevel {
 }
 
 /**
- * Dense v5.1: EFFORT Low/Mid/High lives only in sheet «Сейчас» —
- * not as a full-width composer segment. Placement of existing conversation.effort.
+ * Dense v5.1: EFFORT Low/Mid/High lives only in sheet «Сейчас» under the model
+ * chip — not as a full-width composer segment, and not via native-knobs effort
+ * groups. Single SoT: conversation.effort.
  */
 export default function SessionEffortSection({
   conversation,

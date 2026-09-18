@@ -13,6 +13,7 @@ import {
   filterNativeKnobFamilyForModel,
   matchNativeKnobFamily,
   mergeNativeKnobValues,
+  withoutEffortKnobGroups,
 } from '~/utils/nativeKnobs';
 import { useGetStartupConfig } from '~/data-provider';
 
@@ -83,13 +84,15 @@ export function useNativeModelControls(
   const label = modelSpec?.label ?? conversation?.modelLabel;
   const family = useMemo(
     () =>
-      filterNativeKnobFamilyForModel(
-        matchNativeKnobFamily(manifest.families, {
+      withoutEffortKnobGroups(
+        filterNativeKnobFamilyForModel(
+          matchNativeKnobFamily(manifest.families, {
+            model,
+            spec: conversation?.spec,
+            label,
+          }),
           model,
-          spec: conversation?.spec,
-          label,
-        }),
-        model,
+        ),
       ),
     [conversation?.spec, label, manifest.families, model],
   );

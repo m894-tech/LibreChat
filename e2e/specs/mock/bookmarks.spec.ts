@@ -7,8 +7,6 @@ import {
   NEW_CHAT_PATH,
   sendMessage,
   fetchJson,
-  openSessionSheet,
-  closeSessionSheet,
   sessionBookmarkButton,
 } from './helpers';
 
@@ -19,9 +17,8 @@ const uniqueName = (prefix: string) =>
 
 const firstConversation = (page: Page) => page.getByTestId('convo-item').first();
 
-/** Open Session → More and return the bookmark control (moved out of the header in dense v5). */
-async function openSessionBookmarkMenu(page: Page) {
-  await openSessionSheet(page);
+/** Return the composer bookmark control (dense v5.1 — not under Session → More). */
+async function openComposerBookmarkMenu(page: Page) {
   const bookmark = sessionBookmarkButton(page);
   await expect(bookmark).toBeVisible({ timeout: 15000 });
   await bookmark.click();
@@ -34,14 +31,12 @@ async function startBookmarkableChat(page: Page): Promise<void> {
   const response = await sendMessage(page, 'hello bookmarks');
   expect(response.ok()).toBeTruthy();
   await expect(page).toHaveURL(/\/c\/(?!new)/, { timeout: 15000 });
-  await openSessionSheet(page);
   await expect(sessionBookmarkButton(page)).toBeVisible({ timeout: 15000 });
-  await closeSessionSheet(page);
 }
 
 /** Create a brand-new bookmark and attach it to the active conversation (count -> 1). */
 async function createBookmarkForActiveChat(page: Page, tag: string): Promise<void> {
-  await openSessionBookmarkMenu(page);
+  await openComposerBookmarkMenu(page);
   await page.getByRole('menuitem', { name: 'New Bookmark' }).click();
 
   const dialog = page.getByRole('dialog', { name: 'New Bookmark' });
@@ -56,12 +51,11 @@ async function createBookmarkForActiveChat(page: Page, tag: string): Promise<voi
   expect(response.ok()).toBeTruthy();
   await expect(dialog).toBeHidden();
   await page.keyboard.press('Escape');
-  await closeSessionSheet(page);
 }
 
 /** Attach an already-existing bookmark to the active conversation (count += 1). */
 async function addExistingBookmarkToActiveChat(page: Page, tag: string): Promise<void> {
-  await openSessionBookmarkMenu(page);
+  await openComposerBookmarkMenu(page);
   // Existing-tag rows render as `menuitemcheckbox` (they carry aria-checked).
   const tagItem = page.getByRole('menuitemcheckbox', { name: tag, exact: true });
   await expect(tagItem).toBeVisible({ timeout: 10000 });
@@ -75,7 +69,6 @@ async function addExistingBookmarkToActiveChat(page: Page, tag: string): Promise
   ]);
   expect(response.ok()).toBeTruthy();
   await page.keyboard.press('Escape');
-  await closeSessionSheet(page);
 }
 
 /** Read the persisted bookmark count from the server (0 when the tag is absent). */

@@ -17,6 +17,10 @@ jest.mock('~/hooks', () => ({
 
 jest.mock('~/data-provider', () => ({
   useGetStartupConfig: () => ({ data: mockStartupConfig }),
+  useProjectQuery: (projectId?: string | null) =>
+    projectId
+      ? { data: { _id: projectId, name: 'Bound Project' } }
+      : { data: undefined },
 }));
 
 jest.mock('~/components/Chat/Menus/Endpoints/ModelSelector', () => ({
@@ -94,10 +98,39 @@ describe('SessionSummaryPill', () => {
     expect(pill).toHaveTextContent('com_ui_response_format_detailed');
     expect(pill).toHaveAttribute('aria-haspopup', 'dialog');
     expect(pill).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.getByTestId('session-private-chip')).toBeVisible();
+    expect(screen.queryByTestId('session-private-chip')).not.toBeInTheDocument();
 
     await user.click(pill);
     expect(mockSetSheetOpen).toHaveBeenCalledWith(true);
+  });
+
+  it('shows the bound project name on the pill when chatProjectId is set', () => {
+    render(
+      <SessionSummaryPill
+        conversation={
+          {
+            conversationId: 'c1',
+            model: 'gemini-3.8',
+            modelLabel: 'Gemini 3.8',
+            chatProjectId: 'proj-1',
+          } as never
+        }
+        index={0}
+      />,
+    );
+
+    expect(screen.getByTestId('session-summary-project')).toHaveTextContent('Bound Project');
+  });
+
+  it('hides project meta when the conversation is unbound', () => {
+    render(
+      <SessionSummaryPill
+        conversation={{ conversationId: 'c1', model: 'gemini-3.8', chatProjectId: null } as never}
+        index={0}
+      />,
+    );
+
+    expect(screen.queryByTestId('session-summary-project')).not.toBeInTheDocument();
   });
 
   it('keeps the model chip but hides sheet triggers when sessionMenu is false', () => {

@@ -19,9 +19,10 @@ const themedControls = [
   ['MCPSelect.tsx', ['composerControlClasses()', 'min-w-theme-control', 'md:px-theme-normal']],
   ['CodeApprovalMenu.tsx', ['composerControlClasses()', 'md:px-theme-normal']],
   ['TokenUsage/index.tsx', ['size-theme-control', 'rounded-theme-control-round']],
-  ['Files/AttachFile.tsx', ['size-theme-control', 'rounded-theme-control-round']],
-  ['Files/AttachFileMenu.tsx', ['size-theme-control', 'rounded-theme-control-round']],
-  ['ToolsDropdown.tsx', ['size-theme-control', 'rounded-theme-control-round']],
+  /** Attach restores pre-meili custom chrome (size-9 rounded-full + AttachmentIcon). */
+  ['Files/AttachFile.tsx', ['size-9', 'rounded-full', 'AttachmentIcon']],
+  ['Files/AttachFileMenu.tsx', ['size-9', 'rounded-full', 'AttachmentIcon']],
+  ['ToolsDropdown.tsx', ['size-theme-control', 'rounded-[9px]']],
   /** Floats over the thread rather than sitting in the composer, but stacks
    *  over Send on the same rail, so it takes the row's geometry from the shared
    *  `Button` recipe; the tokens behind those variants are asserted in `Button.spec`. */

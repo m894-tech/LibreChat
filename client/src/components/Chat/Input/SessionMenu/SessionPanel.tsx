@@ -1,32 +1,28 @@
 import React, { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 import { ChevronRight } from 'lucide-react';
-import { getConfigDefaults, PermissionTypes, Permissions } from 'librechat-data-provider';
+import { getConfigDefaults } from 'librechat-data-provider';
 import type { TConversation } from 'librechat-data-provider';
 import type { NativeModelControls } from '~/hooks/Input/useNativeModelControls';
 import ModelSelector from '~/components/Chat/Menus/Endpoints/ModelSelector';
 import { TraceButton, useTraceControl } from '~/components/Chat/Trace';
-import ExportAndShareMenu from '~/components/Chat/ExportAndShareMenu';
+import { useGetStartupConfig, useProjectQuery } from '~/data-provider';
 import { SessionAutomationsSection } from '~/components/Automations';
 import SessionNativeKnobsSection from './SessionNativeKnobsSection';
-import BookmarkMenu from '~/components/Chat/Menus/BookmarkMenu';
 import ResponseFormatSection from './ResponseFormatSection';
-import ContextSourcesSection from './ContextSourcesSection';
 import SessionProfileSection from './SessionProfileSection';
-import AddMultiConvo from '~/components/Chat/AddMultiConvo';
+import SessionProjectSection from './SessionProjectSection';
 import SessionEffortSection from './SessionEffortSection';
 import SessionSkillsSection from './SessionSkillsSection';
-import { useGetStartupConfig } from '~/data-provider';
 import SessionOrchSection from './SessionOrchSection';
 import { PresetsMenu } from '~/components/Chat/Menus';
-import { useLocalize, useHasAccess } from '~/hooks';
 import AgentPickerButton from './AgentPickerButton';
 import SessionMCPSection from './SessionMCPSection';
-import PrivateToggle from './PrivateToggle';
+import { useLocalize } from '~/hooks';
 import ToolGrid from './ToolGrid';
 import store from '~/store';
 
-export type SessionPanelView = 'main' | 'mcp' | 'skills' | 'automations' | 'context';
+export type SessionPanelView = 'main' | 'mcp' | 'skills' | 'automations' | 'project';
 
 type SessionPanelProps = {
   conversation?: TConversation | null;
@@ -45,7 +41,15 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function NavRow({ label, onClick }: { label: string; onClick: () => void }) {
+function NavRow({
+  label,
+  meta,
+  onClick,
+}: {
+  label: string;
+  meta?: string | null;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"
@@ -53,6 +57,9 @@ function NavRow({ label, onClick }: { label: string; onClick: () => void }) {
       className="flex w-full items-center gap-2 border-b border-border-light px-2.5 py-2 text-left text-[12.5px] last:border-b-0 hover:bg-surface-hover"
     >
       <span className="min-w-0 flex-1 truncate">{label}</span>
+      {meta ? (
+        <span className="max-w-[40%] shrink-0 truncate text-[11px] text-text-secondary">{meta}</span>
+      ) : null}
       <ChevronRight className="size-3.5 shrink-0 text-text-secondary" aria-hidden="true" />
     </button>
   );
@@ -79,14 +86,9 @@ export default function SessionPanel({
     traceViewer: interfaceConfig.traceViewer,
     isSubmitting,
   });
-  const hasAccessToBookmarks = useHasAccess({
-    permissionType: PermissionTypes.BOOKMARKS,
-    permission: Permissions.USE,
-  });
-  const hasAccessToMultiConvo = useHasAccess({
-    permissionType: PermissionTypes.MULTI_CONVO,
-    permission: Permissions.USE,
-  });
+  const showMoreChrome =
+    trace.show || (interfaceConfig.presets === true && interfaceConfig.modelSelect);
+  const { data: boundProject } = useProjectQuery(conversation?.chatProjectId);
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto px-2.5 py-2" data-testid="session-panel">
@@ -101,10 +103,10 @@ export default function SessionPanel({
               >
                 <ModelSelector startupConfig={startupConfig} />
               </div>
+              <SessionEffortSection conversation={conversation} index={index} />
               <SessionProfileSection conversationId={conversation?.conversationId} compact />
               <SessionOrchSection conversation={conversation} compact />
               <ResponseFormatSection conversation={conversation} index={index} compact />
-              <SessionEffortSection conversation={conversation} index={index} />
               {modelControls ? (
                 <SessionNativeKnobsSection conversation={conversation} controls={modelControls} />
               ) : null}
@@ -115,13 +117,12 @@ export default function SessionPanel({
           </section>
 
           <section>
-            <SectionLabel>{localize('com_ui_session_privacy')}</SectionLabel>
-            <PrivateToggle index={index} />
-          </section>
-
-          <section>
             <SectionLabel>{localize('com_ui_tools')}</SectionLabel>
-            <ToolGrid onOpenMcp={() => onViewChange('mcp')} />
+            <ToolGrid
+              onOpenMcp={() => {
+                onViewChange('mcp');
+              }}
+            />
           </section>
 
           <section>
@@ -142,34 +143,34 @@ export default function SessionPanel({
                 onClick={() => onViewChange('automations')}
               />
               <NavRow
-                label={localize('com_ui_context_sources')}
-                onClick={() => onViewChange('context')}
+                label={localize('com_ui_session_select_project')}
+                meta={boundProject?.name}
+                onClick={() => onViewChange('project')}
               />
-              <div
-                className="flex flex-wrap items-center gap-1 border-t border-border-light px-2 py-1.5"
-                data-testid="session-more-chrome"
-              >
-                {trace.show ? <TraceButton onClick={trace.open} /> : null}
-                <ExportAndShareMenu
-                  isSharedButtonEnabled={startupConfig?.sharedLinksEnabled ?? false}
-                />
-                {interfaceConfig.presets === true && interfaceConfig.modelSelect ? (
-                  <PresetsMenu />
-                ) : null}
-                {hasAccessToBookmarks ? <BookmarkMenu /> : null}
-                {hasAccessToMultiConvo ? <AddMultiConvo /> : null}
-              </div>
+              {showMoreChrome ? (
+                <div
+                  className="flex flex-wrap items-center gap-1 border-t border-border-light px-2 py-1.5"
+                  data-testid="session-more-chrome"
+                >
+                  {trace.show ? <TraceButton onClick={trace.open} /> : null}
+                  {interfaceConfig.presets === true && interfaceConfig.modelSelect ? (
+                    <PresetsMenu />
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           </section>
         </div>
       ) : null}
 
-      {view === 'mcp' ? <SessionMCPSection /> : null}
-      {view === 'skills' ? <SessionSkillsSection agentId={conversation?.agent_id} drill /> : null}
+      {view === 'mcp' ? <SessionMCPSection drill /> : null}
+      {view === 'skills' ? (
+        <SessionSkillsSection agentId={conversation?.agent_id} drill index={index} />
+      ) : null}
       {view === 'automations' ? (
         <SessionAutomationsSection conversationId={conversation?.conversationId} />
       ) : null}
-      {view === 'context' ? <ContextSourcesSection conversation={conversation} /> : null}
+      {view === 'project' ? <SessionProjectSection conversation={conversation} /> : null}
     </div>
   );
 }

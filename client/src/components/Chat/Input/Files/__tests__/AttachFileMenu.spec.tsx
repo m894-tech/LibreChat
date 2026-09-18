@@ -27,6 +27,10 @@ jest.mock('~/components/SharePoint', () => ({
   SharePointPickerDialog: () => null,
 }));
 
+jest.mock('../FolderPreviewDialog', () => () => null);
+jest.mock('../GitHubImportDialog', () => () => null);
+jest.mock('../DropboxImportDialog', () => () => null);
+
 jest.mock('@librechat/client', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const R = require('react');
@@ -65,13 +69,31 @@ jest.mock('@librechat/client', () => {
           R.createElement(
             'div',
             { 'data-testid': 'dropdown-menu' },
-            props.items.map((item, idx) =>
-              R.createElement(
-                'button',
-                { key: idx, onClick: item.onClick, 'data-testid': `menu-item-${idx}` },
-                item.label,
-              ),
-            ),
+            props.items.flatMap((item, idx) => {
+              const nodes = [
+                R.createElement(
+                  'button',
+                  { key: idx, onClick: item.onClick, 'data-testid': `menu-item-${idx}` },
+                  item.label,
+                ),
+              ];
+              if (item.subItems?.length) {
+                for (const [subIdx, sub] of item.subItems.entries()) {
+                  nodes.push(
+                    R.createElement(
+                      'button',
+                      {
+                        key: `${idx}-sub-${subIdx}`,
+                        onClick: sub.onClick,
+                        'data-testid': `menu-item-${idx}-sub-${subIdx}`,
+                      },
+                      sub.label,
+                    ),
+                  );
+                }
+              }
+              return nodes;
+            }),
           ),
       ),
     AttachmentIcon: () => R.createElement('span', { 'data-testid': 'attachment-icon' }),
@@ -108,6 +130,11 @@ function setupMocks(overrides: { provider?: string } = {}) {
     com_files_upload_local_machine: 'From Local Computer',
     com_files_upload_sharepoint: 'Upload from SharePoint',
     com_sidepanel_attach_files: 'Attach Files',
+    com_ui_upload_add_file: 'Add file',
+    com_ui_upload_folder: 'Upload folder',
+    com_ui_upload_cloud_disk: 'From cloud disk',
+    com_ui_upload_github: 'From GitHub',
+    com_ui_upload_dropbox: 'From Dropbox',
     com_ui_upload_code_environment: 'Upload to Code Environment',
     com_ui_upload_file_search: 'Upload for File Search',
     com_ui_upload_image_input: 'Upload Image',
@@ -121,7 +148,10 @@ function setupMocks(overrides: { provider?: string } = {}) {
     codeEnabled: false,
   });
   mockUseGetAgentsConfig.mockReturnValue({ agentsConfig: {} });
-  mockUseFileHandlingNoChatContext.mockReturnValue({ handleFileChange: jest.fn() });
+  mockUseFileHandlingNoChatContext.mockReturnValue({
+    handleFileChange: jest.fn(),
+    handleFiles: jest.fn(),
+  });
   const sharePointReturnValue = {
     handleSharePointFiles: jest.fn(),
     isProcessing: false,
@@ -163,29 +193,29 @@ function openMenu() {
 describe('AttachFileMenu', () => {
   beforeEach(jest.clearAllMocks);
 
-  describe('unified mode upload sources', () => {
-    it('uses a single upload button when SharePoint is disabled', () => {
+  describe('M894 custom attach menu (never unified collapse)', () => {
+    it('keeps the popover menu when isUnifiedMode is true', () => {
       setupMocks();
       renderMenu({ isUnifiedMode: true });
 
-      expect(screen.getByRole('button', { name: /attach files/i })).toBeInTheDocument();
-      expect(
-        screen.queryByRole('button', { name: /attach file options/i }),
-      ).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /attach file options/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^attach files$/i })).not.toBeInTheDocument();
     });
 
-    it('offers SharePoint alongside local upload when SharePoint is enabled', () => {
+    it('lists add file, folder, image, and cloud connectors', () => {
       setupMocks();
-      mockUseGetStartupConfig.mockReturnValue({ data: { sharePointFilePickerEnabled: true } });
       renderMenu({ isUnifiedMode: true });
-
       openMenu();
 
-      expect(screen.getByText('From Local Computer')).toBeInTheDocument();
-      expect(screen.getByText('Upload from SharePoint')).toBeInTheDocument();
+      expect(screen.getByText('Add file')).toBeInTheDocument();
+      expect(screen.getByText('Upload folder')).toBeInTheDocument();
+      expect(screen.getByText('Upload Image')).toBeInTheDocument();
+      expect(screen.getByText('From cloud disk')).toBeInTheDocument();
+      expect(screen.getByText('From GitHub')).toBeInTheDocument();
+      expect(screen.getByText('From Dropbox')).toBeInTheDocument();
     });
 
-    it('does not offer a destination choice on either source', () => {
+    it('still offers destination choices alongside M894 sources', () => {
       setupMocks();
       mockUseAgentCapabilities.mockReturnValue({
         contextEnabled: true,
@@ -198,13 +228,14 @@ describe('AttachFileMenu', () => {
         provider: undefined,
       });
       mockUseGetStartupConfig.mockReturnValue({ data: { sharePointFilePickerEnabled: true } });
-      renderMenu({ isUnifiedMode: true });
+      renderMenu({ isUnifiedMode: true, endpointType: EModelEndpoint.openAI });
 
       openMenu();
 
-      expect(screen.queryByText('Upload to Code Environment')).not.toBeInTheDocument();
-      expect(screen.queryByText('Upload for File Search')).not.toBeInTheDocument();
-      expect(screen.queryByText('Upload as Text')).not.toBeInTheDocument();
+      expect(screen.getByText('Upload to Code Environment')).toBeInTheDocument();
+      expect(screen.getByText('Upload for File Search')).toBeInTheDocument();
+      expect(screen.getByText('Upload as Text')).toBeInTheDocument();
+      expect(screen.getByText('Upload from SharePoint')).toBeInTheDocument();
     });
   });
 
@@ -254,7 +285,7 @@ describe('AttachFileMenu', () => {
       renderMenu({ endpointType: EModelEndpoint.custom });
       openMenu();
       expect(screen.getByText('Upload to Provider')).toBeInTheDocument();
-      expect(screen.queryByText('Upload Image')).not.toBeInTheDocument();
+      expect(screen.getByText('Upload Image')).toBeInTheDocument();
     });
 
     it('shows "Upload to Provider" when endpointType is openAI', () => {
@@ -367,13 +398,10 @@ describe('AttachFileMenu', () => {
       expect(screen.getByTestId('dropdown-popup')).toHaveAttribute('data-portal', 'true');
     });
 
-    it('renders the unified upload button when legacyFileUploadUX is not true', () => {
+    it('keeps the popover menu even when isUnifiedMode is true', () => {
       setupMocks();
       renderMenu({ isUnifiedMode: true });
-      expect(screen.getByRole('button', { name: /attach files/i })).toBeInTheDocument();
-      expect(
-        screen.queryByRole('button', { name: /attach file options/i }),
-      ).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /attach file options/i })).toBeInTheDocument();
     });
   });
 
@@ -459,7 +487,10 @@ describe('AttachFileMenu', () => {
     it('passes File Search resource when the file input changes before React state commits', () => {
       setupMocks();
       const handleFileChange = jest.fn();
-      mockUseFileHandlingNoChatContext.mockReturnValue({ handleFileChange });
+      mockUseFileHandlingNoChatContext.mockReturnValue({
+        handleFileChange,
+        handleFiles: jest.fn(),
+      });
       mockUseAgentCapabilities.mockReturnValue({
         contextEnabled: false,
         fileSearchEnabled: true,
