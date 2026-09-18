@@ -14,9 +14,15 @@ import {
   MOBILE_DRAWER_ID,
   MOBILE_DRAWER_WIDTH,
 } from './constants';
-import { ChatContext, ChatFormProvider, ActivePanelProvider } from '~/Providers';
+import {
+  ChatContext,
+  ChatFormProvider,
+  ActivePanelProvider,
+  getRouteActivePanel,
+} from '~/Providers';
 import { MobileHeader, MobileBottomBar, MobileShortcutTargets } from './mobile';
 import useUnifiedSidebarLinks from '~/hooks/Nav/useUnifiedSidebarLinks';
+import SyncActivePanelToRoute from './SyncActivePanelToRoute';
 import useSidebarToggle from '~/hooks/Nav/useSidebarToggle';
 import useSidebarState from '~/hooks/Nav/useSidebarState';
 import { useChatHelpers, useLocalize } from '~/hooks';
@@ -59,6 +65,7 @@ function UnifiedSidebar() {
 
   const links = useUnifiedSidebarLinks();
   const isInsightsRoute = location.pathname.startsWith('/insights');
+  const routeActiveId = getRouteActivePanel(location.pathname);
   const panelExpanded = expanded && !isInsightsRoute;
 
   /** The aside's max width is a viewport percentage, so the announced range has to track
@@ -206,12 +213,13 @@ function UnifiedSidebar() {
       >
         <SidebarChatProvider>
           <ActivePanelProvider>
+            <SyncActivePanelToRoute />
             <MobileHeader
               links={links}
               expanded={expanded}
               onClose={handleCollapse}
               onLeaveInsights={handleLeaveInsights}
-              routeActiveId={isInsightsRoute ? 'insights' : undefined}
+              routeActiveId={routeActiveId}
             />
             <nav
               id="chat-history-nav"
@@ -222,7 +230,7 @@ function UnifiedSidebar() {
             <MobileShortcutTargets
               links={links}
               onLeaveInsights={handleLeaveInsights}
-              routeActiveId={isInsightsRoute ? 'insights' : undefined}
+              routeActiveId={routeActiveId}
             />
             <MobileBottomBar links={links} onNewChat={handleCollapse} />
           </ActivePanelProvider>
@@ -234,6 +242,7 @@ function UnifiedSidebar() {
   return (
     <SidebarChatProvider>
       <ActivePanelProvider>
+        <SyncActivePanelToRoute />
         <aside
           className="relative flex h-full flex-shrink-0 overflow-hidden"
           style={{

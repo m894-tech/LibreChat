@@ -3,7 +3,9 @@ import { render, fireEvent, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/extend-expect';
 import {
   ActivePanelProvider,
+  getRouteActivePanel,
   resolveActivePanel,
+  resolveEffectivePanel,
   useActivePanel,
 } from '~/Providers/ActivePanelContext';
 
@@ -80,5 +82,25 @@ describe('resolveActivePanel', () => {
 
   it('falls back to the only link when active is stale', () => {
     expect(resolveActivePanel('agents', [{ id: 'conversations' }])).toBe('conversations');
+  });
+});
+
+describe('getRouteActivePanel / resolveEffectivePanel', () => {
+  const links = [{ id: 'conversations' }, { id: 'skills' }, { id: 'prompts' }];
+
+  it('maps /skills management routes to the skills rail panel', () => {
+    expect(getRouteActivePanel('/skills')).toBe('skills');
+    expect(getRouteActivePanel('/skills/abc')).toBe('skills');
+    expect(getRouteActivePanel('/skills/abc/edit')).toBe('skills');
+  });
+
+  it('prefers the skills panel over a stale conversations localStorage active', () => {
+    expect(resolveEffectivePanel('/skills', 'conversations', links)).toBe('skills');
+  });
+
+  it('falls back when the skills link is not in the rail', () => {
+    expect(resolveEffectivePanel('/skills', 'conversations', [{ id: 'conversations' }])).toBe(
+      'conversations',
+    );
   });
 });

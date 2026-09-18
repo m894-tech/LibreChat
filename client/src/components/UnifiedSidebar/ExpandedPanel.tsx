@@ -5,7 +5,7 @@ import { useLocation } from 'react-router-dom';
 import { Skeleton, Sidebar, Button, TooltipAnchor } from '@librechat/client';
 import type { NavLink } from '~/common';
 import { useShortcutAriaKey, useShortcutHint } from '~/hooks/useKeyboardShortcuts';
-import { useActivePanel, resolveActivePanel, DEFAULT_PANEL } from '~/Providers';
+import { useActivePanel, resolveEffectivePanel, DEFAULT_PANEL } from '~/Providers';
 import AgentMarketplaceButton from '~/components/Nav/AgentMarketplaceButton';
 import { CLOSE_SIDEBAR_ID } from '~/components/Chat/Menus/OpenSidebar';
 import useNewChat from '~/hooks/Chat/useNewChat';
@@ -140,8 +140,7 @@ function ExpandedPanel({
   const localize = useLocalize();
   const location = useLocation();
   const { active, setActive } = useActivePanel();
-  const effectiveActive = resolveActivePanel(active, links);
-  const isInsightsRoute = location.pathname.startsWith('/insights');
+  const effectiveActive = resolveEffectivePanel(location.pathname, active, links);
 
   const toggleLabel = expanded ? 'com_nav_close_sidebar' : 'com_nav_open_sidebar';
   const toggleClick = expanded ? onCollapse : onExpand;
@@ -177,17 +176,15 @@ function ExpandedPanel({
           <NavIconButton
             key={link.id}
             link={link}
-            isActive={
-              link.id === 'insights'
-                ? isInsightsRoute
-                : !isInsightsRoute && link.id === effectiveActive
-            }
+            isActive={link.id === effectiveActive}
             expanded={expanded ?? true}
             setActive={setActive}
             onExpand={onExpand}
             onCollapse={onCollapse}
             onNavigate={onNavigate}
-            onLeaveInsights={isInsightsRoute ? onLeaveInsights : undefined}
+            onLeaveInsights={
+              location.pathname.startsWith('/insights') ? onLeaveInsights : undefined
+            }
           />
         ))}
       </div>
