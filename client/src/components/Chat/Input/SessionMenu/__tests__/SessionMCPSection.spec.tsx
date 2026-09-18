@@ -96,6 +96,17 @@ describe('SessionMCPSection', () => {
     expect(screen.queryByRole('button', { name: /MCP Servers/ })).not.toBeInTheDocument();
   });
 
+  it('keeps drill chrome visible when selectableServers is empty', () => {
+    mockMcpServerManager = {
+      ...defaultMcpServerManager,
+      selectableServers: [],
+    };
+    render(<SessionMCPSection drill />);
+    expect(screen.getByTestId('session-menu-mcp')).toBeInTheDocument();
+    expect(screen.getByTestId('session-mcp-empty')).toBeInTheDocument();
+    expect(screen.queryByTestId('session-mcp-server-list')).not.toBeInTheDocument();
+  });
+
   it('toggles a server from the inline list', async () => {
     const user = userEvent.setup();
     render(<SessionMCPSection drill />);

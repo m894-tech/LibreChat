@@ -80,7 +80,11 @@ function ToolCell({
     <div className="flex items-center gap-1 rounded-[10px] border border-border-light bg-surface-secondary px-2 py-1.5 text-xs text-text-primary">
       <button
         type="button"
-        onClick={onNavigate ?? onToggle}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          (onNavigate ?? onToggle)?.();
+        }}
         className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
       >
         <span className="flex size-[22px] shrink-0 items-center justify-center rounded-md bg-surface-tertiary text-text-secondary">
@@ -160,7 +164,8 @@ export default function ToolGrid({ onOpenMcp }: ToolGridProps) {
   const showMemory = canUseMemory && memoryEnabled && user?.personalization?.memories !== false;
 
   const { webSearch, artifacts, fileSearch, codeInterpreter, memory } = context ?? {};
-  const { availableMCPServers } = context?.mcpServerManager ?? {};
+  /** Same filter as SessionMCPSection — only open MCP when the sheet can list servers. */
+  const selectableMCPServers = context?.mcpServerManager?.selectableServers;
 
   const { isPinned: isSearchPinned, setIsPinned: setIsSearchPinned } = webSearch ?? {};
   const { isPinned: isCodePinned, setIsPinned: setIsCodePinned } = codeInterpreter ?? {};
@@ -285,14 +290,16 @@ export default function ToolGrid({ onOpenMcp }: ToolGridProps) {
       />,
     );
   }
-  if (canUseMcp && availableMCPServers && availableMCPServers.length > 0 && onOpenMcp) {
+  if (canUseMcp && selectableMCPServers && selectableMCPServers.length > 0 && onOpenMcp) {
     cells.push(
       <ToolCell
         key="mcp"
         icon={<span className="text-[9px] font-bold">MCP</span>}
         label={localize('com_ui_mcp_servers')}
-        meta={String(availableMCPServers.length)}
-        onNavigate={onOpenMcp}
+        meta={String(selectableMCPServers.length)}
+        onNavigate={() => {
+          onOpenMcp();
+        }}
       />,
     );
   }

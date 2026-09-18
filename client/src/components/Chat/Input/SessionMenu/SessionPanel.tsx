@@ -115,7 +115,11 @@ export default function SessionPanel({
 
           <section>
             <SectionLabel>{localize('com_ui_tools')}</SectionLabel>
-            <ToolGrid onOpenMcp={() => onViewChange('mcp')} />
+            <ToolGrid
+              onOpenMcp={() => {
+                onViewChange('mcp');
+              }}
+            />
           </section>
 
           <section>

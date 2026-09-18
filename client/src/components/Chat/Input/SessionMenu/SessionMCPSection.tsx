@@ -1,5 +1,4 @@
 import React from 'react';
-import * as Ariakit from '@ariakit/react';
 import { PinIcon } from '@librechat/client';
 import { Permissions, PermissionTypes } from 'librechat-data-provider';
 import MCPServerMenuItem from '~/components/MCP/MCPServerMenuItem';
@@ -15,6 +14,10 @@ type SessionMCPSectionProps = {
   drill?: boolean;
 };
 
+/**
+ * Session MCP list. Always a plain DOM list (no Ariakit Menu): nested menus
+ * inside OGDialog can leave the mcp view blank / steal dismiss.
+ */
 export default function SessionMCPSection({ drill = false }: SessionMCPSectionProps) {
   const localize = useLocalize();
   const { data: startupConfig } = useGetStartupConfig();
@@ -26,17 +29,10 @@ export default function SessionMCPSection({ drill = false }: SessionMCPSectionPr
   const { conversationId, storageContextKey, mcpServerManager } = context ?? {};
   const placeholder = startupConfig?.interface?.mcpServers?.placeholder;
 
-  const menuStore = Ariakit.useMenuStore({
-    open: true,
-    setOpen: () => undefined,
-    focusLoop: true,
-  });
-
   const configDialogOpen = mcpServerManager?.getConfigDialogProps()?.isOpen === true;
+  const serverCount = mcpServerManager?.selectableServers.length ?? 0;
   useMCPRefresh({
-    enabled:
-      ((mcpServerManager?.selectableServers.length ?? 0) > 0 || configDialogOpen) &&
-      canUseMcp === true,
+    enabled: canUseMcp === true && (serverCount > 0 || configDialogOpen),
   });
 
   if (!canUseMcp || !mcpServerManager) {
@@ -61,12 +57,9 @@ export default function SessionMCPSection({ drill = false }: SessionMCPSectionPr
     return null;
   }
 
-  if (!selectableServers || selectableServers.length === 0) {
-    return null;
-  }
-
   const configDialogProps = getConfigDialogProps();
   const label = placeholder || placeholderText || localize('com_ui_mcp_servers');
+  const servers = selectableServers ?? [];
 
   return (
     <div className="flex flex-col gap-0.5" data-testid="session-menu-mcp">
@@ -80,6 +73,7 @@ export default function SessionMCPSection({ drill = false }: SessionMCPSectionPr
         <button
           type="button"
           onClick={(e) => {
+            e.preventDefault();
             e.stopPropagation();
             setIsPinned(!isPinned);
           }}
@@ -95,23 +89,21 @@ export default function SessionMCPSection({ drill = false }: SessionMCPSectionPr
           </div>
         </button>
       </div>
-      <Ariakit.MenuProvider store={menuStore}>
-        <Ariakit.Menu
-          portal={false}
-          modal={false}
-          hideOnInteractOutside={false}
-          autoFocusOnShow={false}
+      {servers.length === 0 ? (
+        <p className="px-2 py-2 text-xs text-text-secondary" data-testid="session-mcp-empty">
+          {localize('com_ui_mcp_servers')}
+        </p>
+      ) : (
+        <div
+          role="group"
           aria-label={localize('com_ui_mcp_servers')}
-          className={cn(
-            'relative !inset-auto !transform-none !opacity-100',
-            'flex max-h-[min(320px,50vh)] w-full flex-col gap-1 overflow-y-auto p-0.5',
-            'border-0 bg-transparent shadow-none outline-none',
-          )}
+          className="flex max-h-[min(320px,50vh)] w-full flex-col gap-1 overflow-y-auto p-0.5"
           data-testid="session-mcp-server-list"
         >
-          {selectableServers.map((server) => (
+          {servers.map((server) => (
             <MCPServerMenuItem
               key={server.serverName}
+              inline
               server={server}
               isSelected={mcpValues?.includes(server.serverName) ?? false}
               connectionStatus={connectionStatus}
@@ -120,8 +112,8 @@ export default function SessionMCPSection({ drill = false }: SessionMCPSectionPr
               onToggle={toggleServerSelection}
             />
           ))}
-        </Ariakit.Menu>
-      </Ariakit.MenuProvider>
+        </div>
+      )}
       {configDialogProps ? (
         <MCPConfigDialog
           {...configDialogProps}
