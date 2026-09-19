@@ -44,6 +44,8 @@ import {
   scheduleRetainedFileDeletionRetry,
   retainFileDeletion,
   failedFileIdsFrom,
+  specPresetDisplacesPriorAgent,
+  saveSessionAgentIds,
   logger,
 } from '~/utils';
 import { useDeleteFilesMutation, useGetEndpointsQuery, useGetStartupConfig } from '~/data-provider';
@@ -236,6 +238,43 @@ const useNewConvo = (index = 0) => {
             models,
             defaultParamsEndpoint,
           });
+
+          /**
+           * Soft default yields to a stored agent by returning no preset, so
+           * `buildDefaultConvo` never sees `agent_id`. ModelSelector's
+           * `useSelectorEffects` used to backfill it from `AGENT_ID_PREFIX`, but
+           * sessionMenu keeps that selector off the landing chrome — restore here
+           * so New Chat / cold load still land on the selected agent. Only when
+           * there is no active preset: an explicit clear/select preset must win.
+           */
+          if (
+            !activePreset &&
+            isAgentsEndpoint(conversation.endpoint ?? defaultEndpoint) &&
+            (conversation.agent_id == null || isEphemeralAgentId(conversation.agent_id))
+          ) {
+            const fromSetup =
+              typeof lastConversationSetup?.agent_id === 'string'
+                ? lastConversationSetup.agent_id
+                : null;
+            const fromPrefix = localStorage.getItem(`${LocalStorageKeys.AGENT_ID_PREFIX}${index}`);
+            const restoredAgentId = fromSetup || fromPrefix;
+            if (restoredAgentId && !isEphemeralAgentId(restoredAgentId)) {
+              conversation.agent_id = restoredAgentId;
+              conversation.model = undefined;
+            }
+          } else if (specPresetDisplacesPriorAgent(activePreset)) {
+            /**
+             * URL/spec or soft-default preset wins: do not leave a prior agent in
+             * the draft Session agents roster or AGENT_ID_PREFIX. Soft Default
+             * pill and Session agents UI must agree (agent gone from the list).
+             * Agent-backed specs that name their own agent keep that selection.
+             */
+            if (conversation.agent_id != null && !isEphemeralAgentId(conversation.agent_id)) {
+              conversation.agent_id = undefined;
+            }
+            localStorage.removeItem(`${LocalStorageKeys.AGENT_ID_PREFIX}${index}`);
+            saveSessionAgentIds([], conversation.conversationId, index);
+          }
 
           if (hasExplicitChatProjectId) {
             conversation.chatProjectId = explicitChatProjectId ?? null;

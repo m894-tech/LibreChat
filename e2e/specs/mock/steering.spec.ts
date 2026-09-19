@@ -18,7 +18,7 @@ import {
 /** Non-spec endpoint from e2e/config/librechat.e2e.yaml — the ephemeral MCP
  *  selection rides the no-spec path, mirroring mcp-ephemeral.spec.ts. */
 const PROVIDER_C = { label: 'Mock Provider C', model: 'mock-model-c' };
-const MCP_SERVER_TITLE = 'E2E Memory';
+const MCP_SERVER_NAME = 'e2e-memory';
 /** Last chunk streamed by the fake model's slow replies (160 chunks, 0-indexed). */
 const SLOW_REPLY_LAST_CHUNK = 'chunk-159';
 const SLOW_REPLY_CONTINUATION_TEXT = 'E2E slow reply continued';
@@ -61,7 +61,7 @@ function isSteerRequest(response: Response) {
 
 /** Select the MCP server from Session → Tools → MCP. */
 async function selectEphemeralMCP(page: Page) {
-  await selectSessionMcpServer(page, MCP_SERVER_TITLE);
+  await selectSessionMcpServer(page, MCP_SERVER_NAME);
 }
 
 /** Establish a real conversation with a fast first turn so during-run actions

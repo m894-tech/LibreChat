@@ -6,6 +6,7 @@ import {
   removeAgentFromSession,
   saveSessionAgentIds,
   sessionAgentsStorageKey,
+  specPresetDisplacesPriorAgent,
 } from '../sessionAgents';
 
 describe('sessionAgents', () => {
@@ -71,5 +72,37 @@ describe('sessionAgents', () => {
   it('legacy loadSessionAgentIds(0) still works as draft', () => {
     saveSessionAgentIds(['agent_a'], 'new', 0);
     expect(loadSessionAgentIds(0 as unknown as string)).toEqual(['agent_a']);
+  });
+
+  describe('specPresetDisplacesPriorAgent', () => {
+    it('displaces when a non-agent URL/spec or soft-default preset wins', () => {
+      expect(
+        specPresetDisplacesPriorAgent({
+          spec: 'e2e-soft-default',
+          endpoint: 'Mock Provider A',
+          agent_id: null,
+        }),
+      ).toBe(true);
+    });
+
+    it('keeps an agent-backed spec that names its own agent', () => {
+      expect(
+        specPresetDisplacesPriorAgent({
+          spec: 'soft-agent-spec',
+          endpoint: 'agents',
+          agent_id: 'agent_soft',
+        }),
+      ).toBe(false);
+    });
+
+    it('does not displace without a named spec', () => {
+      expect(
+        specPresetDisplacesPriorAgent({
+          endpoint: 'agents',
+          agent_id: undefined,
+        }),
+      ).toBe(false);
+      expect(specPresetDisplacesPriorAgent(null)).toBe(false);
+    });
   });
 });

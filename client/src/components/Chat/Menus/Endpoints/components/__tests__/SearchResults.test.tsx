@@ -161,4 +161,37 @@ describe('SearchResults', () => {
     expect(screen.queryByRole('menuitem', { name: 'My Agents' })).not.toBeInTheDocument();
     expect(mockHandleSelectEndpoint).not.toHaveBeenCalled();
   });
+
+  it('tags modelSpec rows with model-search-option-${preset.model}', () => {
+    mockSelectedValues = { endpoint: '', model: '', modelSpec: '' };
+    const spec = {
+      name: 'e2e-mock-provider-a',
+      label: 'Mock Provider A',
+      preset: { endpoint: 'Mock Provider A', model: 'mock-model-a' },
+    };
+    render(
+      <SearchResults results={[spec as never]} localize={localize} searchValue="mock-model-a" />,
+    );
+
+    expect(screen.getByTestId('model-search-option-mock-model-a')).toBeInTheDocument();
+    expect(screen.getByTestId('model-search-option-mock-model-a')).toHaveTextContent(
+      'Mock Provider A',
+    );
+  });
+
+  it('tags endpoint model rows with model-search-option-${modelId}', () => {
+    mockSelectedValues = { endpoint: '', model: '', modelSpec: '' };
+    render(
+      <SearchResults results={[anthropicEndpoint]} localize={localize} searchValue="claude" />,
+    );
+
+    expect(screen.getByTestId('model-search-option-claude-opus-4-6')).toBeInTheDocument();
+  });
+
+  it('tags endpoints without models with model-search-option-${value}', () => {
+    mockSelectedValues = { endpoint: '', model: '', modelSpec: '' };
+    render(<SearchResults results={[noModelsEndpoint]} localize={localize} searchValue="custom" />);
+
+    expect(screen.getByTestId('model-search-option-custom')).toBeInTheDocument();
+  });
 });

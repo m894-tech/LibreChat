@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { getPrimaryE2EUser } from '../../setup/users.mock';
-import { NEW_CHAT_PATH, selectModelSpec } from './helpers';
+import { NEW_CHAT_PATH, openModelSelector, selectModelSpec } from './helpers';
 
 /** Spec with `showOnLanding: true` and an HTML `description` in e2e/config/librechat.e2e.yaml. */
 const BRANDED_SPEC = {
@@ -39,9 +39,19 @@ test.describe('model spec branding on landing', () => {
   test('branded spec renders its description in the model selector', async ({ page }) => {
     await page.goto(NEW_CHAT_PATH, { timeout: 10000 });
 
-    await page.getByRole('button', { name: 'Select a model' }).first().click();
+    /** sessionMenu ON: Session pill → sheet → model search (same as openModelSelector). */
+    await openModelSelector(page);
+
+    const search = page.locator('#model-search');
+    await expect(search).toBeVisible({ timeout: 10000 });
+    await search.click({ timeout: 5000 });
+    await search.fill('');
+    await search.pressSequentially(BRANDED_SPEC.label, { delay: 15 });
     const option = page.getByRole('option', { name: new RegExp(BRANDED_SPEC.label) });
-    await expect(option).toContainText(BRANDED_SPEC.descriptionText);
-    await expect(option.locator(`img[src$="${BRANDED_SPEC.descriptionIcon}"]`)).toBeVisible();
+    await expect(option.first()).toBeVisible({ timeout: 15000 });
+    await expect(option.first()).toContainText(BRANDED_SPEC.descriptionText);
+    await expect(
+      option.first().locator(`img[src$="${BRANDED_SPEC.descriptionIcon}"]`),
+    ).toBeVisible();
   });
 });

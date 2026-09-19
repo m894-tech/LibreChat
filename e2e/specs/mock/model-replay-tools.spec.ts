@@ -45,7 +45,7 @@ const RECORD_ENDPOINT = {
   model: process.env.E2E_RECORD_PROVIDER_MODEL || 'deepseek-chat',
 };
 
-const MCP_SERVER_TITLE = 'E2E Memory';
+const MCP_SERVER_NAME = 'e2e-memory';
 const TOOL_NAME = 'remember_fact';
 /** MCP tools reach the model under a server-qualified name
  *  (`remember_fact_mcp_e2e-memory`), and that qualification has changed before,
@@ -59,7 +59,7 @@ const TOOL_PROMPT =
 
 /** Enable the ephemeral MCP server whose tools this turn calls. */
 async function selectEphemeralMCP(page: Page) {
-  await selectSessionMcpServer(page, MCP_SERVER_TITLE);
+  await selectSessionMcpServer(page, MCP_SERVER_NAME);
 }
 
 test.describe('recorded tool-call fixture replay', () => {

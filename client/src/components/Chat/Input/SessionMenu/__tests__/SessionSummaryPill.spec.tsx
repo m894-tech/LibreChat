@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { render, screen } from '@testing-library/react';
 
 const mockSetSheetOpen = jest.fn();
+let mockAgentsMap: Record<string, { id: string; name: string }> | undefined;
 let mockStartupConfig: {
   interface?: { sessionMenu?: boolean };
   modelSpecs?: { list?: Array<{ name: string; label: string }> };
@@ -18,9 +19,11 @@ jest.mock('~/hooks', () => ({
 jest.mock('~/data-provider', () => ({
   useGetStartupConfig: () => ({ data: mockStartupConfig }),
   useProjectQuery: (projectId?: string | null) =>
-    projectId
-      ? { data: { _id: projectId, name: 'Bound Project' } }
-      : { data: undefined },
+    projectId ? { data: { _id: projectId, name: 'Bound Project' } } : { data: undefined },
+}));
+
+jest.mock('~/Providers', () => ({
+  useAgentsMapContext: () => mockAgentsMap,
 }));
 
 jest.mock('~/components/Chat/Menus/Endpoints/ModelSelector', () => ({
@@ -66,6 +69,7 @@ import SessionSummaryPill from '../SessionSummaryPill';
 describe('SessionSummaryPill', () => {
   beforeEach(() => {
     mockSetSheetOpen.mockClear();
+    mockAgentsMap = undefined;
     mockStartupConfig = {
       interface: { sessionMenu: true },
       modelSpecs: { list: [{ name: 'gemini-3.8', label: 'Gemini 3.8' }] },
@@ -145,5 +149,47 @@ describe('SessionSummaryPill', () => {
     expect(screen.getByRole('button', { name: 'Select a model' })).toBeVisible();
     expect(screen.queryByTestId('session-summary-pill')).not.toBeInTheDocument();
     expect(screen.queryByTestId('session-private-chip')).not.toBeInTheDocument();
+  });
+
+  it('shows the agent name when a persisted agent is selected without model/modelLabel', () => {
+    mockAgentsMap = { agent_abc: { id: 'agent_abc', name: 'E2E Soft Agent' } };
+    render(
+      <SessionSummaryPill
+        conversation={
+          {
+            conversationId: 'c1',
+            endpoint: 'agents',
+            agent_id: 'agent_abc',
+            model: undefined,
+            modelLabel: null,
+            spec: null,
+          } as never
+        }
+        index={0}
+      />,
+    );
+
+    expect(screen.getByTestId('session-summary-model')).toHaveTextContent('E2E Soft Agent');
+  });
+
+  it('prefers a named spec over a stored agent_id (URL-spec chimera)', () => {
+    mockAgentsMap = { agent_abc: { id: 'agent_abc', name: 'E2E Soft Agent' } };
+    render(
+      <SessionSummaryPill
+        conversation={
+          {
+            conversationId: 'c1',
+            endpoint: 'agents',
+            agent_id: 'agent_abc',
+            spec: 'gemini-3.8',
+            model: undefined,
+            modelLabel: null,
+          } as never
+        }
+        index={0}
+      />,
+    );
+
+    expect(screen.getByTestId('session-summary-model')).toHaveTextContent('Gemini 3.8');
   });
 });

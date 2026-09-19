@@ -8,7 +8,10 @@ import {
   getAccessToken,
   mockReply,
   requestJson,
+  selectChatAgent,
+  selectMockEndpoint,
   selectModelSpec,
+  selectedModelLabel,
   sendMessage,
 } from './helpers';
 
@@ -23,7 +26,7 @@ const EPHEMERAL_ENDPOINT = { label: 'Mock Provider C', model: 'mock-model-c' };
 
 const uniqueName = (prefix: string) => `${prefix} ${Date.now()}-${Math.floor(Math.random() * 1e4)}`;
 
-const modelTrigger = (page: Page) => page.getByRole('button', { name: 'Select a model' }).first();
+const modelLabel = (page: Page) => selectedModelLabel(page);
 
 /** Reset selection state so the test starts as a fresh instance (auth stays in cookies). */
 async function startFresh(page: Page) {
@@ -54,17 +57,11 @@ async function createAgent(page: Page, name: string, description?: string): Prom
 }
 
 async function selectAgent(page: Page, agentName: string) {
-  await modelTrigger(page).click();
-  await page.getByRole('option', { name: 'My Agents' }).click();
-  await page.getByRole('option', { name: agentName }).click();
-  await expect(modelTrigger(page)).toContainText(agentName);
+  await selectChatAgent(page, agentName);
 }
 
 async function selectEphemeralModel(page: Page) {
-  await modelTrigger(page).click();
-  await page.getByRole('option', { name: EPHEMERAL_ENDPOINT.label }).click();
-  await page.getByRole('option', { name: EPHEMERAL_ENDPOINT.model, exact: true }).click();
-  await expect(modelTrigger(page)).toContainText(EPHEMERAL_ENDPOINT.model);
+  await selectMockEndpoint(page, EPHEMERAL_ENDPOINT);
 }
 
 async function sendAndAwaitReply(page: Page, text: string) {
@@ -85,18 +82,18 @@ test.describe('soft default model spec', () => {
   }) => {
     await startFresh(page);
 
-    await expect(modelTrigger(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
+    await expect(modelLabel(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
 
     // Its own auto-application must not convert it into a sticky "last" selection
     // that would behave differently on the next load.
     await page.reload({ timeout: 10000 });
-    await expect(modelTrigger(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
+    await expect(modelLabel(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
   });
 
   test('a previously selected agent outranks the soft default', async ({ page }) => {
     test.setTimeout(120000);
     await startFresh(page);
-    await expect(modelTrigger(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
+    await expect(modelLabel(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
 
     const agentName = uniqueName('E2E Soft Agent');
     await createAgent(page, agentName);
@@ -105,11 +102,11 @@ test.describe('soft default model spec', () => {
     await selectAgent(page, agentName);
 
     await page.reload({ timeout: 10000 });
-    await expect(modelTrigger(page)).toContainText(agentName, { timeout: 15000 });
+    await expect(modelLabel(page)).toContainText(agentName, { timeout: 15000 });
 
     await page.getByTestId('new-chat-button').click();
     await expect(page).toHaveURL(/\/c\/new/, { timeout: 15000 });
-    await expect(modelTrigger(page)).toContainText(agentName, { timeout: 15000 });
+    await expect(modelLabel(page)).toContainText(agentName, { timeout: 15000 });
   });
 
   test('a previous ephemeral endpoint and model selection outranks the soft default', async ({
@@ -117,34 +114,34 @@ test.describe('soft default model spec', () => {
   }) => {
     test.setTimeout(120000);
     await startFresh(page);
-    await expect(modelTrigger(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
+    await expect(modelLabel(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
 
     await selectEphemeralModel(page);
 
     await page.reload({ timeout: 10000 });
-    await expect(modelTrigger(page)).toContainText(EPHEMERAL_ENDPOINT.model, { timeout: 15000 });
-    await expect(modelTrigger(page)).not.toContainText(SOFT_DEFAULT_LABEL);
+    await expect(modelLabel(page)).toContainText(EPHEMERAL_ENDPOINT.model, { timeout: 15000 });
+    await expect(modelLabel(page)).not.toContainText(SOFT_DEFAULT_LABEL);
 
     await page.getByTestId('new-chat-button').click();
     await expect(page).toHaveURL(/\/c\/new/, { timeout: 15000 });
-    await expect(modelTrigger(page)).toContainText(EPHEMERAL_ENDPOINT.model, { timeout: 15000 });
+    await expect(modelLabel(page)).toContainText(EPHEMERAL_ENDPOINT.model, { timeout: 15000 });
   });
 
   test('stays soft on New Chat after the first conversation is sent', async ({ page }) => {
     test.setTimeout(120000);
     await startFresh(page);
-    await expect(modelTrigger(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
+    await expect(modelLabel(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
 
     await sendAndAwaitReply(page, 'first soft conversation');
 
     await newChat(page);
-    await expect(modelTrigger(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
+    await expect(modelLabel(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
   });
 
   test('viewing the soft conversation re-arms it on the next New Chat', async ({ page }) => {
     test.setTimeout(120000);
     await startFresh(page);
-    await expect(modelTrigger(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
+    await expect(modelLabel(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
 
     await sendAndAwaitReply(page, 'soft history conversation');
     const softConvoUrl = page.url();
@@ -153,13 +150,13 @@ test.describe('soft default model spec', () => {
     await selectEphemeralModel(page);
 
     await page.goto(softConvoUrl, { timeout: 10000 });
-    await expect(modelTrigger(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
+    await expect(modelLabel(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
 
     // Fresh load (not the in-memory SPA transition, which masks the regression): the
     // cold ChatRoute path resolves the New Chat purely from getDefaultModelSpec.
     await page.goto(NEW_CHAT_PATH, { timeout: 10000 });
-    await expect(modelTrigger(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
-    await expect(modelTrigger(page)).not.toHaveText('Select a model');
+    await expect(modelLabel(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
+    await expect(modelLabel(page)).not.toHaveText('Select a model');
   });
 
   // Regression: agents-only deployment (`addedEndpoints: [agents]`) — the selector
@@ -181,7 +178,7 @@ test.describe('soft default model spec', () => {
     });
 
     await startFresh(page);
-    await expect(modelTrigger(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
+    await expect(modelLabel(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
 
     const agentName = uniqueName('E2E Agents Only');
     await createAgent(page, agentName);
@@ -191,16 +188,16 @@ test.describe('soft default model spec', () => {
     await sendAndAwaitReply(page, 'agents-only agent conversation');
 
     await newChat(page);
-    await expect(modelTrigger(page)).toContainText(agentName, { timeout: 15000 });
+    await expect(modelLabel(page)).toContainText(agentName, { timeout: 15000 });
 
     // Cold load (not the SPA transition): ChatRoute resolves purely from getDefaultModelSpec.
     await page.goto(NEW_CHAT_PATH, { timeout: 10000 });
-    await expect(modelTrigger(page)).toContainText(agentName, { timeout: 15000 });
+    await expect(modelLabel(page)).toContainText(agentName, { timeout: 15000 });
 
     // The soft default still owns the fresh-instance landing under this allow-list.
     await page.evaluate(() => localStorage.clear());
     await page.goto(NEW_CHAT_PATH, { timeout: 10000 });
-    await expect(modelTrigger(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
+    await expect(modelLabel(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
   });
 
   // Regression: softDefault spec on an endpoint kept out of `addedEndpoints` (e.g. a
@@ -215,7 +212,7 @@ test.describe('soft default model spec', () => {
   }) => {
     test.setTimeout(120000);
     await startFresh(page);
-    await expect(modelTrigger(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
+    await expect(modelLabel(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
 
     await selectEphemeralModel(page);
     await sendAndAwaitReply(page, 'history on a different endpoint');
@@ -226,11 +223,11 @@ test.describe('soft default model spec', () => {
     const specConvoUrl = page.url();
 
     await page.goto(specConvoUrl, { timeout: 10000 });
-    await expect(modelTrigger(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
+    await expect(modelLabel(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
 
     await page.goto(NEW_CHAT_PATH, { timeout: 10000 });
-    await expect(modelTrigger(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
-    await expect(modelTrigger(page)).not.toHaveText('Select a model');
+    await expect(modelLabel(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
+    await expect(modelLabel(page)).not.toHaveText('Select a model');
   });
 
   // Regression: two tabs share localStorage — one on the soft default spec, one on a
@@ -243,7 +240,7 @@ test.describe('soft default model spec', () => {
   }) => {
     test.setTimeout(120000);
     await startFresh(page);
-    await expect(modelTrigger(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
+    await expect(modelLabel(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
 
     const agentName = uniqueName('E2E URL Spec Agent');
     const agentDescription = 'Powered by E2E Mock';
@@ -254,10 +251,10 @@ test.describe('soft default model spec', () => {
     // Mirrors refreshing the agent tab: the restored selection is re-stamped as the
     // last conversation setup.
     await page.reload({ timeout: 10000 });
-    await expect(modelTrigger(page)).toContainText(agentName, { timeout: 15000 });
+    await expect(modelLabel(page)).toContainText(agentName, { timeout: 15000 });
 
     await page.goto(`${NEW_CHAT_PATH}?spec=${SOFT_DEFAULT_NAME}`, { timeout: 10000 });
-    await expect(modelTrigger(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
+    await expect(modelLabel(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
 
     const main = page.getByRole('main');
     const composer = page.getByRole('textbox', { name: 'Message input' });
@@ -274,7 +271,7 @@ test.describe('soft default model spec', () => {
     // The mixed state used to be written back to localStorage; a follow-up cold load
     // of a plain New Chat must stay on the spec, not resurrect the agent.
     await page.goto(NEW_CHAT_PATH, { timeout: 10000 });
-    await expect(modelTrigger(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
+    await expect(modelLabel(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
     await expect(main).not.toContainText(agentName);
   });
 
@@ -289,7 +286,7 @@ test.describe('soft default model spec', () => {
   }) => {
     test.setTimeout(120000);
     await startFresh(page);
-    await expect(modelTrigger(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
+    await expect(modelLabel(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
 
     const agentName = uniqueName('E2E Stale Agent');
     const agent = await createAgent(page, agentName);
@@ -297,13 +294,13 @@ test.describe('soft default model spec', () => {
     await selectAgent(page, agentName);
 
     await page.reload({ timeout: 10000 });
-    await expect(modelTrigger(page)).toContainText(agentName, { timeout: 15000 });
+    await expect(modelLabel(page)).toContainText(agentName, { timeout: 15000 });
 
     await cleanupAgent(page, agent.id);
 
     await page.goto(NEW_CHAT_PATH, { timeout: 10000 });
-    await expect(modelTrigger(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
-    await expect(modelTrigger(page)).not.toHaveText('Select a model');
+    await expect(modelLabel(page)).toContainText(SOFT_DEFAULT_LABEL, { timeout: 15000 });
+    await expect(modelLabel(page)).not.toHaveText('Select a model');
 
     // A live selection must still outrank the soft default after the fix: recreate,
     // select, and confirm the carry-forward behavior is intact on a cold load.
@@ -312,6 +309,6 @@ test.describe('soft default model spec', () => {
     await page.goto(NEW_CHAT_PATH, { timeout: 10000 });
     await selectAgent(page, survivorName);
     await page.goto(NEW_CHAT_PATH, { timeout: 10000 });
-    await expect(modelTrigger(page)).toContainText(survivorName, { timeout: 15000 });
+    await expect(modelLabel(page)).toContainText(survivorName, { timeout: 15000 });
   });
 });

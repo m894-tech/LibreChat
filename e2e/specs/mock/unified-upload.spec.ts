@@ -12,19 +12,19 @@ import {
 } from './helpers';
 
 /**
- * Unified file upload — per-mime-type delivery routing (PR #12626).
+ * File upload delivery routing (PR #12626) against Mock Provider B.
  *
- * Runs against Mock Provider B, configured for unified mode in
- * e2e/config/librechat.e2e.yaml (Mock Provider A stays on the legacy dropdown
- * for chat.spec.ts's upload-to-provider test).
+ * This fork keeps the M894 attach popover (never collapses to a bare picker),
+ * so "unified" here means: Add file with no tool resource, and mime overrides
+ * from fileConfig decide llmDeliveryPath. Mock Provider A stays on the legacy
+ * destination-labelled menu for chat.spec.ts's upload-to-provider test.
  *
  * What this proves end-to-end (real backend + DB), and what it deliberately can't:
- * - The composer renders ONE attach button (unified mode), not the legacy 3-way
- *   dropdown.
+ * - Composer attach opens the popover; "Add file" uploads without a tool resource.
  * - A `none`-routed upload (csv) persists `llmDeliveryPath: 'none'` and is kept
  *   out of LLM delivery — reachable only by tools.
  * - A `provider`-routed upload (markdown) is STILL delivered to the model AND
- *   shown as an attachment chip — unified mode doesn't lose upload-to-provider.
+ *   shown as an attachment chip.
  * - A `text`-routed upload (json) is extracted and persisted as `text`.
  *
  * The "available to the code interpreter / file_search at tool-execute time" half
@@ -35,17 +35,15 @@ import {
  */
 
 test.describe('unified file upload', () => {
-  test('single attach button routes a csv to llmDeliveryPath "none"', async ({ page }) => {
+  test('Add file routes a csv to llmDeliveryPath "none"', async ({ page }) => {
     test.setTimeout(120000);
     await page.goto(NEW_CHAT_PATH, { timeout: 10000 });
 
-    // Default model needs a real key; Mock Provider B is the unified-mode endpoint.
+    // Default model needs a real key; Mock Provider B is the delivery-routing endpoint.
     await selectMockEndpoint(page, MOCK_ENDPOINTS[1]);
 
-    // Unified mode: one attach button, and the legacy multi-option dropdown trigger
-    // is not rendered at all.
-    await expect(page.locator('#attach-file-button')).toBeVisible({ timeout: 15000 });
-    await expect(page.locator('#attach-file-menu-button')).toHaveCount(0);
+    // M894 attach popover (composer-attach-file / menu button), not a bare picker.
+    await expect(page.getByTestId('composer-attach-file')).toBeVisible({ timeout: 15000 });
 
     // Upload-time routing: the configured override (csv -> none) must persist, so
     // the file is kept out of LLM delivery and left for tools (code interpreter).
@@ -69,16 +67,14 @@ test.describe('unified file upload', () => {
     expect(persisted?.llmDeliveryPath).toBe('none');
   });
 
-  test('single attach button still delivers a provider-routed upload and shows it in chat', async ({
+  test('Add file still delivers a provider-routed upload and shows it in chat', async ({
     page,
   }) => {
     test.setTimeout(120000);
     await page.goto(NEW_CHAT_PATH, { timeout: 10000 });
     await selectMockEndpoint(page, MOCK_ENDPOINTS[1]);
 
-    // Same single unified button — no legacy dropdown.
-    await expect(page.locator('#attach-file-button')).toBeVisible({ timeout: 15000 });
-    await expect(page.locator('#attach-file-menu-button')).toHaveCount(0);
+    await expect(page.getByTestId('composer-attach-file')).toBeVisible({ timeout: 15000 });
 
     // markdown is overridden to `provider` for Mock Provider B: it should be
     // delivered to the model (unlike `none`) while still attaching to the chat.
@@ -117,12 +113,12 @@ test.describe('unified file upload', () => {
     ).toBeVisible();
   });
 
-  test('single attach button routes a json upload to llmDeliveryPath "text"', async ({ page }) => {
+  test('Add file routes a json upload to llmDeliveryPath "text"', async ({ page }) => {
     test.setTimeout(120000);
     await page.goto(NEW_CHAT_PATH, { timeout: 10000 });
     await selectMockEndpoint(page, MOCK_ENDPOINTS[1]);
 
-    await expect(page.locator('#attach-file-button')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId('composer-attach-file')).toBeVisible({ timeout: 15000 });
 
     // application/json is neither overridden nor image/pdf, so it falls through to the
     // system fallback ('text'): extracted and delivered as text context, not a provider file.
@@ -141,7 +137,7 @@ test.describe('unified file upload', () => {
     expect(persisted?.llmDeliveryPath).toBe('text');
   });
 
-  test('legacy endpoint renders the 3-way upload dropdown, not the single button', async ({
+  test('legacy endpoint still exposes destination-labelled upload menu items', async ({
     page,
   }) => {
     test.setTimeout(120000);
@@ -149,14 +145,12 @@ test.describe('unified file upload', () => {
     // Mock Provider A opts into legacyFileUploadUX.
     await selectMockEndpoint(page, MOCK_ENDPOINTS[0]);
 
-    // Legacy: the menu-button trigger is present; the unified single button is not.
-    await expect(page.locator('#attach-file-menu-button')).toBeVisible({ timeout: 15000 });
-    await expect(page.locator('#attach-file-button')).toHaveCount(0);
+    await expect(page.getByTestId('composer-attach-file')).toBeVisible({ timeout: 15000 });
 
     // Opening it reveals the classic multi-option menu (its always-present entry is
     // the provider upload; the code/file_search options are gated on those ephemeral
     // capabilities being enabled first).
-    await page.locator('#attach-file-menu-button').click();
+    await page.getByTestId('composer-attach-file').click();
     await expect(page.getByText('Upload to Provider')).toBeVisible();
   });
 });

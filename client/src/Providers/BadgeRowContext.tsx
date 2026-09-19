@@ -6,6 +6,7 @@ import {
   useMCPServerManager,
   useSearchApiKeyForm,
   useGetAgentsConfig,
+  activateCatalog,
   useToolToggle,
 } from '~/hooks';
 import { getTimestampedValue } from '~/utils/timestamps';
@@ -271,6 +272,13 @@ export default function BadgeRowProvider({
     localStorageKey: LocalStorageKeys.LAST_MEMORY_TOGGLE_,
     isAuthenticated: true,
   });
+
+  /** Session MCP lives in the sheet (no composer badge). Release the servers
+   *  catalog as soon as the composer mounts so stdio fixtures like e2e-memory
+   *  are in `availableMCPServers` before Session → MCP opens. */
+  useEffect(() => {
+    activateCatalog('mcpServers');
+  }, []);
 
   const mcpServerManager = useMCPServerManager({
     conversationId,

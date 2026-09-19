@@ -66,6 +66,11 @@ export function SearchResults({ results, localize, searchValue }: SearchResultsP
               key={spec.name}
               onClick={() => handleSelectSpec(spec)}
               aria-selected={selectedSpec === spec.name || undefined}
+              data-testid={
+                typeof spec.preset?.model === 'string' && spec.preset.model
+                  ? `model-search-option-${spec.preset.model}`
+                  : `model-search-option-${spec.name}`
+              }
               className={cn(
                 'flex w-full cursor-pointer justify-between rounded-lg px-2 text-sm',
                 spec.description ? 'items-start' : 'items-center',
@@ -189,6 +194,7 @@ export function SearchResults({ results, localize, searchValue }: SearchResultsP
                       key={`${endpoint.value}-${modelId}-search-${i}`}
                       onClick={() => handleSelectModel(endpoint, modelId)}
                       aria-selected={isModelSelected || undefined}
+                      data-testid={`model-search-option-${modelId}`}
                       className="flex w-full cursor-pointer items-center justify-start rounded-lg px-3 py-2 pl-6 text-sm"
                     >
                       <div className="flex items-center gap-2">
@@ -231,6 +237,7 @@ export function SearchResults({ results, localize, searchValue }: SearchResultsP
                 key={`endpoint-${endpoint.value}-search-item`}
                 onClick={() => handleSelectEndpoint(endpoint)}
                 aria-selected={isEndpointSelected || undefined}
+                data-testid={`model-search-option-${endpoint.value}`}
                 className="flex w-full cursor-pointer items-center justify-between rounded-xl px-3 py-2 text-sm"
               >
                 <div className="flex items-center gap-2">

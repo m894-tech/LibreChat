@@ -82,6 +82,7 @@ function Row({
     onPointerEnter: id != null ? () => onHoverChange?.(id) : undefined,
     onPointerLeave: id != null ? () => onHoverChange?.(null) : undefined,
   };
+  const testId = id != null ? `context-row-${id}` : undefined;
   return onClick != null ? (
     <button
       type="button"
@@ -89,12 +90,13 @@ function Row({
       aria-expanded={expanded}
       aria-controls={controls}
       onClick={onClick}
+      data-testid={testId}
       {...handlers}
     >
       {content}
     </button>
   ) : (
-    <div className={className} {...handlers}>
+    <div className={className} data-testid={testId} {...handlers}>
       {content}
     </div>
   );
@@ -450,8 +452,13 @@ export default function Breakdown({
               {breakdown ? (
                 <>
                   {segments.map(({ id, label, value, ...segment }) => {
+                    /** Tool-calls stays visible at 0 once a split is reported;
+                     * Messages stays too so the peer split never collapses to a
+                     * single Tool-calls row when the remainder is empty. */
                     const shouldRender =
-                      value > 0 || (id === 'tool-calls' && toolCallTokens != null);
+                      value > 0 ||
+                      (id === 'tool-calls' && toolCallTokens != null) ||
+                      (id === 'messages' && toolCallTokens != null);
                     if (!shouldRender) {
                       return null;
                     }

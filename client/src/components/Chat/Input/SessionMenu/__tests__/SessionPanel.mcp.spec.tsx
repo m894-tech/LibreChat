@@ -15,6 +15,7 @@ jest.mock('~/hooks', () => ({
   useLocalize: () => (key: string) => key,
   useHasAccess: () => true,
   useHasMemoryAccess: () => false,
+  activateCatalog: jest.fn(),
   useAgentCapabilities: () => ({
     codeEnabled: false,
     webSearchEnabled: false,
@@ -162,9 +163,7 @@ import SessionPanel from '../SessionPanel';
 
 function Harness() {
   const [view, setView] = useState<SessionPanelView>('main');
-  return (
-    <SessionPanel conversation={null} index={0} view={view} onViewChange={setView} />
-  );
+  return <SessionPanel conversation={null} index={0} view={view} onViewChange={setView} />;
 }
 
 describe('SessionPanel MCP open path', () => {

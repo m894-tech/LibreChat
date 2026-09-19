@@ -130,6 +130,8 @@ export default function MCPServerMenuItem({
     />
   );
 
+  const testId = `session-mcp-server-${server.serverName}`;
+
   if (inline) {
     return (
       <button
@@ -137,6 +139,7 @@ export default function MCPServerMenuItem({
         role="checkbox"
         aria-checked={isSelected}
         aria-label={accessibleLabel}
+        data-testid={testId}
         onClick={() => onToggle(server.serverName)}
         className={rowClassName(isSelected)}
       >
@@ -153,6 +156,7 @@ export default function MCPServerMenuItem({
       checked={isSelected}
       onChange={() => onToggle(server.serverName)}
       aria-label={accessibleLabel}
+      data-testid={testId}
       className={rowClassName(isSelected)}
     >
       {content}

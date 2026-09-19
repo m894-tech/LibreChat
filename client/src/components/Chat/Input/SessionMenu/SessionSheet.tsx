@@ -26,6 +26,13 @@ type SessionSheetProps = {
 /**
  * Dense Session chrome — same panel tree at every breakpoint.
  * Small screens: bottom sheet. Desktop: composer-anchored panel (no separate toolbar IA).
+ *
+ * `modal={false}` plus ModelSelector `portal={false}`: the sheet hosts a searchable
+ * Ariakit menu. A modal dialog aria-hides body-portaled siblings, and even with
+ * `modal={false}` a body-portaled ComboboxList stays outside the sheet DOM so
+ * Playwright getByRole('option') never sees mock-model-* rows. Keep the list in
+ * the sheet (portal=false) and use overflow-visible so the popover is not clipped
+ * — same contract as ControlCombobox inside EditPresetDialog.
  */
 export default function SessionSheet({
   conversation,
@@ -61,11 +68,12 @@ export default function SessionSheet({
   }
 
   return (
-    <OGDialog open={open} onOpenChange={onOpenChange}>
+    <OGDialog open={open} onOpenChange={onOpenChange} modal={false}>
       <OGDialogContent
         showCloseButton={false}
         className={cn(
-          'flex max-h-[58vh] flex-col gap-0 overflow-hidden border border-border-light bg-surface-primary p-0 shadow-lg',
+          /** overflow-visible: ModelSelector portal={false} list must not be clipped */
+          'flex max-h-[58vh] flex-col gap-0 overflow-visible border border-border-light bg-surface-primary p-0 shadow-lg',
           view !== 'main' && 'max-h-[72vh]',
           isMobile
             ? 'fixed inset-x-0 bottom-0 top-auto w-full max-w-full translate-x-0 translate-y-0 rounded-t-2xl'
@@ -95,6 +103,7 @@ export default function SessionSheet({
           </OGDialogTitle>
           <button
             type="button"
+            data-testid="session-sheet-close"
             aria-label={localize('com_ui_close')}
             onClick={() => onOpenChange(false)}
             className="rounded-md p-1 text-text-secondary hover:bg-surface-hover hover:text-text-primary"

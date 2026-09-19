@@ -219,7 +219,9 @@ function restoreDrawerFocus(pane: HTMLElement | null): void {
     return;
   }
 
-  const opener = document.getElementById(OPEN_SIDEBAR_ID);
+  const opener =
+    document.getElementById(OPEN_SIDEBAR_ID) ??
+    document.getElementById('header-open-sidebar-button');
   if (opener != null) {
     opener.focus();
     /** It stays mounted across breakpoints but is hidden on desktop, where the

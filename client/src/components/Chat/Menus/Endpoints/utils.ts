@@ -21,6 +21,8 @@ export function filterItems<
     models?: Array<{ name: string; isGlobal?: boolean }>;
     searchAliases?: string[];
     showMarketplace?: boolean;
+    /** Model specs expose selectable models via preset, not `models`. */
+    preset?: { model?: string | null; endpoint?: string | null };
   },
 >(
   items: T[],
@@ -51,6 +53,18 @@ export function filterItems<
         ));
 
     if (itemMatches) {
+      return true;
+    }
+
+    const presetModel = item.preset?.model;
+    if (typeof presetModel === 'string' && presetModel.toLowerCase().includes(searchTermLower)) {
+      return true;
+    }
+    const presetEndpoint = item.preset?.endpoint;
+    if (
+      typeof presetEndpoint === 'string' &&
+      presetEndpoint.toLowerCase().includes(searchTermLower)
+    ) {
       return true;
     }
 

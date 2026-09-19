@@ -9,6 +9,7 @@ import {
   selectMockEndpoint,
   selectSessionMcpServer,
   sendMessage,
+  sessionMcpServer,
 } from './helpers';
 
 /** Non-spec endpoints from e2e/config/librechat.e2e.yaml — switching between
@@ -18,22 +19,20 @@ const PROVIDER_C = { label: 'Mock Provider C', model: 'mock-model-c' };
 const PROVIDER_D = { label: 'Mock Provider D', model: 'mock-model-d' };
 
 const MCP_SERVER_NAME = 'e2e-memory';
-const MCP_SERVER_TITLE = 'E2E Memory';
 
 const uniqueText = (prefix: string) => `${prefix} ${Date.now()}-${Math.floor(Math.random() * 1e4)}`;
 
 /** Dense v5: MCP lives under Session → Tools → MCP Servers (no composer badge row). */
 async function expectMcpSelected(page: Page) {
   await openSessionMcpMenu(page);
-  const serverItem = page.getByRole('checkbox', { name: new RegExp(MCP_SERVER_TITLE) });
-  await expect(serverItem).toHaveAttribute('aria-checked', 'true');
-  await page.keyboard.press('Escape');
+  await expect(sessionMcpServer(page, MCP_SERVER_NAME)).toHaveAttribute('aria-checked', 'true');
+  /** closeSessionSheet: Escape + session-sheet-close retry (not English Close). */
   await closeSessionSheet(page);
 }
 
 /** Select the MCP server from Session chrome. */
 async function selectEphemeralMCP(page: Page) {
-  await selectSessionMcpServer(page, MCP_SERVER_TITLE);
+  await selectSessionMcpServer(page, MCP_SERVER_NAME);
 }
 
 /** The `ephemeralAgent.mcp` array sent with a chat request. */
