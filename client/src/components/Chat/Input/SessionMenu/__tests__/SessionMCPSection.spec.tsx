@@ -92,6 +92,8 @@ describe('SessionMCPSection', () => {
     render(<SessionMCPSection drill />);
 
     expect(screen.getByTestId('session-mcp-server-list')).toBeInTheDocument();
+    expect(screen.getByTestId('session-mcp-server-server-a')).toBeInTheDocument();
+    expect(screen.getByTestId('session-mcp-server-server-b')).toBeInTheDocument();
     expect(screen.getByLabelText(/Server A/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Server B/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /MCP Servers/ })).not.toBeInTheDocument();

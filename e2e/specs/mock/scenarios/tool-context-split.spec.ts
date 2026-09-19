@@ -10,7 +10,7 @@ import {
   sendMessageAndWaitForCompletion,
 } from '../helpers';
 
-const MCP_SERVER_TITLE = 'E2E Memory';
+const MCP_SERVER_NAME = 'e2e-memory';
 const TOOL_FINAL_TEXT = 'E2E steer tool reply done';
 
 const uniqueLabel = (prefix: string) =>
@@ -27,7 +27,7 @@ async function expectGaugeAboveZero(page: Page) {
 /** Select the ephemeral MCP server whose real remember_fact tool creates the
  * tool boundary and causes the fake model to take its tool-response path. */
 async function selectEphemeralMCP(page: Page) {
-  await selectSessionMcpServer(page, MCP_SERVER_TITLE);
+  await selectSessionMcpServer(page, MCP_SERVER_NAME);
 }
 
 /** The popover opens with only the meter visible; its detail is a remembered

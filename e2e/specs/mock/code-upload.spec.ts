@@ -6,6 +6,7 @@ import {
   getAccessToken,
   messagesView,
   requestJson,
+  selectChatAgent,
   sendMessageAndWaitForCompletion,
 } from './helpers';
 
@@ -39,7 +40,6 @@ const TURN2_LINES_NEEDLE = 'LINES=3';
 const TURN2_MARKER_NEEDLE = 'turn1-proof-42';
 
 const uniqueName = (prefix: string) => `${prefix} ${Date.now()}-${Math.floor(Math.random() * 1e4)}`;
-const modelTrigger = (page: Page) => page.getByRole('button', { name: 'Select a model' }).first();
 
 async function startFresh(page: Page) {
   await page.goto(NEW_CHAT_PATH, { timeout: 10000 });
@@ -68,10 +68,7 @@ async function createCodeAgent(page: Page, name: string): Promise<AgentResponse>
 }
 
 async function selectAgent(page: Page, agentName: string) {
-  await modelTrigger(page).click();
-  await page.getByRole('option', { name: 'My Agents' }).click();
-  await page.getByRole('option', { name: agentName }).click();
-  await expect(modelTrigger(page)).toContainText(agentName);
+  await selectChatAgent(page, agentName);
 }
 
 /** Attaches a CSV through the real attach menu → Code Environment target,

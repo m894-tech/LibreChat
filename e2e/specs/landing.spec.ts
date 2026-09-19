@@ -6,7 +6,12 @@ test.describe('Landing suite', () => {
 
     await expect(page.getByRole('main')).toBeVisible();
     await expect(page.getByRole('textbox', { name: 'Message input' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Select a model' })).toBeVisible();
+    /** sessionMenu ON mounts the Session pill; chip is the sessionMenu-off fallback. */
+    await expect(
+      page
+        .getByTestId('session-summary-pill')
+        .or(page.getByTestId('session-model-chip').getByTestId('model-selector-button')),
+    ).toBeVisible();
   });
 
   test('Create Conversation', async ({ page }) => {

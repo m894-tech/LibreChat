@@ -70,7 +70,12 @@ export async function openSessionSheet(page: Page) {
  * the sheet DOM/a11y tree (body-portaled options stay invisible to getByRole even
  * when `#model-search` is CSS-visible under a dialog layer).
  */
-async function openModelSelector(page: Page) {
+/**
+ * Dense Session chrome: open Session → model search (or the standalone chip).
+ * Never click a missing "Select a model" landing control — sessionMenu ON
+ * mounts the summary pill instead.
+ */
+export async function openModelSelector(page: Page) {
   /**
    * With sessionMenu ON, composer mounts `session-summary-pill` (not the chip).
    * A one-shot isVisible() races startup remounts and falls through to the chip
@@ -224,13 +229,18 @@ export async function openSessionMcpMenu(page: Page) {
   });
 }
 
+/**
+ * Stable MCP server row — nested Cancel/Connect buttons often remove the
+ * checkbox from the a11y tree, so prefer `data-testid` over getByRole.
+ */
+export function sessionMcpServer(page: Page, serverName: string) {
+  return page.getByTestId(`session-mcp-server-${serverName}`);
+}
+
 /** Select an ephemeral MCP server from Session → Tools → MCP, then close the sheet. */
-export async function selectSessionMcpServer(page: Page, serverTitle: string) {
+export async function selectSessionMcpServer(page: Page, serverName: string) {
   await openSessionMcpMenu(page);
-  const sheet = page.getByTestId('session-sheet');
-  const serverItem = sheet.getByRole('checkbox', {
-    name: new RegExp(escapeRegExp(serverTitle)),
-  });
+  const serverItem = sessionMcpServer(page, serverName);
   await expect(serverItem).toBeVisible({ timeout: 15000 });
   if ((await serverItem.getAttribute('aria-checked')) !== 'true') {
     await serverItem.click();
@@ -239,43 +249,66 @@ export async function selectSessionMcpServer(page: Page, serverTitle: string) {
   await closeSessionSheet(page);
 }
 
+/** Close MCP config / OAuth dialogs that block Session sheet re-entry. */
+export async function dismissMcpConfigDialog(page: Page) {
+  const continueOAuth = page.getByRole('button', { name: 'Continue with OAuth' });
+  if (await continueOAuth.isVisible().catch(() => false)) {
+    await page.keyboard.press('Escape');
+    await expect(continueOAuth).toHaveCount(0, { timeout: 10000 });
+  }
+  const authenticate = page.getByRole('button', { name: 'Authenticate', exact: true });
+  if (await authenticate.isVisible().catch(() => false)) {
+    await page.keyboard.press('Escape');
+    await expect(authenticate).toHaveCount(0, { timeout: 10000 });
+  }
+}
+
 /**
  * Re-open Session → MCP if the sheet remounted or Escape closed it.
  * OAuth readiness polls can remount Session chrome; callers must re-bind
  * checkbox locators after this rather than reuse a stale handle.
  */
 export async function ensureSessionMcpMenu(page: Page) {
+  await dismissMcpConfigDialog(page);
   await expect(async () => {
     await openSessionMcpMenu(page);
-    await expect(page.getByTestId('session-mcp-server-list')).toBeVisible({ timeout: 5000 });
+    const list = page.getByTestId('session-mcp-server-list');
+    await expect(list).toBeVisible({ timeout: 5000 });
+    await expect(list.locator('[data-testid^="session-mcp-server-"]').first()).toBeVisible({
+      timeout: 5000,
+    });
   }).toPass({ timeout: 30000 });
 }
 
 /**
  * Cancel / Connect live as nested `<button>`s inside the checkbox row.
  * Nested interactives are often missing from the a11y tree, so use DOM
- * aria-label queries rather than `checkbox.getByRole('button')`.
+ * aria-label queries on the stable server testid rather than getByRole.
  */
-export function sessionMcpServerCancel(page: Page, serverTitle: string) {
-  return page
-    .getByTestId('session-mcp-server-list')
-    .getByRole('checkbox', { name: new RegExp(escapeRegExp(serverTitle)) })
-    .locator('button[aria-label="Cancel"]');
+export function sessionMcpServerCancel(page: Page, serverName: string) {
+  return sessionMcpServer(page, serverName).locator('button[aria-label="Cancel"]');
 }
 
-export function sessionMcpServerConnect(page: Page, serverTitle: string, serverName: string) {
-  return page
-    .getByTestId('session-mcp-server-list')
-    .getByRole('checkbox', { name: new RegExp(escapeRegExp(serverTitle)) })
-    .locator(`button[aria-label="Connect ${serverName}"]`);
+export function sessionMcpServerConnect(page: Page, serverName: string) {
+  return sessionMcpServer(page, serverName).locator(`button[aria-label="Connect ${serverName}"]`);
 }
 
 /** Landing model control: Session pill when sessionMenu is on, else the chip. */
 export function landingModelControl(page: Page) {
   return page
     .getByTestId('session-summary-pill')
-    .or(page.getByTestId('session-model-chip').getByTestId('model-selector-button'))
-    .or(page.getByRole('button', { name: 'Select a model' }));
+    .or(page.getByTestId('session-model-chip').getByTestId('model-selector-button'));
+}
+
+/**
+ * Visible selected-model label on the Session pill (or chip). Prefer this over
+ * `getByRole('button', { name: 'Select a model' })` — that landing control is
+ * gone when sessionMenu mounts the summary pill.
+ */
+export function selectedModelLabel(page: Page) {
+  return page
+    .getByTestId('session-summary-model')
+    .or(page.getByTestId('session-model-chip').getByTestId('model-selector-button'));
 }
 
 /**
@@ -344,6 +377,20 @@ export async function selectModelSpec(page: Page, label: string) {
   await openModelSelector(page);
   await selectModelSearchOption(page, label, new RegExp(`(^|\\s)${escapeRegExp(label)}\\b`));
   await assertModelSelection(page, label);
+}
+
+/** Open Session → model search and pick an agent by display name. */
+export async function selectChatAgent(page: Page, agentName: string) {
+  const label = selectedModelLabel(page);
+  if (
+    (await label.isVisible().catch(() => false)) &&
+    (await label.textContent())?.includes(agentName)
+  ) {
+    return;
+  }
+  await openModelSelector(page);
+  await selectModelSearchOption(page, agentName, agentName);
+  await assertModelSelection(page, agentName);
 }
 
 /** Enable Skills from Session → Skills (dense Session chrome). */
@@ -750,12 +797,14 @@ export function waitForUpload(page: Page) {
   });
 }
 
-/** Attach a file via the unified single button (no tool resource). */
+/** Attach a file via the composer attach menu's "Add file" (no tool resource). */
 export async function uploadViaUnifiedButton(page: Page, file: AttachFile) {
   const uploadResponse = waitForUpload(page);
+  await expect(page.getByTestId('composer-attach-file')).toBeVisible({ timeout: 15000 });
+  await page.getByTestId('composer-attach-file').click();
   const [fileChooser] = await Promise.all([
     page.waitForEvent('filechooser'),
-    page.locator('#attach-file-button').click(),
+    page.getByRole('menuitem', { name: 'Add file' }).click(),
   ]);
   await fileChooser.setFiles({
     name: file.name,

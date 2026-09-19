@@ -13,7 +13,7 @@ import {
 const PHASE_ENDPOINT = { label: 'Mock Provider F', model: 'mock-model-f' };
 const CHILD_LABEL_MODEL = 'mock-label-model';
 const PHASE_LABEL_MODEL = 'mock-phase-label-model';
-const MCP_SERVER_TITLE = 'E2E Memory';
+const MCP_SERVER_NAME = 'e2e-memory';
 const LABEL_SERVER = `http://127.0.0.1:${process.env.E2E_LABEL_PORT || '8889'}`;
 const PARENT_LABEL = 'Verified both memory facts across the sequential research phase';
 const FIRST_CHILD_LABEL = 'Recorded the first phase fact in memory';
@@ -85,7 +85,7 @@ async function getLabelRequestsFor(
 }
 
 async function selectEphemeralMCP(page: Page) {
-  await selectSessionMcpServer(page, MCP_SERVER_TITLE);
+  await selectSessionMcpServer(page, MCP_SERVER_NAME);
 }
 
 function contentPartText(part: PersistedContentPart | null): string {

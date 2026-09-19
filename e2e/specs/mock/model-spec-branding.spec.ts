@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { getPrimaryE2EUser } from '../../setup/users.mock';
-import { NEW_CHAT_PATH, openSessionSheet, selectModelSpec } from './helpers';
+import { NEW_CHAT_PATH, openModelSelector, selectModelSpec } from './helpers';
 
 /** Spec with `showOnLanding: true` and an HTML `description` in e2e/config/librechat.e2e.yaml. */
 const BRANDED_SPEC = {
@@ -39,18 +39,8 @@ test.describe('model spec branding on landing', () => {
   test('branded spec renders its description in the model selector', async ({ page }) => {
     await page.goto(NEW_CHAT_PATH, { timeout: 10000 });
 
-    /** sessionMenu ON: open Session → model search, not a missing "Select a model" chip. */
-    const summaryPill = page.getByTestId('session-summary-pill');
-    if (await summaryPill.isVisible().catch(() => false)) {
-      await openSessionSheet(page);
-      const sheetTrigger = page
-        .getByTestId('session-sheet-model')
-        .getByTestId('model-selector-button');
-      await expect(sheetTrigger).toBeVisible({ timeout: 15000 });
-      await sheetTrigger.click({ timeout: 10000 });
-    } else {
-      await page.getByRole('button', { name: 'Select a model' }).first().click();
-    }
+    /** sessionMenu ON: Session pill → sheet → model search (same as openModelSelector). */
+    await openModelSelector(page);
 
     const search = page.locator('#model-search');
     await expect(search).toBeVisible({ timeout: 10000 });

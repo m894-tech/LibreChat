@@ -26,7 +26,7 @@ const VIEWPORTS: VisualViewport[] = [
   { name: 'mobile', width: 390, height: 844, snapshotSuffix: '-mobile' },
 ];
 const PROVIDER_C = { label: 'Mock Provider C', model: 'mock-model-c' };
-const MCP_SERVER_TITLE = 'E2E Memory';
+const MCP_SERVER_NAME = 'e2e-memory';
 const VISUAL_OPTIONS = {
   animations: 'disabled' as const,
   caret: 'hide' as const,
@@ -79,7 +79,7 @@ async function expectMessageScreenshot(locator: Locator, name: string) {
 }
 
 async function selectEphemeralMCP(page: Page) {
-  await selectSessionMcpServer(page, MCP_SERVER_TITLE);
+  await selectSessionMcpServer(page, MCP_SERVER_NAME);
 }
 
 test.skip(process.platform !== 'linux', 'Message visual baselines target the Linux CI runner');

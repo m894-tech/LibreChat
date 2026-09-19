@@ -18,7 +18,7 @@ const LABELED_ENDPOINT = { label: 'Mock Provider E', model: 'mock-model-e' };
 const UNLABELED_ENDPOINT = { label: 'Mock Provider D', model: 'mock-model-d' };
 /** Distinct from the chat model, so a label request proves `activityModel` won. */
 const LABEL_MODEL = 'mock-label-model';
-const MCP_SERVER_TITLE = 'E2E Memory';
+const MCP_SERVER_NAME = 'e2e-memory';
 const LABEL_SERVER = `http://127.0.0.1:${process.env.E2E_LABEL_PORT || '8889'}`;
 
 type LabelRequest = { model?: string; stream: boolean; prompt: string };
@@ -60,7 +60,7 @@ async function getLabelRequestsFor(
 
 /** Select the MCP server whose `remember_fact` tool creates the batch boundary. */
 async function selectEphemeralMCP(page: Page) {
-  await selectSessionMcpServer(page, MCP_SERVER_TITLE);
+  await selectSessionMcpServer(page, MCP_SERVER_NAME);
 }
 
 /** Run one labeled turn: two parallel tool calls => exactly one PostToolBatch. */
