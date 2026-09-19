@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Folder, Sparkles } from 'lucide-react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import type { TConversation, TModelSpec } from 'librechat-data-provider';
+import { isEphemeralAgentId } from 'librechat-data-provider';
+import type { TAgentsMap, TConversation, TModelSpec } from 'librechat-data-provider';
 import type {
   SessionOrchMode,
   SessionProfileChangedDetail,
@@ -9,10 +10,11 @@ import type {
   SessionProfileState,
 } from '~/utils/sessionProfiles';
 import type { TranslationKeys } from '~/hooks';
-import { SESSION_PROFILE_CHANGED_EVENT, loadSessionProfile } from '~/utils/sessionProfiles';
 import ModelSelector from '~/components/Chat/Menus/Endpoints/ModelSelector';
+import { SESSION_PROFILE_CHANGED_EVENT, loadSessionProfile } from '~/utils/sessionProfiles';
 import { normalizeResponseFormat } from '~/utils/responseFormat';
 import { useGetStartupConfig, useProjectQuery } from '~/data-provider';
+import { useAgentsMapContext } from '~/Providers';
 import { useLocalize } from '~/hooks';
 import { cn } from '~/utils';
 import store from '~/store';
@@ -55,6 +57,7 @@ function resolveModelLabel(
   conversation: TConversation | null | undefined,
   modelSpecs: TModelSpec[] | undefined,
   fallback: string,
+  agentsMap?: TAgentsMap,
 ): string {
   if (conversation?.spec) {
     const spec = modelSpecs?.find((candidate) => candidate.name === conversation.spec);
@@ -63,6 +66,18 @@ function resolveModelLabel(
     }
     if (spec?.name) {
       return spec.name;
+    }
+  }
+  /**
+   * Non-ephemeral agents clear `model` / `modelLabel` (agents use their configured
+   * model internally). Resolve the display name from `agent_id` so the Session
+   * pill does not fall through to "Select a model" after an agent pick.
+   */
+  const agentId = conversation?.agent_id;
+  if (agentId && !isEphemeralAgentId(agentId)) {
+    const agentName = agentsMap?.[agentId]?.name;
+    if (agentName) {
+      return agentName;
     }
   }
   if (conversation?.modelLabel) {
@@ -87,6 +102,7 @@ export default function SessionSummaryPill({
 }: SessionSummaryPillProps) {
   const localize = useLocalize();
   const { data: startupConfig } = useGetStartupConfig();
+  const agentsMap = useAgentsMapContext();
   const [sheetOpen, setSheetOpen] = useRecoilState(store.sessionSheetOpenByIndex(index));
   const uiKey = store.conversationUiStateKey(conversation?.conversationId, index);
   const responseFormat = useRecoilValue(store.responseFormatByIndex(uiKey));
@@ -122,8 +138,9 @@ export default function SessionSummaryPill({
         conversation,
         startupConfig?.modelSpecs?.list as TModelSpec[] | undefined,
         localize('com_ui_select_model'),
+        agentsMap,
       ),
-    [conversation, localize, startupConfig?.modelSpecs?.list],
+    [agentsMap, conversation, localize, startupConfig?.modelSpecs?.list],
   );
   const profileLabel = localize(
     PROFILE_LABEL[profileState.profile] ?? 'com_ui_session_profile_fast',

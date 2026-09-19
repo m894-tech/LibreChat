@@ -379,7 +379,7 @@ export async function selectModelSpec(page: Page, label: string) {
   await assertModelSelection(page, label);
 }
 
-/** Open Session → model search and pick an agent by display name. */
+/** Open Session → Agent picker and select an agent by display name. */
 export async function selectChatAgent(page: Page, agentName: string) {
   const label = selectedModelLabel(page);
   if (
@@ -388,8 +388,30 @@ export async function selectChatAgent(page: Page, agentName: string) {
   ) {
     return;
   }
-  await openModelSelector(page);
-  await selectModelSearchOption(page, agentName, agentName);
+
+  /**
+   * Session pill → sheet → Agent picker (not a landing "Select a model" chip).
+   * Newly created agents may lag the agentsMap; retry search until the option mounts.
+   */
+  await openSessionSheet(page);
+  const pickerButton = page.getByTestId('session-sheet').getByTestId('agent-picker-button');
+  await expect(pickerButton).toBeVisible({ timeout: 15000 });
+  await pickerButton.click();
+
+  const list = page.getByTestId('agent-picker-list');
+  await expect(list).toBeVisible({ timeout: 15000 });
+  const search = page.getByRole('searchbox', { name: 'Search agents' });
+  await expect(search).toBeVisible({ timeout: 10000 });
+
+  const option = list.getByRole('option', { name: agentName });
+  await expect(async () => {
+    await search.fill('');
+    await search.fill(agentName);
+    await expect(option).toBeVisible({ timeout: 2500 });
+  }).toPass({ timeout: 30000 });
+
+  await option.click();
+  await expect(list).toBeHidden({ timeout: 10000 });
   await assertModelSelection(page, agentName);
 }
 
@@ -406,8 +428,14 @@ export async function enableSkills(page: Page) {
     await sheet.getByRole('button', { name: 'Skills' }).click();
     await expect(sheet.getByTestId('session-menu-skills')).toBeVisible();
   }
-  const toggle = sheet.getByRole('switch', { name: 'Skills' });
-  await expect(toggle).toBeVisible();
+  /**
+   * Drill Skills view mounts `session-skills-toggle` (master arm). Prefer the
+   * stable testid — role name alone races remounts / per-skill switches.
+   */
+  const toggle = sheet
+    .getByTestId('session-skills-toggle')
+    .or(sheet.getByRole('switch', { name: 'Skills' }));
+  await expect(toggle).toBeVisible({ timeout: 15000 });
   if ((await toggle.getAttribute('aria-checked')) !== 'true') {
     await toggle.click();
   }

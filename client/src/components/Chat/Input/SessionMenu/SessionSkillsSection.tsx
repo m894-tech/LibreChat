@@ -147,9 +147,31 @@ export default function SessionSkillsSection({
   return (
     <div className="flex flex-col gap-1" data-testid="session-menu-skills">
       {drill ? (
-        <p className="px-0.5 pb-1 text-[10px] leading-snug text-text-secondary">
-          {localize('com_ui_session_skills_drill_hint')}
-        </p>
+        <>
+          <p className="px-0.5 pb-1 text-[10px] leading-snug text-text-secondary">
+            {localize('com_ui_session_skills_drill_hint')}
+          </p>
+          <div
+            data-testid="session-skills-toggle-row"
+            className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-sm"
+          >
+            <span className="flex items-center gap-2">
+              <ScrollText className="icon-md" aria-hidden="true" />
+              <span>{localize('com_ui_skills')}</span>
+              {toggleState ? (
+                <span className="text-[10px] uppercase text-text-secondary">
+                  {localize('com_ui_on')}
+                </span>
+              ) : null}
+            </span>
+            <Switch
+              checked={Boolean(toggleState)}
+              onCheckedChange={() => handleSkillsToggle()}
+              aria-label={localize('com_ui_skills')}
+              data-testid="session-skills-toggle"
+            />
+          </div>
+        </>
       ) : (
         <button
           type="button"
@@ -226,6 +248,7 @@ export default function SessionSkillsSection({
             checked={Boolean(toggleState)}
             onCheckedChange={() => handleSkillsToggle()}
             aria-label={localize('com_ui_skills')}
+            data-testid="session-skills-toggle"
           />
         </div>
       ) : null}
