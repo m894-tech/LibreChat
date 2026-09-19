@@ -34,6 +34,7 @@ import {
   useAssistantsMapContext,
 } from '~/Providers';
 import { SessionAgentsBar, SessionSummaryPill, NewConversationButton, PrivateToggle } from './SessionMenu';
+import OrchRunBanner from './OrchRunBanner';
 import {
   PendingToolApprovalButton,
   PendingToolApprovalPanel,
@@ -780,6 +781,7 @@ const ChatForm = memo(function ChatForm({
                 onClose={pastedTextEdit.closeEditor}
                 onSave={pastedTextEdit.saveEdit}
               />
+              <OrchRunBanner conversationId={conversationId} isSubmitting={isSubmitting} />
               <div className="px-2 pb-0.5 pt-0.5">
                 <SessionSummaryPill conversation={conversation} index={index} />
               </div>

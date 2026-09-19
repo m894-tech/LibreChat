@@ -148,6 +148,22 @@ router.use((req, _res, next) => {
 router.use(checkBan);
 router.use(uaParser);
 
+router.get('/orch-run/:conversationId', async (req, res) => {
+  try {
+    const orch = require('/opt/librechat-mcp/orch-canon-resolve');
+    if (typeof orch.getOrchRunForUser !== 'function') {
+      return res.status(501).json({ error: 'unwired' });
+    }
+    const run = await orch.getOrchRunForUser(req.user, req.params.conversationId);
+    if (!run) {
+      return res.status(404).json({ error: 'not found' });
+    }
+    return res.json(run);
+  } catch (e) {
+    return res.status(500).json({ error: String((e && e.message) || e) });
+  }
+});
+
 /**
  * Stream endpoints - mounted before chatRouter to bypass rate limiters
  * These are GET requests and don't need message body validation or rate limiting
