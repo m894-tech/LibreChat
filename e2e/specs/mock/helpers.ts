@@ -240,6 +240,45 @@ export async function selectSessionMcpServer(page: Page, serverTitle: string) {
 }
 
 /**
+ * Re-open Session → MCP if the sheet remounted or Escape closed it.
+ * OAuth readiness polls can remount Session chrome; callers must re-bind
+ * checkbox locators after this rather than reuse a stale handle.
+ */
+export async function ensureSessionMcpMenu(page: Page) {
+  await expect(async () => {
+    await openSessionMcpMenu(page);
+    await expect(page.getByTestId('session-mcp-server-list')).toBeVisible({ timeout: 5000 });
+  }).toPass({ timeout: 30000 });
+}
+
+/**
+ * Cancel / Connect live as nested `<button>`s inside the checkbox row.
+ * Nested interactives are often missing from the a11y tree, so use DOM
+ * aria-label queries rather than `checkbox.getByRole('button')`.
+ */
+export function sessionMcpServerCancel(page: Page, serverTitle: string) {
+  return page
+    .getByTestId('session-mcp-server-list')
+    .getByRole('checkbox', { name: new RegExp(escapeRegExp(serverTitle)) })
+    .locator('button[aria-label="Cancel"]');
+}
+
+export function sessionMcpServerConnect(page: Page, serverTitle: string, serverName: string) {
+  return page
+    .getByTestId('session-mcp-server-list')
+    .getByRole('checkbox', { name: new RegExp(escapeRegExp(serverTitle)) })
+    .locator(`button[aria-label="Connect ${serverName}"]`);
+}
+
+/** Landing model control: Session pill when sessionMenu is on, else the chip. */
+export function landingModelControl(page: Page) {
+  return page
+    .getByTestId('session-summary-pill')
+    .or(page.getByTestId('session-model-chip').getByTestId('model-selector-button'))
+    .or(page.getByRole('button', { name: 'Select a model' }));
+}
+
+/**
  * Open Session → model selector (or the standalone chip), search for the mock
  * model id, and commit via the flat search option — not the nested endpoint submenu.
  */

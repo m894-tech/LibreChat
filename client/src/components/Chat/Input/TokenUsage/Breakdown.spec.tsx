@@ -321,6 +321,26 @@ describe('TokenUsage Breakdown', () => {
       /** 1000 used − 400 instructions − 50 summary − 150 tool calls = 400 */
       expect(rowFor('com_ui_context_messages').textContent).toContain('400');
       expect(rowFor('com_ui_context_tool_calls').textContent).toContain('150');
+      expect(screen.getByTestId('context-row-messages')).toBeInTheDocument();
+      expect(screen.getByTestId('context-row-tool-calls')).toBeInTheDocument();
+    });
+
+    it('keeps the Messages peer when the tool split consumes the whole message budget', async () => {
+      const allTools = JSON.parse(JSON.stringify(toolSplitView)) as TokenUsageView;
+      allTools.usedTokens = 600;
+      allTools.percent = 30;
+      allTools.snapshot!.breakdown.messageTokens = 150;
+      allTools.snapshot!.breakdown.toolMessageTokens = 150;
+      allTools.snapshot!.breakdown.instructionTokens = 400;
+      allTools.snapshot!.breakdown.summaryTokens = 50;
+      allTools.snapshot!.effectiveInstructionTokens = 400;
+      allTools.toolMessageTokenCounts = { remember_fact: 150 };
+
+      renderBreakdown({ view: allTools });
+      await userEvent.click(toggle());
+
+      expect(screen.getByTestId('context-row-messages')).toHaveTextContent(/0/);
+      expect(screen.getByTestId('context-row-tool-calls')).toHaveTextContent(/150/);
     });
 
     it('widens the tool-call row for retained results without exceeding used tokens', async () => {

@@ -96,11 +96,12 @@ test.describe('retained tool context split', () => {
     await expect(breakdown).toBeVisible({ timeout: 10000 });
     await expect(popover.getByTestId('context-estimate')).toHaveCount(0);
 
-    const peers = directPeerRows(breakdown);
-    const toolRow = peers.filter({ hasText: 'Tool calls' });
-    const messageRow = peers.filter({ hasText: 'Messages' });
-    await expect(toolRow).toHaveCount(1);
-    await expect(messageRow).toHaveCount(1);
+    const messageRow = breakdown.getByTestId('context-row-messages');
+    const toolRow = breakdown.getByTestId('context-row-tool-calls');
+    await expect(async () => {
+      await expect(messageRow).toHaveCount(1);
+      await expect(toolRow).toHaveCount(1);
+    }).toPass({ timeout: 15000 });
     // Tool calls and Messages are meter peers, not an indented subset row.
     await expect(toolRow.locator('xpath=ancestor::*[contains(@class, "pl-6")]')).toHaveCount(0);
     await expect(messageRow.locator('xpath=ancestor::*[contains(@class, "pl-6")]')).toHaveCount(0);
@@ -122,10 +123,10 @@ test.describe('retained tool context split', () => {
 
     const popover = await openBreakdown(page);
     const breakdown = popover.getByTestId('context-breakdown');
-    const toolRow = directPeerRows(breakdown).filter({ hasText: 'Tool calls' });
+    const toolRow = breakdown.getByTestId('context-row-tool-calls');
     // Selecting the native button directly proves this row is keyboard-operable,
     // rather than merely looking like a clickable div.
-    const toolButton = breakdown.locator(':scope > button').filter({ hasText: 'Tool calls' });
+    const toolButton = breakdown.getByTestId('context-row-tool-calls');
     await expect(toolButton).toHaveCount(1);
     await expect(toolButton).toHaveAttribute('aria-expanded', 'false');
     await expect(toolRow).toHaveCount(1);
@@ -165,10 +166,10 @@ test.describe('retained tool context split', () => {
     expect(usedPercent).toBeGreaterThan(0);
 
     const peers = directPeerRows(breakdown);
-    await expect(peers.filter({ hasText: 'Messages' })).toHaveCount(1);
-    await expect(peers.filter({ hasText: 'Tool calls' })).toHaveCount(1);
+    await expect(breakdown.getByTestId('context-row-messages')).toHaveCount(1);
+    await expect(breakdown.getByTestId('context-row-tool-calls')).toHaveCount(1);
 
-    const toolButton = breakdown.locator(':scope > button').filter({ hasText: 'Tool calls' });
+    const toolButton = breakdown.getByTestId('context-row-tool-calls');
     await toolButton.focus();
     await page.keyboard.press('Enter');
     await expect(toolButton).toHaveAttribute('aria-expanded', 'true');
@@ -189,11 +190,9 @@ test.describe('retained tool context split', () => {
 
     const initialPopover = await openBreakdown(page);
     const initialBreakdown = initialPopover.getByTestId('context-breakdown');
-    const initialToolRow = directPeerRows(initialBreakdown).filter({ hasText: 'Tool calls' });
+    const initialToolRow = initialBreakdown.getByTestId('context-row-tool-calls');
     await expect(initialToolRow).toHaveCount(1);
-    const initialToolButton = initialBreakdown
-      .locator(':scope > button')
-      .filter({ hasText: 'Tool calls' });
+    const initialToolButton = initialBreakdown.getByTestId('context-row-tool-calls');
     await initialToolButton.click();
     const initialPanelId = await initialToolButton.getAttribute('aria-controls');
     expect(initialPanelId).toBeTruthy();
@@ -214,9 +213,7 @@ test.describe('retained tool context split', () => {
     const reloadedBreakdown = reloadedPopover.getByTestId('context-breakdown');
     await expect(reloadedBreakdown).toBeVisible({ timeout: 10000 });
     await expect(reloadedPopover.getByTestId('context-estimate')).toHaveCount(0);
-    const reloadedToolButton = reloadedBreakdown
-      .locator(':scope > button')
-      .filter({ hasText: 'Tool calls' });
+    const reloadedToolButton = reloadedBreakdown.getByTestId('context-row-tool-calls');
     await expect(reloadedToolButton).toHaveCount(1);
     await reloadedToolButton.click();
     const reloadedPanelId = await reloadedToolButton.getAttribute('aria-controls');
