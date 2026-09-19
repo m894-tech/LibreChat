@@ -19,9 +19,7 @@ jest.mock('~/hooks', () => ({
 jest.mock('~/data-provider', () => ({
   useGetStartupConfig: () => ({ data: mockStartupConfig }),
   useProjectQuery: (projectId?: string | null) =>
-    projectId
-      ? { data: { _id: projectId, name: 'Bound Project' } }
-      : { data: undefined },
+    projectId ? { data: { _id: projectId, name: 'Bound Project' } } : { data: undefined },
 }));
 
 jest.mock('~/Providers', () => ({

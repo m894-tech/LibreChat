@@ -196,8 +196,7 @@ const useNewConvo = (index = 0) => {
           const assistants: AssistantListItem[] = assistantsListMap[defaultEndpoint] ?? [];
           const currentAssistantId = conversation.assistant_id ?? '';
           const currentAssistant = assistantsListMap[defaultEndpoint]?.[currentAssistantId] as
-            | AssistantListItem
-            | undefined;
+            AssistantListItem | undefined;
 
           if (currentAssistantId && !currentAssistant) {
             conversation.assistant_id = undefined;
@@ -236,6 +235,31 @@ const useNewConvo = (index = 0) => {
             models,
             defaultParamsEndpoint,
           });
+
+          /**
+           * Soft default yields to a stored agent by returning no preset, so
+           * `buildDefaultConvo` never sees `agent_id`. ModelSelector's
+           * `useSelectorEffects` used to backfill it from `AGENT_ID_PREFIX`, but
+           * sessionMenu keeps that selector off the landing chrome — restore here
+           * so New Chat / cold load still land on the selected agent. Only when
+           * there is no active preset: an explicit clear/select preset must win.
+           */
+          if (
+            !activePreset &&
+            isAgentsEndpoint(conversation.endpoint ?? defaultEndpoint) &&
+            (conversation.agent_id == null || isEphemeralAgentId(conversation.agent_id))
+          ) {
+            const fromSetup =
+              typeof lastConversationSetup?.agent_id === 'string'
+                ? lastConversationSetup.agent_id
+                : null;
+            const fromPrefix = localStorage.getItem(`${LocalStorageKeys.AGENT_ID_PREFIX}${index}`);
+            const restoredAgentId = fromSetup || fromPrefix;
+            if (restoredAgentId && !isEphemeralAgentId(restoredAgentId)) {
+              conversation.agent_id = restoredAgentId;
+              conversation.model = undefined;
+            }
+          }
 
           if (hasExplicitChatProjectId) {
             conversation.chatProjectId = explicitChatProjectId ?? null;

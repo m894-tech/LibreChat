@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ChevronDown, Folder, Sparkles } from 'lucide-react';
 import { useRecoilState, useRecoilValue } from 'recoil';
+import { ChevronDown, Folder, Sparkles } from 'lucide-react';
 import { isEphemeralAgentId } from 'librechat-data-provider';
 import type { TAgentsMap, TConversation, TModelSpec } from 'librechat-data-provider';
 import type {
@@ -10,10 +10,10 @@ import type {
   SessionProfileState,
 } from '~/utils/sessionProfiles';
 import type { TranslationKeys } from '~/hooks';
-import ModelSelector from '~/components/Chat/Menus/Endpoints/ModelSelector';
 import { SESSION_PROFILE_CHANGED_EVENT, loadSessionProfile } from '~/utils/sessionProfiles';
-import { normalizeResponseFormat } from '~/utils/responseFormat';
+import ModelSelector from '~/components/Chat/Menus/Endpoints/ModelSelector';
 import { useGetStartupConfig, useProjectQuery } from '~/data-provider';
+import { normalizeResponseFormat } from '~/utils/responseFormat';
 import { useAgentsMapContext } from '~/Providers';
 import { useLocalize } from '~/hooks';
 import { cn } from '~/utils';
