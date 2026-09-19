@@ -264,6 +264,41 @@ const TABLE_CELL = 'E2E table cell text';
 /** Comfortably longer than the component's 300ms selection-settle interval. */
 const SETTLE_OBSERVATION_MS = 1500;
 
+/**
+ * Wait until `needle` lives in a single text node under a `.message-render`.
+ *
+ * Distinct from `getByText` / `textContent` matching: while a reply streams with
+ * smooth fade enabled, each word is wrapped in its own `<span>` (see
+ * `createFadePlugin`). Concatenated `textContent` already contains the needle —
+ * so Playwright visibility checks pass — but `selectMessageText` /
+ * `selectAcrossMessages` build a Range from one text node and throw
+ * `No text node contains` until the stream ends and the fade plugin is dropped.
+ * Redis lanes keep that mid-stream shape long enough to flake the no-retry
+ * cross-message test; waiting for a real text node is the deterministic gate.
+ */
+async function waitForSelectableText(page: Page, needle: string) {
+  await expect(async () => {
+    const found = await page.evaluate((text) => {
+      const renders = Array.from(document.querySelectorAll('.message-render'));
+      for (const host of [...renders].reverse()) {
+        if (!(host.textContent ?? '').includes(text)) {
+          continue;
+        }
+        const walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT);
+        let node = walker.nextNode();
+        while (node) {
+          if ((node.nodeValue ?? '').includes(text)) {
+            return true;
+          }
+          node = walker.nextNode();
+        }
+      }
+      return false;
+    }, needle);
+    expect(found).toBe(true);
+  }).toPass({ timeout: 20000 });
+}
+
 /** Seed a conversation whose latest reply has several paragraphs. */
 async function seedParagraphReply(page: Page) {
   await page.goto(NEW_CHAT_PATH, { timeout: 10000 });
@@ -271,6 +306,11 @@ async function seedParagraphReply(page: Page) {
   const response = await sendMessage(page, PARAGRAPHS_PROMPT);
   expect(response.ok()).toBeTruthy();
   await expect(messagesView(page).getByText(CLOSING_PARAGRAPH)).toBeVisible({ timeout: 20000 });
+  // Closing text is visible mid-stream (word spans); selection helpers need
+  // coalesced text nodes after the fade plugin drops.
+  await waitForSelectableText(page, OPENING_PARAGRAPH);
+  await waitForSelectableText(page, CLOSING_PARAGRAPH);
+  await waitForSelectableText(page, PARAGRAPHS_PROMPT);
 }
 
 /** The mock model echoes this when a blockquote containing the token reached the prompt. */
