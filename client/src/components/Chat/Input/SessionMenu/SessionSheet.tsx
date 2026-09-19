@@ -103,6 +103,7 @@ export default function SessionSheet({
           </OGDialogTitle>
           <button
             type="button"
+            data-testid="session-sheet-close"
             aria-label={localize('com_ui_close')}
             onClick={() => onOpenChange(false)}
             className="rounded-md p-1 text-text-secondary hover:bg-surface-hover hover:text-text-primary"

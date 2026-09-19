@@ -27,7 +27,7 @@ async function expectMcpSelected(page: Page) {
   await openSessionMcpMenu(page);
   const serverItem = page.getByRole('checkbox', { name: new RegExp(MCP_SERVER_TITLE) });
   await expect(serverItem).toHaveAttribute('aria-checked', 'true');
-  await page.keyboard.press('Escape');
+  /** closeSessionSheet: Escape + session-sheet-close retry (not English Close). */
   await closeSessionSheet(page);
 }
 

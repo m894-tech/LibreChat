@@ -54,8 +54,10 @@ export async function openSessionSheet(page: Page) {
   if (await sheet.isVisible().catch(() => false)) {
     return;
   }
-  await page.getByTestId('session-summary-pill').click();
-  await expect(sheet).toBeVisible();
+  const summaryPill = page.getByTestId('session-summary-pill');
+  await expect(summaryPill).toBeVisible({ timeout: 15000 });
+  await summaryPill.click();
+  await expect(sheet).toBeVisible({ timeout: 15000 });
 }
 
 /**
@@ -70,11 +72,19 @@ export async function openSessionSheet(page: Page) {
  */
 async function openModelSelector(page: Page) {
   /**
-   * Prefer Session → Now (`session-sheet-model`, portal={false}) whenever the
-   * summary pill is present. The standalone chip defaults to portal=true and
-   * was the path that left options outside the dialog a11y tree.
+   * With sessionMenu ON, composer mounts `session-summary-pill` (not the chip).
+   * A one-shot isVisible() races startup remounts and falls through to the chip
+   * path, which never appears. Wait for either control, then prefer the pill.
    */
   const summaryPill = page.getByTestId('session-summary-pill');
+  const chipTrigger = page.getByTestId('session-model-chip').getByTestId('model-selector-button');
+
+  await expect(async () => {
+    const pillVisible = await summaryPill.isVisible().catch(() => false);
+    const chipVisible = await chipTrigger.isVisible().catch(() => false);
+    expect(pillVisible || chipVisible).toBe(true);
+  }).toPass({ timeout: 15000 });
+
   if (await summaryPill.isVisible().catch(() => false)) {
     await openSessionSheet(page);
     const sheetTrigger = page
@@ -86,7 +96,6 @@ async function openModelSelector(page: Page) {
     return sheetTrigger;
   }
 
-  const chipTrigger = page.getByTestId('session-model-chip').getByTestId('model-selector-button');
   await expect(chipTrigger).toBeVisible({ timeout: 15000 });
   await chipTrigger.click({ timeout: 10000 });
   return chipTrigger;
@@ -159,11 +168,19 @@ export async function closeSessionSheet(page: Page) {
    * Session chrome remounts during MCP catalog warmup / nested menus, so the
    * Close control is often "not stable" or detaches under a direct click.
    * Escape closes the sheet (and any leftover menu) without waiting on that
-   * button; force-click is only a fallback if Escape was consumed by a child.
+   * button; force-click the stable testid as a fallback — do not rely on the
+   * English aria-label alone (remount + locale make getByRole('Close') flake).
    */
   await page.keyboard.press('Escape');
   if (await sheet.isVisible().catch(() => false)) {
-    await sheet.getByRole('button', { name: 'Close' }).click({ force: true });
+    const closeButton = page.getByTestId('session-sheet-close');
+    await expect(async () => {
+      if (!(await sheet.isVisible().catch(() => false))) {
+        return;
+      }
+      await closeButton.click({ force: true, timeout: 3000 });
+      await expect(sheet).toBeHidden({ timeout: 3000 });
+    }).toPass({ timeout: 15000 });
   }
   await expect(sheet).toBeHidden({ timeout: 15000 });
 }
