@@ -1,5 +1,6 @@
 /** Session roster of agents. One remains conversation.agent_id; extras are local quick-switch. */
 
+import { isAgentsEndpoint, isEphemeralAgentId } from 'librechat-data-provider';
 import { isPersistedAgentId } from './agentPicker';
 
 /** Legacy key: session_agents__${index} (global per pane). */
@@ -138,4 +139,30 @@ export function ensureAgentInSession(ids: string[], agentId: string): string[] {
 
 export function removeAgentFromSession(ids: string[], agentId: string): string[] {
   return ids.filter((id) => id !== agentId && isPersistedAgentId(id));
+}
+
+/**
+ * Whether a winning URL/spec or soft-default preset should wipe a prior agent
+ * from the draft Session agents roster (and AGENT_ID_PREFIX). Agent-backed
+ * specs that name their own agent keep that selection.
+ */
+export function specPresetDisplacesPriorAgent(
+  preset:
+    | {
+        spec?: string | null;
+        endpoint?: string | null;
+        agent_id?: string | null;
+      }
+    | null
+    | undefined,
+): boolean {
+  if (preset?.spec == null || preset.spec === '') {
+    return false;
+  }
+  const presetAgentId = typeof preset.agent_id === 'string' ? preset.agent_id : null;
+  return !(
+    isAgentsEndpoint(preset.endpoint) &&
+    presetAgentId != null &&
+    !isEphemeralAgentId(presetAgentId)
+  );
 }

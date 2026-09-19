@@ -44,6 +44,8 @@ import {
   scheduleRetainedFileDeletionRetry,
   retainFileDeletion,
   failedFileIdsFrom,
+  specPresetDisplacesPriorAgent,
+  saveSessionAgentIds,
   logger,
 } from '~/utils';
 import { useDeleteFilesMutation, useGetEndpointsQuery, useGetStartupConfig } from '~/data-provider';
@@ -196,7 +198,8 @@ const useNewConvo = (index = 0) => {
           const assistants: AssistantListItem[] = assistantsListMap[defaultEndpoint] ?? [];
           const currentAssistantId = conversation.assistant_id ?? '';
           const currentAssistant = assistantsListMap[defaultEndpoint]?.[currentAssistantId] as
-            AssistantListItem | undefined;
+            | AssistantListItem
+            | undefined;
 
           if (currentAssistantId && !currentAssistant) {
             conversation.assistant_id = undefined;
@@ -259,6 +262,18 @@ const useNewConvo = (index = 0) => {
               conversation.agent_id = restoredAgentId;
               conversation.model = undefined;
             }
+          } else if (specPresetDisplacesPriorAgent(activePreset)) {
+            /**
+             * URL/spec or soft-default preset wins: do not leave a prior agent in
+             * the draft Session agents roster or AGENT_ID_PREFIX. Soft Default
+             * pill and Session agents UI must agree (agent gone from the list).
+             * Agent-backed specs that name their own agent keep that selection.
+             */
+            if (conversation.agent_id != null && !isEphemeralAgentId(conversation.agent_id)) {
+              conversation.agent_id = undefined;
+            }
+            localStorage.removeItem(`${LocalStorageKeys.AGENT_ID_PREFIX}${index}`);
+            saveSessionAgentIds([], conversation.conversationId, index);
           }
 
           if (hasExplicitChatProjectId) {
