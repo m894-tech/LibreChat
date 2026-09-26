@@ -1,3 +1,5 @@
+> **Frozen mirror:** this repo only syncs upstream LibreChat. Product code lives in m894-tech/librechat-de-src (branch integrate/av2-p5); ops/config in m894-tech/librechat-mcp-de.
+
 <p align="center">
   <a href="https://librechat.ai">
     <img src="client/public/assets/logo.svg" height="256">
