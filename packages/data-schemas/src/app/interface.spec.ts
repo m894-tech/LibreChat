@@ -99,6 +99,30 @@ describe('loadDefaultInterface', () => {
     expect(interfaceConfig?.contextCost).toBe(false);
   });
 
+  it('disables the context counter v2 menu by default', async () => {
+    const interfaceConfig = await loadDefaultInterface({
+      config: {},
+      configDefaults: getConfigDefaults(),
+    });
+
+    expect(interfaceConfig?.contextCounterV2).toBe(false);
+  });
+
+  it('preserves an enabled context counter v2 flag', async () => {
+    const config: Partial<TCustomConfig> = {
+      interface: {
+        contextCounterV2: true,
+      },
+    };
+
+    const interfaceConfig = await loadDefaultInterface({
+      config,
+      configDefaults: getConfigDefaults(),
+    });
+
+    expect(interfaceConfig?.contextCounterV2).toBe(true);
+  });
+
   it('preserves a disabled context cost flag', async () => {
     const config: Partial<TCustomConfig> = {
       interface: {

@@ -2065,6 +2065,8 @@ export const interfaceSchema = z
     webSearch: z.boolean().optional(),
     contextUsage: z.boolean().optional(),
     contextCost: z.boolean().optional(),
+    /** Context counter v2: the single-menu redesign behind its own switch (rollback = false). */
+    contextCounterV2: z.boolean().optional(),
     feedback: z.boolean().optional(),
     currency: z
       .object({
@@ -2173,6 +2175,7 @@ export const interfaceSchema = z
     webSearch: true,
     contextUsage: true,
     contextCost: false,
+    contextCounterV2: false,
     feedback: true,
     peoplePicker: {
       users: true,
