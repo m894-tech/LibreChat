@@ -39,6 +39,12 @@ export interface ContextCounterViewModel {
   configuration: TContextConfiguration;
   nextRequestEstimate: TContextNextRequestEstimate | null;
   lastCallMeasurement: TContextLastCallMeasurement | null;
+  /**
+   * Host verdict that the last call was measured for another configuration
+   * (model, agent or window limits). When omitted the model/provider fields
+   * are compared locally.
+   */
+  lastCallMismatch?: boolean;
   sessionUsage: TContextSessionUsage | null;
   activity: ContextCounterActivity;
   capabilities: ContextCounterCapabilities;

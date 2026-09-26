@@ -157,9 +157,15 @@ export function deriveNextPanel(vm: ContextCounterViewModel): PanelView {
   }
   const budget = resolveBudget(estimate.budget);
   const occupied = sumContextOccupied(estimate.occupied);
+  /** A status without an answer yet (calculating / error before any reply) has nothing to show. */
+  const hasAnswer =
+    occupied > 0 ||
+    estimate.status === 'fresh' ||
+    estimate.status === 'partial' ||
+    estimate.status === 'stale';
   return {
     mode: 'next',
-    available: estimate.status !== 'error' || occupied > 0,
+    available: hasAnswer,
     approximate: true,
     source: estimate.source,
     occupied,
@@ -214,7 +220,8 @@ export function deriveLastPanel(vm: ContextCounterViewModel): PanelView {
     partial: !measurement.complete,
     errorCode: null,
     excluded: null,
-    configurationMismatch: isConfigurationMismatch(vm.configuration, measurement.configuration),
+    configurationMismatch:
+      vm.lastCallMismatch ?? isConfigurationMismatch(vm.configuration, measurement.configuration),
     measuredModel: measurement.configuration.model ?? null,
   };
 }
@@ -272,8 +279,10 @@ export function resolveBottomAction(vm: ContextCounterViewModel): BottomAction {
   const status = vm.nextRequestEstimate?.status ?? 'unavailable';
   const conflict = conflictingOperation(vm);
   const next = deriveNextPanel(vm);
+  /** History already being dropped counts as the threshold being reached (§4 warning → §3 «Сжать»). */
   const thresholdReached =
-    next.fillPercent != null && next.fillPercent >= vm.capabilities.compressThresholdPercent;
+    (next.fillPercent != null && next.fillPercent >= vm.capabilities.compressThresholdPercent) ||
+    (next.excluded != null && next.excluded.count > 0);
   const canCompress = vm.capabilities.compressionSupported;
 
   if (canCompress && thresholdReached) {

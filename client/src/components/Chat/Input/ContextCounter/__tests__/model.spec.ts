@@ -5,8 +5,10 @@ import {
   staleVm,
   normalVm,
   partialVm,
+  trimmedVm,
   overflowVm,
   streamingVm,
+  calculatingEmptyVm,
   compressingVm,
   calculatingVm,
   unavailableVm,
@@ -44,6 +46,10 @@ describe('resolveBottomAction — §3 one bottom button', () => {
       nextRequestEstimate: { ...overflowVm.nextRequestEstimate!, status: 'stale' },
     };
     expect(resolveBottomAction(staleOverflow)).toEqual({ kind: 'compress', disabledReason: null });
+  });
+
+  it('offers «Сжать» whenever history is already being excluded, even at 70% (§4 → §3)', () => {
+    expect(resolveBottomAction(trimmedVm)).toEqual({ kind: 'compress', disabledReason: null });
   });
 
   it('turns the error state into a retry', () => {
@@ -110,6 +116,21 @@ describe('derive panels — §5 and §3', () => {
 
   it('never adds the response to the last call input (§10.2)', () => {
     expect(deriveLastPanel(normalVm).occupied).toBe(normalVm.lastCallMeasurement!.input);
+  });
+
+  it('lets the host verdict on configuration mismatch win over the local comparison', () => {
+    expect(deriveLastPanel({ ...normalVm, lastCallMismatch: true }).configurationMismatch).toBe(
+      true,
+    );
+    expect(
+      deriveLastPanel({ ...lastCallMismatchVm, lastCallMismatch: false }).configurationMismatch,
+    ).toBe(false);
+  });
+
+  it('treats a status without an answer yet as «нет данных»', () => {
+    expect(deriveNextPanel(calculatingEmptyVm).available).toBe(false);
+    expect(deriveNextPanel(errorVm).available).toBe(false);
+    expect(deriveNextPanel(calculatingVm).available).toBe(true);
   });
 });
 

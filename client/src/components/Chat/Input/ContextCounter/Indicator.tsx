@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useAtom } from 'jotai';
 import * as Ariakit from '@ariakit/react';
-import type { ContextCounterActions, ContextCounterViewModel } from './types';
+import type { ContextCounterActions, ContextCounterMode, ContextCounterViewModel } from './types';
 import { miniIndicatorText, MiniIndicator } from './MiniIndicator';
 import { useContextCounterFormatter } from './hooks';
-import { contextCounterModeAtom } from './store';
 import { ContextCounterMenu } from './Menu';
 import { useLocalize } from '~/hooks';
 import { cn } from '~/utils';
@@ -16,19 +14,29 @@ const HIDE_DELAY_MS = 150;
 export interface ContextCounterIndicatorProps {
   vm: ContextCounterViewModel;
   actions: ContextCounterActions;
+  /** Owned by the host (a per-conversation store), so closing the menu keeps it (§3). */
+  mode: ContextCounterMode;
+  onModeChange: (mode: ContextCounterMode) => void;
+  /** Lets the host request estimates only while the menu is open (§6.3). */
+  onOpenChange?: (open: boolean) => void;
 }
 
 /**
  * Composer control: the mini-indicator is the disclosure, the single menu is
  * its popover. Hover opens, click pins, Escape closes (the excluded-history
  * popover first, being the inner dialog), touch works without hover, focus
- * returns to the trigger. The toggle mode lives in a Jotai atom, so closing
- * the menu resets neither it nor the indicator (§3, §9).
+ * returns to the trigger. Mode and data live above this component, so closing
+ * the menu resets neither the toggle nor the indicator (§3, §9).
  */
-export function ContextCounterIndicator({ vm, actions }: ContextCounterIndicatorProps) {
+export function ContextCounterIndicator({
+  vm,
+  actions,
+  mode,
+  onModeChange,
+  onOpenChange,
+}: ContextCounterIndicatorProps) {
   const localize = useLocalize();
   const format = useContextCounterFormatter();
-  const [mode, setMode] = useAtom(contextCounterModeAtom);
   const popover = Ariakit.usePopoverStore({ placement: 'top' });
   const popoverOpen = Ariakit.useStoreState(popover, 'open');
   const disclosureRef = useRef<HTMLButtonElement>(null);
@@ -78,7 +86,8 @@ export function ContextCounterIndicator({ vm, actions }: ContextCounterIndicator
     if (!popoverOpen) {
       pinnedRef.current = false;
     }
-  }, [popoverOpen]);
+    onOpenChange?.(popoverOpen);
+  }, [popoverOpen, onOpenChange]);
   useEffect(() => cancelTimers, [cancelTimers, conversationId]);
 
   const mini = miniIndicatorText(vm, format, localize);
@@ -149,7 +158,7 @@ export function ContextCounterIndicator({ vm, actions }: ContextCounterIndicator
           'data-[leave]:translate-y-1 data-[leave]:scale-95 data-[leave]:opacity-0',
         )}
       >
-        <ContextCounterMenu vm={vm} mode={mode} onModeChange={setMode} actions={actions} />
+        <ContextCounterMenu vm={vm} mode={mode} onModeChange={onModeChange} actions={actions} />
       </Ariakit.Popover>
     </>
   );

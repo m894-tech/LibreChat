@@ -1,158 +1,100 @@
 import { useMemo } from 'react';
-import { CONTEXT_COUNTER_CONTRACT_VERSION, toTokenInteger } from 'librechat-data-provider';
-import type {
-  TConversation,
-  TContextOccupied,
-  TContextSessionUsage,
-  TContextLastCallMeasurement,
-} from 'librechat-data-provider';
-import type { ContextCounterActions, ContextCounterViewModel } from './types';
-import type { TokenUsageView } from '~/hooks/Chat/useTokenUsage';
+import { Constants } from 'librechat-data-provider';
+import type { TConversation, TContextNextRequestEstimate } from 'librechat-data-provider';
+import type { ContextCounterActions, ContextCounterMode, ContextCounterViewModel } from './types';
+import type { ContextCounterView } from '~/hooks/Chat/contextCounter';
 import useCompactConversation, { supportsCompaction } from '~/hooks/Chat/useCompactConversation';
-import useTokenUsage from '~/hooks/Chat/useTokenUsage';
-import { DEFAULT_CAPABILITIES } from './types';
-import { groupToolTokens } from '~/utils';
+import { useComposerDraft, useContextCounter, useContextCounterEnabled } from '~/hooks/Chat';
 
 interface Params {
   index: number;
   conversation: TConversation | null;
   isSubmitting: boolean;
+  /** The dark menu is open — the only state in which estimates are requested (§6.3). */
+  menuOpen: boolean;
   compactionEnabled: boolean;
 }
 
 interface Model {
   vm: ContextCounterViewModel;
   actions: ContextCounterActions;
+  mode: ContextCounterMode;
+  setMode: (mode: ContextCounterMode) => void;
 }
 
 /**
- * Maps the pre-invoke server snapshot of the branch's last generation to
- * `lastCallMeasurement`. The snapshot is the server's own count reconciled
- * after the call, not raw provider usage, so it is labelled `server_estimate`
- * (§10.5). Composition is closed with an `other` remainder so the segments
- * sum to `input` (§10.21); a negative remainder is surfaced as a mismatch.
+ * Stream D reports the lifecycle status beside the stored answer; the pure
+ * components read one record, so the status travels on it. A status without
+ * an answer («считаем» / ошибка до первого ответа) becomes an empty record
+ * with that status — `deriveNextPanel` shows it as «нет данных».
  */
-function lastCallFromSnapshot(
-  view: TokenUsageView,
-  conversation: TConversation | null,
-): TContextLastCallMeasurement | null {
-  const snapshot = view.snapshotActive ? view.snapshot : null;
-  if (snapshot == null) {
+function estimateRecord(view: ContextCounterView): TContextNextRequestEstimate | null {
+  const { estimate } = view;
+  if (estimate.estimate != null) {
+    return {
+      ...estimate.estimate,
+      status: estimate.status,
+      staleReason: estimate.staleReason,
+      errorCode: estimate.errorCode,
+    };
+  }
+  if (estimate.status === 'unavailable') {
     return null;
   }
-  const breakdown = snapshot.breakdown;
-  const window = toTokenInteger(breakdown.maxContextTokens);
-  const budget = snapshot.contextBudget != null ? toTokenInteger(snapshot.contextBudget) : window;
-  const remaining =
-    snapshot.remainingContextTokens != null
-      ? toTokenInteger(snapshot.remainingContextTokens)
-      : null;
-  const instructions = toTokenInteger(
-    snapshot.effectiveInstructionTokens ?? breakdown.instructionTokens,
-  );
-  const input =
-    remaining != null
-      ? Math.max(0, budget - remaining)
-      : instructions + toTokenInteger(breakdown.messageTokens);
-  const groups = groupToolTokens(breakdown.toolTokenCounts, breakdown.deferredToolNames);
-  const mcpTools = groups.mcp + groups.mcpDeferred;
-  const toolCalls = Math.min(
-    toTokenInteger(breakdown.toolMessageTokens),
-    toTokenInteger(breakdown.messageTokens),
-  );
-  const messages = toTokenInteger(breakdown.messageTokens) - toolCalls;
-  const systemPrompt = Math.max(0, instructions - mcpTools);
-  const known = messages + toolCalls + systemPrompt + mcpTools;
-  const composition: TContextOccupied = {
-    messages,
-    toolCalls,
-    systemPrompt,
-    mcpTools,
-    attachments: 0,
-    other: Math.max(0, input - known),
-  };
   return {
-    version: CONTEXT_COUNTER_CONTRACT_VERSION,
-    conversationId: conversation?.conversationId ?? '',
-    branchLeafId: view.branchTotals.tailId ?? '',
-    callId: snapshot.runId ?? snapshot.anchorMessageId ?? '',
-    responseMessageId: snapshot.anchorMessageId ?? undefined,
-    measuredAt: 0,
-    configuration: {
-      endpoint: conversation?.endpoint ?? undefined,
-      provider: snapshot.provider,
-      model: snapshot.model ?? conversation?.model ?? undefined,
-      agentId: snapshot.agentId ?? conversation?.agent_id ?? null,
-    },
-    source: 'server_estimate',
-    complete: true,
-    budget: {
-      window: window > 0 ? window : null,
-      reserve: Math.max(0, window - budget),
-      inputLimit: null,
-      budget: budget > 0 ? budget : null,
-    },
-    input,
-    output: toTokenInteger(snapshot.completedOutputTokens),
-    cacheRead: toTokenInteger(snapshot.cacheRead),
-    cacheWrite: toTokenInteger(snapshot.cacheWrite),
-    composition,
-    compositionSource: 'server_estimate',
-    compositionMismatch: known > input,
-  };
-}
-
-function sessionUsageFromBranch(
-  view: TokenUsageView,
-  conversation: TConversation | null,
-): TContextSessionUsage | null {
-  if (!view.hasUsage) {
-    return null;
-  }
-  const usage = view.branchUsage;
-  return {
-    version: CONTEXT_COUNTER_CONTRACT_VERSION,
-    conversationId: conversation?.conversationId ?? '',
-    branchLeafId: view.branchTotals.tailId ?? '',
-    scope: 'branch',
-    complete: true,
-    cacheSplittable: true,
-    input: toTokenInteger(usage.input),
-    output: toTokenInteger(usage.output),
-    cacheRead: toTokenInteger(usage.cacheRead),
-    cacheWrite: toTokenInteger(usage.cacheWrite),
-    calls: toTokenInteger(view.branchTotals.counted),
-    updatedAt: 0,
+    version: 1,
+    conversationId: view.conversationId,
+    branchLeafId: view.leafId,
+    revision: 0,
+    fingerprint: view.inputs.fingerprint,
+    status: estimate.status,
+    staleReason: estimate.staleReason,
+    errorCode: estimate.errorCode,
+    source: 'unavailable',
+    computedAt: 0,
+    configuration: view.inputs.current.configuration,
+    budget: { window: null, reserve: 0, inputLimit: null, budget: null },
+    occupied: { messages: 0, toolCalls: 0, systemPrompt: 0, mcpTools: 0, attachments: 0, other: 0 },
+    cache: { read: null, write: null },
+    excluded: null,
   };
 }
 
 /**
- * Interim adapter over the existing `useTokenUsage` view. Stream D replaces
- * this hook with its conversation-level stores; the components above it do
- * not change. No dry-run estimate exists yet, so `nextRequestEstimate` stays
- * `null` («нет данных») instead of the forbidden `chars/4` guess (§6.5).
+ * The one adapter between stream D's `useContextCounter` view-model and the
+ * pure menu/indicator components. Everything the components need is mapped
+ * here; nothing below this hook reaches into stores.
  */
 export function useContextCounterModel({
   index,
   conversation,
   isSubmitting,
+  menuOpen,
   compactionEnabled,
 }: Params): Model {
-  const view = useTokenUsage({ index, conversation, isSubmitting });
+  const enabled = useContextCounterEnabled();
+  const draft = useComposerDraft(index);
   const compaction = useCompactConversation();
-  const compressionSupported = compactionEnabled && supportsCompaction(conversation?.endpoint);
+  const compressSupported =
+    compactionEnabled && supportsCompaction(conversation?.endpoint) && compaction.canCompact;
+  const view = useContextCounter({
+    index,
+    conversation,
+    draft,
+    menuOpen,
+    isSubmitting,
+    enabled,
+    compressSupported,
+  });
 
   const vm = useMemo<ContextCounterViewModel>(
     () => ({
-      conversationId: conversation?.conversationId ?? null,
-      configuration: {
-        endpoint: conversation?.endpoint ?? undefined,
-        model: conversation?.model ?? undefined,
-        agentId: conversation?.agent_id ?? null,
-      },
-      nextRequestEstimate: null,
-      lastCallMeasurement: lastCallFromSnapshot(view, conversation),
-      sessionUsage: sessionUsageFromBranch(view, conversation),
+      conversationId: view.conversationId,
+      configuration: view.inputs.current.configuration,
+      nextRequestEstimate: estimateRecord(view),
+      lastCallMeasurement: view.lastCall.measurement,
+      lastCallMismatch: view.lastCall.configMismatch,
+      sessionUsage: view.sessionUsage,
       activity: {
         streaming: isSubmitting && !compaction.isCompacting,
         sending: false,
@@ -160,29 +102,19 @@ export function useContextCounterModel({
         modelSwitching: false,
       },
       capabilities: {
-        ...DEFAULT_CAPABILITIES,
-        compressionSupported: compressionSupported && compaction.canCompact,
-        estimateSupported: false,
+        compressionSupported: compressSupported,
+        estimateSupported: true,
+        compressThresholdPercent: 80,
       },
-      isEmptyChat: view.branchTotals.total === 0,
+      isEmptyChat: view.leafId === Constants.NO_PARENT,
     }),
-    [
-      conversation,
-      view,
-      isSubmitting,
-      compaction.isCompacting,
-      compaction.canCompact,
-      compressionSupported,
-    ],
+    [view, isSubmitting, compaction.isCompacting, compressSupported],
   );
 
   const actions = useMemo<ContextCounterActions>(
-    () => ({
-      recalculate: () => undefined,
-      compress: compaction.compact,
-    }),
-    [compaction.compact],
+    () => ({ recalculate: view.recalculate, compress: compaction.compact }),
+    [view.recalculate, compaction.compact],
   );
 
-  return { vm, actions };
+  return { vm, actions, mode: view.mode, setMode: view.setMode };
 }

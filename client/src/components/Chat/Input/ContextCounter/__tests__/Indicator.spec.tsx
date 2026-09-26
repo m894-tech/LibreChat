@@ -1,8 +1,7 @@
 import React from 'react';
-import { Provider } from 'jotai';
 import userEvent from '@testing-library/user-event';
 import { render, screen, waitFor } from '@testing-library/react';
-import type { ContextCounterViewModel } from '../types';
+import type { ContextCounterMode, ContextCounterViewModel } from '../types';
 import {
   staleVm,
   normalVm,
@@ -22,6 +21,26 @@ const actions = { recalculate: jest.fn(), compress: jest.fn() };
 function Mini({ vm }: { vm: ContextCounterViewModel }) {
   const format = useContextCounterFormatter();
   return <MiniIndicator vm={vm} format={format} />;
+}
+
+/** Stands in for the host: mode lives above the indicator, as in the adapter. */
+function Host({
+  vm,
+  onOpenChange,
+}: {
+  vm: ContextCounterViewModel;
+  onOpenChange?: (open: boolean) => void;
+}) {
+  const [mode, setMode] = React.useState<ContextCounterMode>('next');
+  return (
+    <ContextCounterIndicator
+      vm={vm}
+      actions={actions}
+      mode={mode}
+      onModeChange={setMode}
+      onOpenChange={onOpenChange}
+    />
+  );
 }
 
 beforeAll(async () => {
@@ -52,21 +71,20 @@ describe('MiniIndicator — §9 table', () => {
 describe('ContextCounterIndicator — menu shell', () => {
   it('keeps the toggle mode and the mini-indicator after the menu closes (§10.14/29)', async () => {
     const user = userEvent.setup();
-    render(
-      <Provider>
-        <ContextCounterIndicator vm={normalVm} actions={actions} />
-      </Provider>,
-    );
+    const onOpenChange = jest.fn();
+    render(<Host vm={normalVm} onOpenChange={onOpenChange} />);
     const trigger = screen.getByTestId('context-counter');
     expect(trigger).toHaveAttribute('aria-label', 'Context: ≈90.1 / 451.3K 20%');
 
     await user.click(trigger);
     const toggle = await screen.findByTestId('cc-mode-toggle');
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
     await user.click(toggle);
     expect(toggle).toHaveAttribute('aria-pressed', 'true');
 
     await user.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByTestId('cc-menu')).not.toBeInTheDocument());
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
     expect(screen.getByTestId('cc-mini')).toHaveTextContent('≈90.1 / 451.3K 20%');
 
     await user.click(trigger);
@@ -75,11 +93,7 @@ describe('ContextCounterIndicator — menu shell', () => {
 
   it('agrees with the menu on status and precision (§10.33)', async () => {
     const user = userEvent.setup();
-    render(
-      <Provider>
-        <ContextCounterIndicator vm={calculatingVm} actions={actions} />
-      </Provider>,
-    );
+    render(<Host vm={calculatingVm} />);
     expect(screen.getByTestId('cc-mini')).toHaveTextContent('calculating…');
     await user.click(screen.getByTestId('context-counter'));
     expect(await screen.findByTestId('cc-status')).toHaveTextContent('Calculating context');

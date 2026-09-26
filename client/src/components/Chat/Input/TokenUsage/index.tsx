@@ -266,20 +266,30 @@ function TokenUsageIndicator({
 }
 
 /** Context counter v2 (`interface.contextCounterV2`): the single-menu redesign
- *  over the same data, adapter-wired until its own stores land. */
+ *  over the conversation-owned stores, wired through one adapter. */
 function ContextCounterHost({
   index,
   conversation,
   isSubmitting,
   compactionEnabled,
 }: TokenUsageProps & { compactionEnabled: boolean }) {
-  const { vm, actions } = useContextCounterModel({
+  const [menuOpen, setMenuOpen] = useState(false);
+  const { vm, actions, mode, setMode } = useContextCounterModel({
     index,
     conversation,
     isSubmitting,
+    menuOpen,
     compactionEnabled,
   });
-  return <ContextCounterIndicator vm={vm} actions={actions} />;
+  return (
+    <ContextCounterIndicator
+      vm={vm}
+      actions={actions}
+      mode={mode}
+      onModeChange={setMode}
+      onOpenChange={setMenuOpen}
+    />
+  );
 }
 
 /** Config gate kept outside the indicator so disabled deployments mount nothing */
