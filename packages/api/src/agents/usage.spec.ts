@@ -2471,6 +2471,7 @@ describe('buildAbortedResponseMetadata', () => {
       cacheWrite: 0,
       cacheRead: 0,
       cost: 0.001,
+      calls: 1,
     });
   });
 
