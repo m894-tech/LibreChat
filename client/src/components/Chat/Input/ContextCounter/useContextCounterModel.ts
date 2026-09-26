@@ -9,6 +9,7 @@ import { useComposerDraft, useContextCounter, useContextCounterEnabled } from '~
 interface Params {
   index: number;
   conversation: TConversation | null;
+  addedConvo: TConversation | null;
   isSubmitting: boolean;
   /** The dark menu is open — the only state in which estimates are requested (§6.3). */
   menuOpen: boolean;
@@ -68,18 +69,21 @@ function estimateRecord(view: ContextCounterView): TContextNextRequestEstimate |
 export function useContextCounterModel({
   index,
   conversation,
+  addedConvo,
   isSubmitting,
   menuOpen,
   compactionEnabled,
 }: Params): Model {
   const enabled = useContextCounterEnabled();
-  const draft = useComposerDraft(index);
+  const conversationId = conversation?.conversationId ?? Constants.NEW_CONVO;
+  const draft = useComposerDraft(index, conversationId);
   const compaction = useCompactConversation();
   const compressSupported =
     compactionEnabled && supportsCompaction(conversation?.endpoint) && compaction.canCompact;
   const view = useContextCounter({
     index,
     conversation,
+    addedConvo,
     draft,
     menuOpen,
     isSubmitting,

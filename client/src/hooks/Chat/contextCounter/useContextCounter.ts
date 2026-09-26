@@ -41,6 +41,7 @@ export const DEFAULT_COMPRESS_THRESHOLD = 0.8;
 export type UseContextCounterParams = {
   index: number;
   conversation: TConversation | null;
+  addedConvo: TConversation | null;
   draft: ComposerDraft;
   /** The dark menu is open — the only state in which estimates are requested (§6.3). */
   menuOpen: boolean;
@@ -83,6 +84,7 @@ export default function useContextCounter(params: UseContextCounterParams): Cont
   const {
     index,
     conversation,
+    addedConvo,
     draft,
     menuOpen,
     isSubmitting,
@@ -92,7 +94,7 @@ export default function useContextCounter(params: UseContextCounterParams): Cont
   } = params;
   const conversationId = conversation?.conversationId ?? Constants.NEW_CONVO;
   const queryClient = useQueryClient();
-  const inputs = useContextInputs({ index, conversation, draft });
+  const inputs = useContextInputs({ index, conversation, addedConvo, draft });
   const { leafId, fingerprint, changeReason, current, request } = inputs;
 
   const buildRequest = useCallback(

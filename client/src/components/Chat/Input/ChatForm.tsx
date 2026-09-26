@@ -33,19 +33,23 @@ import {
   useAddedChatContext,
   useAssistantsMapContext,
 } from '~/Providers';
-import { SessionAgentsBar, SessionSummaryPill, NewConversationButton, PrivateToggle } from './SessionMenu';
-import OrchRunBanner from './OrchRunBanner';
+import {
+  SessionAgentsBar,
+  SessionSummaryPill,
+  NewConversationButton,
+  PrivateToggle,
+} from './SessionMenu';
 import {
   PendingToolApprovalButton,
   PendingToolApprovalPanel,
 } from '~/components/Chat/approval/Review';
 import ExportAndShareMenu from '~/components/Chat/ExportAndShareMenu';
-import BookmarkMenu from '~/components/Chat/Menus/BookmarkMenu';
 import PendingManualSkillsChips from './PendingManualSkillsChips';
-import AddMultiConvo from '~/components/Chat/AddMultiConvo';
+import BookmarkMenu from '~/components/Chat/Menus/BookmarkMenu';
 import usePastedTextEdit from '~/hooks/Files/usePastedTextEdit';
 import useAskAnswerMode from '~/hooks/Input/useAskAnswerMode';
 import AskUserQuestionPopover from './AskUserQuestionPopover';
+import AddMultiConvo from '~/components/Chat/AddMultiConvo';
 import InterruptSteerButton from './InterruptSteerButton';
 import PastedTextDialog from './Files/PastedTextDialog';
 import DuringRunSendButton from './DuringRunSendButton';
@@ -63,6 +67,7 @@ import InFlightSteers from './InFlightSteers';
 import TextareaHeader from './TextareaHeader';
 import PromptsCommand from './PromptsCommand';
 import { submitFromComposer } from './submit';
+import OrchRunBanner from './OrchRunBanner';
 import SkillsCommand from './SkillsCommand';
 import AudioRecorder from './AudioRecorder';
 import AutoPlayAudio from './AutoPlayAudio';
@@ -891,7 +896,12 @@ const ChatForm = memo(function ChatForm({
                 </div>
                 <div className="grow" />
                 <PrivateToggle index={index} />
-                <TokenUsage index={index} conversation={conversation} isSubmitting={isSubmitting} />
+                <TokenUsage
+                  index={index}
+                  conversation={conversation}
+                  addedConvo={addedConvo}
+                  isSubmitting={isSubmitting}
+                />
                 <div
                   className="flex shrink-0 items-center gap-1.5"
                   data-testid="composer-chrome-cluster"

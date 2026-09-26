@@ -45,6 +45,12 @@ describe('resolveContextEstimateConfig', () => {
         endpoints: { agents: { contextEstimate: { rateLimit: { burst: 2 } } } },
       } as never),
     ).toMatchObject({ enabled: true, burst: 2, perMinute: 30 });
+    expect(
+      resolveContextEstimateConfig({
+        interfaceConfig: { contextCounterV2: true },
+        endpoints: { agents: { contextEstimate: { enabled: false } } },
+      } as never),
+    ).toMatchObject({ enabled: false });
   });
 });
 

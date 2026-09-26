@@ -6,11 +6,11 @@ import type {
   TMessage,
   TConversation,
   TEphemeralAgent,
+  TContextEstimateRequest,
   TContextStaleReason,
   TContextConfiguration,
   TContextFingerprintInput,
 } from 'librechat-data-provider';
-import type { TContextEstimateRequest } from '~/data-provider/ContextCounter';
 import type { CurrentConfiguration } from '~/store/contextCounter';
 import { diffFingerprint, hashFingerprint, hashString } from '~/store/contextCounter';
 import { useLatestMessage } from '~/hooks/Messages/useLatestMessage';
@@ -23,16 +23,20 @@ import useTokenLimits from '../useTokenLimits';
 export type ComposerDraft = {
   text: string;
   attachmentIds: string[];
+  quotes: string[];
+  manualSkills: string[];
 };
 
 /**
  * Host adapter for the composer: react-hook-form text plus the attachment
  * ids of the pane. Must render inside `ChatFormProvider` (the composer).
  */
-export function useComposerDraft(index: number): ComposerDraft {
+export function useComposerDraft(index: number, conversationId: string): ComposerDraft {
   const { control } = useChatFormContext();
   const text = useWatch({ control, name: 'text' });
   const files = useRecoilValue(store.filesByIndex(index));
+  const quotes = useRecoilValue(store.pendingQuotesByConvoId(conversationId));
+  const manualSkills = useRecoilValue(store.pendingManualSkillsByConvoId(conversationId));
   const attachmentIds = useMemo(() => {
     const ids: string[] = [];
     for (const file of files.values()) {
@@ -43,7 +47,10 @@ export function useComposerDraft(index: number): ComposerDraft {
     }
     return ids.sort();
   }, [files]);
-  return useMemo(() => ({ text: text ?? '', attachmentIds }), [text, attachmentIds]);
+  return useMemo(
+    () => ({ text: text ?? '', attachmentIds, quotes, manualSkills }),
+    [text, attachmentIds, quotes, manualSkills],
+  );
 }
 
 function toNumber(value: unknown): number | null {
@@ -107,6 +114,7 @@ export type ContextCounterInputs = {
 export type UseContextInputsParams = {
   index: number;
   conversation: TConversation | null;
+  addedConvo: TConversation | null;
   draft: ComposerDraft;
 };
 
@@ -118,6 +126,7 @@ export type UseContextInputsParams = {
 export default function useContextInputs({
   index,
   conversation,
+  addedConvo,
   draft,
 }: UseContextInputsParams): ContextCounterInputs {
   const conversationId = conversation?.conversationId ?? Constants.NEW_CONVO;
@@ -168,6 +177,14 @@ export default function useContextInputs({
       toolIds,
       branchLeafId: leafId,
       historyRevision: `${leafId}:${leaf?.updatedAt ?? ''}`,
+      assemblySettingsHash: hashString(
+        JSON.stringify({
+          addedConvo,
+          chatProjectId: conversation?.chatProjectId ?? null,
+          quotes: draft.quotes,
+          manualSkills: draft.manualSkills,
+        }),
+      ),
       draftHash: hashString(draft.text),
       attachmentIds: draft.attachmentIds,
     };
@@ -183,6 +200,8 @@ export default function useContextInputs({
     maxOutput,
     leaf,
     draft,
+    addedConvo,
+    conversation?.chatProjectId,
   ]);
 
   const fingerprint = useMemo(() => hashFingerprint(fingerprintInput), [fingerprintInput]);
@@ -206,13 +225,17 @@ export default function useContextInputs({
       endpoint: endpoint || undefined,
       endpointType,
       model: model ?? undefined,
-      agent_id: agentId,
-      spec,
-      promptPrefix,
-      maxContextTokens: limits.maxContextTokens ?? null,
-      maxOutputTokens: maxOutput,
+      agent_id: agentId ?? undefined,
+      spec: spec ?? undefined,
+      promptPrefix: promptPrefix ?? undefined,
+      maxContextTokens: limits.maxContextTokens ?? undefined,
+      maxOutputTokens: maxOutput ?? undefined,
       text: draft.text,
       files: draft.attachmentIds,
+      quotes: draft.quotes,
+      manualSkills: draft.manualSkills,
+      addedConvo: addedConvo ?? undefined,
+      chatProjectId: conversation?.chatProjectId ?? undefined,
       ephemeralAgent,
     }),
     [
@@ -227,6 +250,8 @@ export default function useContextInputs({
       limits.maxContextTokens,
       maxOutput,
       draft,
+      addedConvo,
+      conversation?.chatProjectId,
       ephemeralAgent,
     ],
   );

@@ -17,6 +17,7 @@ import Gauge from './Gauge';
 interface TokenUsageProps {
   index: number;
   conversation: TConversation | null;
+  addedConvo?: TConversation | null;
   isSubmitting: boolean;
 }
 
@@ -270,6 +271,7 @@ function TokenUsageIndicator({
 function ContextCounterHost({
   index,
   conversation,
+  addedConvo,
   isSubmitting,
   compactionEnabled,
 }: TokenUsageProps & { compactionEnabled: boolean }) {
@@ -277,6 +279,7 @@ function ContextCounterHost({
   const { vm, actions, mode, setMode } = useContextCounterModel({
     index,
     conversation,
+    addedConvo: addedConvo ?? null,
     isSubmitting,
     menuOpen,
     compactionEnabled,

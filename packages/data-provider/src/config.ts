@@ -1093,6 +1093,8 @@ export type TCheckpointerType = z.infer<typeof checkpointerTypeSchema>;
  */
 export const contextEstimateSchema = z
   .object({
+    /** Independent kill switch; the shared UI flag still has to be enabled. */
+    enabled: z.boolean().optional(),
     rateLimit: z
       .object({
         burst: z.number().int().min(1).max(100).optional(),

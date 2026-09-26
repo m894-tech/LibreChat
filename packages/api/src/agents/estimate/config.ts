@@ -30,7 +30,7 @@ export function resolveContextEstimateConfig(
   const configured: TContextEstimateConfig | undefined =
     appConfig?.endpoints?.[EModelEndpoint.agents]?.contextEstimate;
   return {
-    enabled: appConfig?.interfaceConfig?.contextCounterV2 === true,
+    enabled: appConfig?.interfaceConfig?.contextCounterV2 === true && configured?.enabled !== false,
     burst: configured?.rateLimit?.burst ?? CONTEXT_ESTIMATE_DEFAULTS.burst,
     perMinute: configured?.rateLimit?.perMinute ?? CONTEXT_ESTIMATE_DEFAULTS.perMinute,
     maxExcludedPreviews:
