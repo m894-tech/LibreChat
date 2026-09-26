@@ -233,7 +233,8 @@ describe('AgentClient.buildResponseMetadata — context counter v2 last-call mea
         agent: { id: 'agent-1', endpoint: 'anthropic' },
         req: {
           config: {
-            endpoints: { agents: { contextUsage: { enabled }, maxRetainedToolCountChars: 0 } },
+            interfaceConfig: { contextCounterV2: enabled },
+            endpoints: { agents: { maxRetainedToolCountChars: 0 } },
           },
         },
       },

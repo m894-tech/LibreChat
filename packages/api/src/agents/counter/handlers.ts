@@ -1,5 +1,4 @@
 import { logger } from '@librechat/data-schemas';
-import { EModelEndpoint } from 'librechat-data-provider';
 import type { AppConfig } from '@librechat/data-schemas';
 import type { Response } from 'express';
 import type { ServerRequest } from '~/types';
@@ -20,14 +19,14 @@ export interface ContextUsageHandlerDeps {
     filter: { conversationId: string; user: string },
     select?: string,
   ) => Promise<BranchUsageMessage[]>;
-  /** Defaults to the `endpoints.agents.contextUsage.enabled` flag on the request's app config. */
+  /** Defaults to the `interface.contextCounterV2` flag on the request's app config. */
   isEnabled?: (req: ServerRequest) => boolean;
   now?: () => number;
 }
 
-/** §11 feature flag: `endpoints.agents.contextUsage.enabled` in `librechat.yaml`. */
+/** §11 rollout flag shared with the client: `interface.contextCounterV2` in `librechat.yaml`. */
 export function isContextUsageEnabled(config: AppConfig | undefined | null): boolean {
-  return config?.endpoints?.[EModelEndpoint.agents]?.contextUsage?.enabled === true;
+  return config?.interfaceConfig?.contextCounterV2 === true;
 }
 
 function queryString(value: unknown): string | undefined {
@@ -38,10 +37,11 @@ function queryString(value: unknown): string | undefined {
 }
 
 /**
- * `GET /api/agents/context/usage?conversationId=…&messageId=…` — the persisted
- * `lastCallMeasurement` and `sessionUsage` of the branch root → `messageId`.
- * Reads only the caller's own conversation (404 for anything else, so a foreign
- * id learns nothing) and never touches the model or the ledger.
+ * `GET /api/agents/context/usage?conversationId=…&leafId=…` — the persisted
+ * `lastCallMeasurement` and `sessionUsage` of the branch root → `leafId`
+ * (`messageId` is accepted as an alias). Reads only the caller's own
+ * conversation (404 for anything else, so a foreign id learns nothing) and
+ * never touches the model or the ledger.
  */
 export function createContextUsageHandler({
   getConvoOwnership,
@@ -60,9 +60,9 @@ export function createContextUsageHandler({
         return;
       }
       const conversationId = queryString(req.query.conversationId);
-      const messageId = queryString(req.query.messageId);
+      const messageId = queryString(req.query.leafId) ?? queryString(req.query.messageId);
       if (conversationId == null || messageId == null) {
-        res.status(400).json({ message: 'conversationId and messageId are required' });
+        res.status(400).json({ message: 'conversationId and leafId are required' });
         return;
       }
       const userId = String(req.user.id);

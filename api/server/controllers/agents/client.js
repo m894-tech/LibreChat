@@ -3668,7 +3668,7 @@ class AgentClient extends BaseClient {
     if (usage) {
       metadata.usage = usage;
     }
-    /** Context counter v2 (§7 `lastCallMeasurement`, flag `endpoints.agents.contextUsage`):
+    /** Context counter v2 (§7 `lastCallMeasurement`, flag `interface.contextCounterV2`):
      *  the final primary call's provider usage against the budget of the snapshot that
      *  preceded it, frozen on the response so a reload reads the same measurement. */
     if (
