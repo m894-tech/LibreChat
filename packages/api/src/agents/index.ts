@@ -17,6 +17,7 @@ export * from './deletion';
 export * from './discovery';
 export * from './edges';
 export * from './errors';
+export * from './estimate';
 export * from './eventRetention';
 export * from './envelope';
 export * from './execution';
