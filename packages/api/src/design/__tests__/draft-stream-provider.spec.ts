@@ -211,12 +211,16 @@ describe('createDraftStreamProvider', (): void => {
       submitInput(),
       async (): Promise<void> => undefined,
     );
-    const expectation = await expect(pending).rejects.toMatchObject({
-      name: 'DesignError',
-      code: 'TIMEOUT',
-    });
+    let observed: unknown;
+    const tracked: Promise<void> = pending.then(
+      (): void => undefined,
+      (error: unknown): void => {
+        observed = error;
+      },
+    );
     await jest.runOnlyPendingTimersAsync();
-    await expectation;
+    await tracked;
+    expect(observed).toMatchObject({ name: 'DesignError', code: 'TIMEOUT' });
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
