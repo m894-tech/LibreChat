@@ -37,8 +37,10 @@ export function LastCall({ mode, last, next, lastOutput, format }: LastCallProps
     return (
       <div className="space-y-1" data-testid="cc-last-call">
         <div className="flex items-center justify-between gap-4 text-sm">
-          <span className="text-text-secondary">{localize('com_ui_cc_mode_last')}</span>
-          <span className="text-xs text-text-tertiary">{localize('com_ui_cc_no_last_call')}</span>
+          <span className="shrink-0 text-text-secondary">{localize('com_ui_cc_mode_last')}</span>
+          <span className="text-right text-xs text-text-tertiary">
+            {localize('com_ui_cc_no_last_call')}
+          </span>
         </div>
         {viewingLast && <NextLine next={next} format={format} />}
       </div>

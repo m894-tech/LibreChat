@@ -109,7 +109,7 @@ function ActionButton({
         onClick={onClick}
         disabled={disabledReason != null}
         aria-describedby={hint != null ? describedById : undefined}
-        className="h-8 w-full justify-center gap-2 text-sm"
+        className="h-auto min-h-8 w-full justify-center gap-2 whitespace-normal py-1 text-center text-sm"
         data-testid={testId}
       >
         {icon}
