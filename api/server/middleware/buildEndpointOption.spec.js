@@ -79,6 +79,27 @@ describe('buildEndpointOption - defaultParamsEndpoint parsing', () => {
     jest.clearAllMocks();
   });
 
+  it('uses the agents builder for an ephemeral context estimate', async () => {
+    mockGetEndpointsConfig.mockResolvedValue({});
+    const req = createReq(
+      {
+        endpoint: EModelEndpoint.openAI,
+        model: 'gpt-4o',
+      },
+      { modelSpecs: null },
+    );
+    req.baseUrl = '/api/agents/context';
+    req.path = '/estimate';
+    const next = jest.fn();
+
+    await buildEndpointOption(req, createRes(), next);
+
+    expect(mockAgentBuildOptions).toHaveBeenCalledTimes(1);
+    expect(mockAgentBuildOptions.mock.calls[0][2].agent_id).toBeUndefined();
+    expect(req.body.endpointOption.endpoint).toBe(EModelEndpoint.openAI);
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
   it('should pass defaultParamsEndpoint to parseCompactConvo and preserve maxOutputTokens', async () => {
     mockGetEndpointsConfig.mockResolvedValue({
       AnthropicClaude: {
