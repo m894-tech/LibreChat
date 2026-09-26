@@ -100,6 +100,43 @@ describe('selectLastCallView', () => {
     expect(view.mismatchReason).toBe('limits_changed');
   });
 
+  it('an agent run measured under endpoint `agents` matches the same resolved provider', () => {
+    const measured = lastCallFixture({
+      configuration: {
+        endpoint: 'agents',
+        provider: 'anthropic',
+        model: 'claude',
+        agentId: 'agent_1',
+      },
+    });
+    const view = selectLastCallView(measured, {
+      ...current,
+      configuration: {
+        endpoint: 'anthropic',
+        provider: 'anthropic',
+        model: 'claude',
+        agentId: 'agent_1',
+      },
+    });
+    expect(view.configMismatch).toBe(false);
+  });
+
+  it('a different agent with the same model is still a mismatch', () => {
+    const measured = lastCallFixture({
+      configuration: { endpoint: 'agents', provider: 'anthropic', model: 'claude', agentId: 'a' },
+    });
+    const view = selectLastCallView(measured, {
+      ...current,
+      configuration: {
+        endpoint: 'anthropic',
+        provider: 'anthropic',
+        model: 'claude',
+        agentId: 'b',
+      },
+    });
+    expect(view.mismatchReason).toBe('model_changed');
+  });
+
   it('an unknown client window is not a mismatch', () => {
     const view = selectLastCallView(lastCallFixture(), { ...current, window: null });
     expect(view.configMismatch).toBe(false);
