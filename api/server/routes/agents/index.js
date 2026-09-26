@@ -59,6 +59,7 @@ const management = require('./management');
 const skills = require('./skills');
 const openai = require('./openai');
 const { v1 } = require('./v1');
+const context = require('./context');
 const chat = require('./chat');
 
 const { LIMIT_MESSAGE_IP, LIMIT_MESSAGE_USER } = process.env ?? {};
@@ -1187,5 +1188,6 @@ if (useMessageUserLimiter) {
 
 chatRouter.use('/', chat);
 router.use('/chat', chatRouter);
+router.use('/context', context);
 
 module.exports = router;
