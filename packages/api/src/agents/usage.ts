@@ -6,6 +6,7 @@ import type {
   TTokenUsageEvent,
   TContextUsageEvent,
   TTransactionsConfig,
+  TResponseUsageBucket,
 } from 'librechat-data-provider';
 import type { SubagentUsageEvent as AgentsSubagentUsageEvent } from '@librechat/agents';
 import type {
@@ -269,29 +270,94 @@ export function aggregateEmittedUsage(
   let cacheWrite = 0;
   let cacheRead = 0;
   let cost = 0;
+  let calls = 0;
+  let cacheSplittable = true;
+  const auxiliary = emptyUsageBucket();
+  const compress = emptyUsageBucket();
   /** Persist cost only with COMPLETE coverage — every call priced. A partial
    *  sum (e.g. one call's `computeUsageCostUSD` threw and emitted without cost)
    *  would read back as authoritative and under-report; omitting it makes the
    *  client treat coverage as unknown and hide the cost, matching the live fold.
    *  Naturally false when `contextCost` is off (no event carries cost). */
   let allHaveCost = true;
+  /** One fold per `runId:seq` (§10.13): a redelivered event — resume replay,
+   *  duplicated job-store row — must not double the response's spend. Events
+   *  without an identity fold every time, as before. */
+  const folded = new Set<string>();
   for (const event of events) {
+    const key = usageEventKey(event);
+    if (key != null) {
+      if (folded.has(key)) {
+        continue;
+      }
+      folded.add(key);
+    }
     const units = normalizeEventUnits(event);
     input += units.input;
     output += units.output;
     cacheWrite += units.cacheWrite;
     cacheRead += units.cacheRead;
+    calls += 1;
+    if (!units.cacheSplittable) {
+      cacheSplittable = false;
+    }
+    const bucket = usageKindBucket(event, auxiliary, compress);
+    if (bucket != null) {
+      bucket.input += units.input;
+      bucket.output += units.output;
+      bucket.cacheWrite += units.cacheWrite;
+      bucket.cacheRead += units.cacheRead;
+      bucket.calls += 1;
+    }
     if (event.cost != null) {
       cost += event.cost;
     } else {
       allHaveCost = false;
     }
   }
-  const rollup: TResponseUsage = { input, output, cacheWrite, cacheRead };
+  if (calls === 0) {
+    return null;
+  }
+  const rollup: TResponseUsage = { input, output, cacheWrite, cacheRead, calls };
   if (allHaveCost) {
     rollup.cost = cost;
   }
+  if (auxiliary.calls > 0) {
+    rollup.auxiliary = auxiliary;
+  }
+  if (compress.calls > 0) {
+    rollup.compress = compress;
+  }
+  if (!cacheSplittable) {
+    rollup.cacheSplittable = false;
+  }
   return rollup;
+}
+
+/** Idempotency key of one emitted usage event; `null` when the emitter carried no identity. */
+export function usageEventKey(
+  event: Pick<TTokenUsageEvent, 'runId' | 'seq'> | null | undefined,
+): string | null {
+  if (event?.runId == null || event.seq == null) {
+    return null;
+  }
+  return `${event.runId}:${event.seq}`;
+}
+
+function emptyUsageBucket(): TResponseUsageBucket {
+  return { input: 0, output: 0, cacheWrite: 0, cacheRead: 0, calls: 0 };
+}
+
+/** Spend line a call belongs to: summaries are their own event (§8), every other tagged call is «в том числе». */
+function usageKindBucket(
+  event: TTokenUsageEvent,
+  auxiliary: TResponseUsageBucket,
+  compress: TResponseUsageBucket,
+): TResponseUsageBucket | null {
+  if (event.usage_type == null) {
+    return null;
+  }
+  return event.usage_type === 'summarization' ? compress : auxiliary;
 }
 
 /**
@@ -309,16 +375,18 @@ function normalizeEventUnits(event: TTokenUsageEvent): {
   output: number;
   cacheWrite: number;
   cacheRead: number;
+  /** False for a provider-less event whose cache split rests on the magnitude heuristic (§5 «Неизвестный»). */
+  cacheSplittable: boolean;
 } {
   const rawInput = event.input_tokens ?? 0;
   const rawOutput = event.output_tokens ?? 0;
   const total = event.total_tokens ?? 0;
   const cacheWrite = event.input_token_details?.cache_creation ?? 0;
   const cacheRead = event.input_token_details?.cache_read ?? 0;
-  const includesCache =
-    event.provider != null
-      ? inputTokensIncludesCache(event.provider)
-      : cacheWrite + cacheRead <= rawInput;
+  const knownProvider = event.provider != null && event.provider !== '';
+  const includesCache = knownProvider
+    ? inputTokensIncludesCache(event.provider)
+    : cacheWrite + cacheRead <= rawInput;
   const cacheAdjustment = includesCache ? 0 : cacheRead + cacheWrite;
   const output =
     total > rawInput + rawOutput + cacheAdjustment ? total - rawInput - cacheAdjustment : rawOutput;
@@ -327,6 +395,7 @@ function normalizeEventUnits(event: TTokenUsageEvent): {
     output,
     cacheWrite,
     cacheRead,
+    cacheSplittable: knownProvider || cacheWrite + cacheRead === 0,
   };
 }
 
@@ -334,7 +403,7 @@ function normalizeEventUnits(event: TTokenUsageEvent): {
  *  the call the latest pre-invoke snapshot precedes. Filtering by `runId` prevents
  *  a parallel run's later usage from being attributed to this snapshot; untagged
  *  events (older lib / resume) match any run for back-compat. */
-function finalPrimaryCall(
+export function finalPrimaryCall(
   events: ReadonlyArray<TTokenUsageEvent>,
   runId?: string,
 ): TTokenUsageEvent | undefined {

@@ -7,6 +7,7 @@ import type {
   TTraceRecordDetail,
 } from './types/traces';
 import type { TInsightsAccessResponse, TInsightsParams, TInsightsResponse } from './types/insights';
+import type { TContextUsageParams, TContextUsageSnapshot } from './types/contextUsage';
 import type { TFileConfig } from './file-config';
 import type * as tl from './types/tools';
 import type * as t from './types';
@@ -42,6 +43,13 @@ export function getInsights(params: TInsightsParams = {}): Promise<TInsightsResp
 
 export function getInsightsAccess(): Promise<TInsightsAccessResponse> {
   return request.get(endpoints.insightsAccess());
+}
+
+export function getAgentContextUsage({
+  conversationId,
+  messageId,
+}: TContextUsageParams): Promise<TContextUsageSnapshot> {
+  return request.get(endpoints.agentContextUsage(conversationId, messageId));
 }
 
 export function getConversationTraceAvailability(

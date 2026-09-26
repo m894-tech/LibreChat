@@ -56,6 +56,7 @@ const {
 } = require('~/server/services/Schedules');
 const responses = require('./responses');
 const management = require('./management');
+const contextUsage = require('./contextUsage');
 const skills = require('./skills');
 const openai = require('./openai');
 const { v1 } = require('./v1');
@@ -1149,6 +1150,8 @@ router.delete(
   ...steerLimiters,
   AgentQueuedTurnCancelController,
 );
+
+router.use('/context', contextUsage);
 
 router.use('/', v1);
 

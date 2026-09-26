@@ -469,6 +469,10 @@ export const skillFile = (id: string, relativePath: string) =>
 export const insights = () => `${BASE_URL}/api/insights`;
 export const insightsAccess = () => `${insights()}/access`;
 
+/* Context counter: persisted last call + branch session usage */
+export const agentContextUsage = (conversationId: string, messageId: string) =>
+  `${BASE_URL}/api/agents/context/usage?${new URLSearchParams({ conversationId, messageId }).toString()}`;
+
 /* Conversation traces */
 export const conversationTrace = (conversationId: string) =>
   `${BASE_URL}/api/traces/${encodeURIComponent(conversationId)}`;
