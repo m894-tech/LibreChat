@@ -1,0 +1,107 @@
+{
+  "id": "preview",
+  "projectId": "preview",
+  "kind": "canvas",
+  "schemaVersion": 1,
+  "title": "Swiss Editorial",
+  "revision": 2,
+  "designSystem": { "id": "swiss-editorial", "version": "1.0.0" },
+  "payload": {
+    "width": 800,
+    "height": 1000,
+    "nodes": [
+      {
+        "id": "background",
+        "type": "rect",
+        "parentId": null,
+        "locked": false,
+        "props": {
+          "x": 0,
+          "y": 0,
+          "width": 800,
+          "height": 1000,
+          "rotation": 0,
+          "opacity": 1,
+          "fill": "#FFFFFF"
+        },
+        "bindings": { "fill": "color.background" }
+      },
+      {
+        "id": "heading",
+        "type": "text",
+        "parentId": null,
+        "locked": false,
+        "props": {
+          "x": 48,
+          "y": 70,
+          "width": 700,
+          "height": 200,
+          "rotation": 0,
+          "opacity": 1,
+          "text": "Swiss Editorial\nДизайн системы",
+          "fontSize": 64,
+          "fontFamily": "Inter",
+          "fill": "#111111"
+        },
+        "bindings": {
+          "fill": "color.text",
+          "fontFamily": "font.family.heading",
+          "fontSize": "font.size.heading"
+        }
+      },
+      {
+        "id": "card",
+        "type": "rect",
+        "parentId": null,
+        "locked": false,
+        "props": {
+          "x": 48,
+          "y": 350,
+          "width": 704,
+          "height": 450,
+          "rotation": 0,
+          "opacity": 1,
+          "fill": "#EEEEEE"
+        },
+        "bindings": { "fill": "color.surface" }
+      },
+      {
+        "id": "body",
+        "type": "text",
+        "parentId": null,
+        "locked": false,
+        "props": {
+          "x": 80,
+          "y": 400,
+          "width": 640,
+          "height": 220,
+          "rotation": 0,
+          "opacity": 1,
+          "text": "Кириллица · версии · локальные правки\nПример макета. Не подтверждение UAT.",
+          "fontSize": 24,
+          "fontFamily": "Inter",
+          "fill": "#111111"
+        },
+        "bindings": { "fill": "color.text" }
+      },
+      {
+        "id": "accent",
+        "type": "rect",
+        "parentId": null,
+        "locked": false,
+        "props": {
+          "x": 48,
+          "y": 875,
+          "width": 150,
+          "height": 16,
+          "rotation": 0,
+          "opacity": 1,
+          "fill": "#222222"
+        },
+        "bindings": { "fill": "color.accent" }
+      }
+    ]
+  },
+  "assetRefs": [],
+  "archived": false
+}

@@ -1,0 +1,63 @@
+{
+  "brand": {
+    "id": "premium-minimal",
+    "version": "1.0.0",
+    "name": "Premium Minimal",
+    "baseSystemId": "neutral-business",
+    "baseSystemVersion": "1.0.0",
+    "tokens": {
+      "color.background": {
+        "type": "color",
+        "properties": ["fill"],
+        "value": "#FAFAFA"
+      },
+      "color.surface": {
+        "type": "color",
+        "properties": ["fill"],
+        "value": "#F0F0F0"
+      },
+      "color.text": {
+        "type": "color",
+        "properties": ["fill"],
+        "value": "#161616"
+      },
+      "color.accent": {
+        "type": "color",
+        "properties": ["fill"],
+        "value": "#333333"
+      },
+      "font.family.body": {
+        "type": "fontFamily",
+        "properties": ["fontFamily"],
+        "value": "Inter"
+      },
+      "font.family.heading": {
+        "type": "fontFamily",
+        "properties": ["fontFamily"],
+        "value": "Inter"
+      },
+      "font.size.heading": {
+        "type": "fontSize",
+        "properties": ["fontSize"],
+        "value": 48
+      }
+    },
+    "fonts": [
+      {
+        "family": "Inter",
+        "licenseText": "SIL OPEN FONT LICENSE Version 1.1"
+      }
+    ],
+    "designNotes": "Strict minimal high contrast, generous whitespace. Product imagery is content, not decorative substitute."
+  },
+  "designNotes": "Strict minimal high contrast, generous whitespace. Product imagery is content, not decorative substitute.",
+  "referenceURLs": ["https://vucko.co", "https://ui.shadcn.com"],
+  "reviewStatus": "candidate",
+  "adapters": {
+    "canvas": "pinned-bindings",
+    "web": "materialized-colors",
+    "presentation": "raster",
+    "image": "guidance-only"
+  },
+  "fontLicense": "OFL1.1 bundled resources"
+}

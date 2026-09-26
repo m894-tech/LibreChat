@@ -1,13 +1,14 @@
 import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
-import { BarChart3, MessagesSquare } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { BarChart3, MessagesSquare, Paintbrush } from 'lucide-react';
 import { useUserKeyQuery } from 'librechat-data-provider/react-query';
 import { getConfigDefaults, getEndpointField } from 'librechat-data-provider';
 import type { TEndpointsConfig } from 'librechat-data-provider';
 import type { NavLink } from '~/common';
 import { useGetEndpointsQuery, useGetStartupConfig, useInsightsAccessQuery } from '~/data-provider';
 import ConversationsSection from '~/components/UnifiedSidebar/ConversationsSection';
+import DesignNavPanel from '~/components/UnifiedSidebar/DesignNavPanel';
 import useSideNavLinks from '~/hooks/Nav/useSideNavLinks';
 import { useAuthContext } from '~/hooks';
 import store from '~/store';
@@ -72,11 +73,24 @@ export default function useUnifiedSidebarLinks() {
       Component: ConversationsSection,
     };
 
+    const designLinks: NavLink[] =
+      (interfaceConfig as { design?: boolean }).design === true
+        ? [
+            {
+              title: 'com_ui_design',
+              label: '',
+              icon: Paintbrush,
+              id: 'design',
+              Component: DesignNavPanel,
+            },
+          ]
+        : [];
+
     if (
       !insightsFeatureEnabled ||
       (!isInsightsRoute && !isInsightsAccessLoading && insightsAccess?.access !== true)
     ) {
-      return [conversationLink, ...sideNavLinks];
+      return [conversationLink, ...designLinks, ...sideNavLinks];
     }
 
     const insightsLink: NavLink = {
@@ -95,10 +109,11 @@ export default function useUnifiedSidebarLinks() {
     const nextLinks = [...sideNavLinks];
     nextLinks.splice(mcpIndex >= 0 ? mcpIndex + 1 : nextLinks.length, 0, insightsLink);
 
-    return [conversationLink, ...nextLinks];
+    return [conversationLink, ...designLinks, ...nextLinks];
   }, [
     insightsAccess?.access,
     insightsFeatureEnabled,
+    interfaceConfig,
     isInsightsAccessLoading,
     isInsightsRoute,
     location.pathname,

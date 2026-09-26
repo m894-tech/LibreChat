@@ -1,0 +1,67 @@
+{
+  "brand": {
+    "id": "bold-campaign",
+    "version": "1.0.0",
+    "name": "Bold Campaign",
+    "baseSystemId": "neutral-business",
+    "baseSystemVersion": "1.0.0",
+    "tokens": {
+      "color.background": {
+        "type": "color",
+        "properties": ["fill"],
+        "value": "#FFF200"
+      },
+      "color.surface": {
+        "type": "color",
+        "properties": ["fill"],
+        "value": "#FFFFFF"
+      },
+      "color.text": {
+        "type": "color",
+        "properties": ["fill"],
+        "value": "#111111"
+      },
+      "color.accent": {
+        "type": "color",
+        "properties": ["fill"],
+        "value": "#B51A18"
+      },
+      "font.family.body": {
+        "type": "fontFamily",
+        "properties": ["fontFamily"],
+        "value": "Inter"
+      },
+      "font.family.heading": {
+        "type": "fontFamily",
+        "properties": ["fontFamily"],
+        "value": "Montserrat"
+      },
+      "font.size.heading": {
+        "type": "fontSize",
+        "properties": ["fontSize"],
+        "value": 80
+      }
+    },
+    "fonts": [
+      {
+        "family": "Inter",
+        "licenseText": "SIL OPEN FONT LICENSE Version 1.1"
+      },
+      {
+        "family": "Montserrat",
+        "licenseText": "SIL OPEN FONT LICENSE Version 1.1"
+      }
+    ],
+    "designNotes": "Original campaign direction: assertive yellow field, large type and limited red emphasis. Never soften into generic muted orange."
+  },
+  "designNotes": "Original campaign direction: assertive yellow field, large type and limited red emphasis. Never soften into generic muted orange.",
+  "referenceURLs": ["https://vucko.co"],
+  "reviewStatus": "candidate",
+  "adapters": {
+    "canvas": "pinned-bindings",
+    "web": "materialized-colors",
+    "presentation": "raster",
+    "image": "guidance-only"
+  },
+  "fontLicense": "OFL1.1 bundled resources"
+}

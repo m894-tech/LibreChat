@@ -66,5 +66,6 @@ describe('skills routes', () => {
     const paths = flattenPaths((router as unknown as { routes: RouteNode[] }).routes);
 
     expect(paths).toContain('skills/new');
+    expect(paths).toContain('design');
   });
 });

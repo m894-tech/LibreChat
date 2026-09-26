@@ -1,0 +1,63 @@
+{
+  "brand": {
+    "id": "warm-editorial",
+    "version": "1.0.0",
+    "name": "Warm Editorial",
+    "baseSystemId": "neutral-business",
+    "baseSystemVersion": "1.0.0",
+    "tokens": {
+      "color.background": {
+        "type": "color",
+        "properties": ["fill"],
+        "value": "#F6F2E9"
+      },
+      "color.surface": {
+        "type": "color",
+        "properties": ["fill"],
+        "value": "#FFFFFF"
+      },
+      "color.text": {
+        "type": "color",
+        "properties": ["fill"],
+        "value": "#29251E"
+      },
+      "color.accent": {
+        "type": "color",
+        "properties": ["fill"],
+        "value": "#594C3D"
+      },
+      "font.family.body": {
+        "type": "fontFamily",
+        "properties": ["fontFamily"],
+        "value": "Inter"
+      },
+      "font.family.heading": {
+        "type": "fontFamily",
+        "properties": ["fontFamily"],
+        "value": "Inter"
+      },
+      "font.size.heading": {
+        "type": "fontSize",
+        "properties": ["fontSize"],
+        "value": 52
+      }
+    },
+    "fonts": [
+      {
+        "family": "Inter",
+        "licenseText": "SIL OPEN FONT LICENSE Version 1.1"
+      }
+    ],
+    "designNotes": "Content-first warm paper, restrained brown text emphasis. Sans-serif substitution intentionally explicit; no unlicensed serif."
+  },
+  "designNotes": "Content-first warm paper, restrained brown text emphasis. Sans-serif substitution intentionally explicit; no unlicensed serif.",
+  "referenceURLs": ["https://posthog.com"],
+  "reviewStatus": "candidate",
+  "adapters": {
+    "canvas": "pinned-bindings",
+    "web": "materialized-colors",
+    "presentation": "raster",
+    "image": "guidance-only"
+  },
+  "fontLicense": "OFL1.1 bundled resources"
+}

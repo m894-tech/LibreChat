@@ -3045,5 +3045,12 @@
   "com_ui_session_orch_step_plan": "Plan",
   "com_ui_session_orch_step_leaf": "Leaves",
   "com_ui_session_orch_step_accept": "A5",
-  "com_ui_session_select_project": "Select project"
+  "com_ui_session_select_project": "Select project",
+  "com_ui_design": "Design",
+  "com_ui_design_disabled": "Design workspace is disabled.",
+  "com_ui_design_loading": "Loading…",
+  "com_ui_design_loading_editor": "Loading editor…",
+  "com_ui_design_nav_title": "Design",
+  "com_ui_design_nav_blurb": "Editable layouts, versions, and design systems.",
+  "com_ui_design_nav_open": "Open workspace"
 }

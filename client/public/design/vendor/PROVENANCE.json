@@ -1,0 +1,19 @@
+{
+  "package": "konva",
+  "version": "10.3.0",
+  "license": "MIT",
+  "pinned": true,
+  "npmInstall": false,
+  "sourcePath": "presenton-r0-lab/servers/nextjs/node_modules/konva",
+  "servedAs": "/design/vendor/konva.min.js",
+  "files": {
+    "konva.min.js": {
+      "sha256": "f17dfd9abb8c95953f09893cfefaaf9e09b9205012f6a2e3976dc946c89f6d7d",
+      "bytes": 185931
+    },
+    "LICENSE": {
+      "sha256": "7190132c82df30243dc2ba512c9509ea3b629329b4266e9f2c3b5dbd04029613"
+    }
+  },
+  "note": "Exact copy of already-installed Konva 10.3.0 UMD plus MIT LICENSE. No registry install."
+}

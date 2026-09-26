@@ -1,0 +1,63 @@
+{
+  "brand": {
+    "id": "swiss-editorial",
+    "version": "1.0.0",
+    "name": "Swiss Editorial",
+    "baseSystemId": "neutral-business",
+    "baseSystemVersion": "1.0.0",
+    "tokens": {
+      "color.background": {
+        "type": "color",
+        "properties": ["fill"],
+        "value": "#FFFFFF"
+      },
+      "color.surface": {
+        "type": "color",
+        "properties": ["fill"],
+        "value": "#EEEEEE"
+      },
+      "color.text": {
+        "type": "color",
+        "properties": ["fill"],
+        "value": "#111111"
+      },
+      "color.accent": {
+        "type": "color",
+        "properties": ["fill"],
+        "value": "#222222"
+      },
+      "font.family.body": {
+        "type": "fontFamily",
+        "properties": ["fontFamily"],
+        "value": "Inter"
+      },
+      "font.family.heading": {
+        "type": "fontFamily",
+        "properties": ["fontFamily"],
+        "value": "Inter"
+      },
+      "font.size.heading": {
+        "type": "fontSize",
+        "properties": ["fontSize"],
+        "value": 64
+      }
+    },
+    "fonts": [
+      {
+        "family": "Inter",
+        "licenseText": "SIL OPEN FONT LICENSE Version 1.1"
+      }
+    ],
+    "designNotes": "Monochrome editorial grid. Hierarchy by scale, not accent. No gradients, decorative shadows or brightCTA. Original adaptation; not Vucko clone."
+  },
+  "designNotes": "Monochrome editorial grid. Hierarchy by scale, not accent. No gradients, decorative shadows or brightCTA. Original adaptation; not Vucko clone.",
+  "referenceURLs": ["https://vucko.co"],
+  "reviewStatus": "candidate",
+  "adapters": {
+    "canvas": "pinned-bindings",
+    "web": "materialized-colors",
+    "presentation": "raster",
+    "image": "guidance-only"
+  },
+  "fontLicense": "OFL1.1 bundled resources"
+}

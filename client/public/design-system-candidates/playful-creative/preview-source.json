@@ -1,0 +1,107 @@
+{
+  "id": "preview",
+  "projectId": "preview",
+  "kind": "canvas",
+  "schemaVersion": 1,
+  "title": "Playful Creative",
+  "revision": 2,
+  "designSystem": { "id": "playful-creative", "version": "1.0.0" },
+  "payload": {
+    "width": 800,
+    "height": 1000,
+    "nodes": [
+      {
+        "id": "background",
+        "type": "rect",
+        "parentId": null,
+        "locked": false,
+        "props": {
+          "x": 0,
+          "y": 0,
+          "width": 800,
+          "height": 1000,
+          "rotation": 0,
+          "opacity": 1,
+          "fill": "#F1ECFF"
+        },
+        "bindings": { "fill": "color.background" }
+      },
+      {
+        "id": "heading",
+        "type": "text",
+        "parentId": null,
+        "locked": false,
+        "props": {
+          "x": 48,
+          "y": 70,
+          "width": 700,
+          "height": 200,
+          "rotation": 0,
+          "opacity": 1,
+          "text": "Playful Creative\nДизайн системы",
+          "fontSize": 60,
+          "fontFamily": "Montserrat",
+          "fill": "#241B3D"
+        },
+        "bindings": {
+          "fill": "color.text",
+          "fontFamily": "font.family.heading",
+          "fontSize": "font.size.heading"
+        }
+      },
+      {
+        "id": "card",
+        "type": "rect",
+        "parentId": null,
+        "locked": false,
+        "props": {
+          "x": 48,
+          "y": 350,
+          "width": 704,
+          "height": 450,
+          "rotation": 0,
+          "opacity": 1,
+          "fill": "#FFFFFF"
+        },
+        "bindings": { "fill": "color.surface" }
+      },
+      {
+        "id": "body",
+        "type": "text",
+        "parentId": null,
+        "locked": false,
+        "props": {
+          "x": 80,
+          "y": 400,
+          "width": 640,
+          "height": 220,
+          "rotation": 0,
+          "opacity": 1,
+          "text": "Кириллица · версии · локальные правки\nПример макета. Не подтверждение UAT.",
+          "fontSize": 24,
+          "fontFamily": "Inter",
+          "fill": "#241B3D"
+        },
+        "bindings": { "fill": "color.text" }
+      },
+      {
+        "id": "accent",
+        "type": "rect",
+        "parentId": null,
+        "locked": false,
+        "props": {
+          "x": 48,
+          "y": 875,
+          "width": 150,
+          "height": 16,
+          "rotation": 0,
+          "opacity": 1,
+          "fill": "#5730A4"
+        },
+        "bindings": { "fill": "color.accent" }
+      }
+    ]
+  },
+  "assetRefs": [],
+  "archived": false
+}

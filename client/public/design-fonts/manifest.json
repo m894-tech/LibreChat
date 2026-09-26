@@ -1,0 +1,23 @@
+[
+  {
+    "family": "Inter",
+    "file": "Inter.ttf",
+    "source": "client/public/design-fonts/Inter.ttf",
+    "cyrillicVerified": true,
+    "license": "OFL-1.1"
+  },
+  {
+    "family": "IBM Plex Mono",
+    "file": "IBM-Plex-Mono.ttf",
+    "source": "client/public/design-fonts/IBM-Plex-Mono.ttf",
+    "cyrillicVerified": true,
+    "license": "OFL-1.1"
+  },
+  {
+    "family": "Montserrat",
+    "file": "Montserrat.ttf",
+    "source": "client/public/design-fonts/Montserrat.ttf",
+    "cyrillicVerified": true,
+    "license": "OFL-1.1"
+  }
+]

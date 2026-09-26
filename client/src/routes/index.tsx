@@ -41,11 +41,15 @@ const loadSkillsView = () =>
     Component: m.default,
   }));
 
+const loadDesignView = () =>
+  import('./DesignGate').then((m) => ({
+    Component: m.default,
+  }));
+
 const loadInsightsView = () =>
   import('~/components/Insights').then((m) => ({
     Component: m.default,
   }));
-
 
 const loadAutomationsView = () =>
   import('~/components/Automations').then((m) => ({
@@ -56,7 +60,6 @@ const loadAutomationCreateView = () =>
   import('~/components/Automations').then((m) => ({
     Component: m.AutomationCreatePage,
   }));
-
 
 const loadProjectsView = () =>
   import('~/components/Projects').then((m) => ({
@@ -195,6 +198,10 @@ export const router = createBrowserRouter(
             {
               path: 'automations/:automationId',
               lazy: loadAutomationsView,
+            },
+            {
+              path: 'design',
+              lazy: loadDesignView,
             },
             {
               path: 'projects',

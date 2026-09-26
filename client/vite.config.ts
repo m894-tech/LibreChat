@@ -70,6 +70,52 @@ export default defineConfig(({ command }) => ({
   envDir: '../',
   envPrefix: ['VITE_', 'SCRIPT_', 'DOMAIN_', 'ALLOW_', 'REACT_APP_THEME_'],
   plugins: [
+    {
+      name: 'design-pinned-public-assets',
+      apply: 'build',
+      generateBundle() {
+        const files = [
+          'design/vendor/konva.min.js',
+          'design/vendor/LICENSE',
+          'design/vendor/PROVENANCE.json',
+          'design-fonts/Inter.ttf',
+          'design-fonts/IBM-Plex-Mono.ttf',
+          'design-fonts/Montserrat.ttf',
+          'design-fonts/Inter-OFL.txt',
+          'design-fonts/IBM-Plex-Mono-OFL.txt',
+          'design-fonts/Montserrat-OFL.txt',
+        ];
+        for (const fileName of files) {
+          this.emitFile({
+            type: 'asset',
+            fileName,
+            source: fs.readFileSync(path.resolve(import.meta.dirname, 'public', fileName)),
+          });
+        }
+        const root = path.resolve(import.meta.dirname, 'public/design-system-candidates');
+        if (fs.existsSync(root)) {
+          for (const folder of fs.readdirSync(root)) {
+            for (const name of [
+              'manifest.json',
+              'brand.json',
+              'DESIGN.md',
+              'preview-source.json',
+              'preview.svg',
+              'preview.png',
+            ]) {
+              const file = path.join(root, folder, name);
+              if (fs.existsSync(file)) {
+                this.emitFile({
+                  type: 'asset',
+                  fileName: `design-system-candidates/${folder}/${name}`,
+                  source: fs.readFileSync(file),
+                });
+              }
+            }
+          }
+        }
+      },
+    },
     react(),
     {
       name: 'node-polyfills-shims-resolver',
