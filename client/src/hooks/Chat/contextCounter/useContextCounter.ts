@@ -5,6 +5,8 @@ import { Constants, QueryKeys } from 'librechat-data-provider';
 import type {
   TMessage,
   TConversation,
+  CodeEnvironmentMode,
+  CodeWorkspaceSelection,
   TContextSessionUsage,
   TContextExclusionPlan,
 } from 'librechat-data-provider';
@@ -42,6 +44,8 @@ export type UseContextCounterParams = {
   index: number;
   conversation: TConversation | null;
   addedConvo: TConversation | null;
+  codeEnvironmentMode?: CodeEnvironmentMode;
+  codeWorkspaces?: CodeWorkspaceSelection[];
   draft: ComposerDraft;
   /** The dark menu is open — the only state in which estimates are requested (§6.3). */
   menuOpen: boolean;
@@ -85,6 +89,8 @@ export default function useContextCounter(params: UseContextCounterParams): Cont
     index,
     conversation,
     addedConvo,
+    codeEnvironmentMode,
+    codeWorkspaces,
     draft,
     menuOpen,
     isSubmitting,
@@ -94,7 +100,14 @@ export default function useContextCounter(params: UseContextCounterParams): Cont
   } = params;
   const conversationId = conversation?.conversationId ?? Constants.NEW_CONVO;
   const queryClient = useQueryClient();
-  const inputs = useContextInputs({ index, conversation, addedConvo, draft });
+  const inputs = useContextInputs({
+    index,
+    conversation,
+    addedConvo,
+    codeEnvironmentMode,
+    codeWorkspaces,
+    draft,
+  });
   const { leafId, fingerprint, changeReason, current, request } = inputs;
 
   const buildRequest = useCallback(

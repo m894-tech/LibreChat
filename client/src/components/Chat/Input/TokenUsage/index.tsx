@@ -2,7 +2,11 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import * as Ariakit from '@ariakit/react';
 import { Spinner } from '@librechat/client';
 import { Constants } from 'librechat-data-provider';
-import type { TConversation } from 'librechat-data-provider';
+import type {
+  TConversation,
+  CodeEnvironmentMode,
+  CodeWorkspaceSelection,
+} from 'librechat-data-provider';
 import type { CurrencyConfig } from '~/utils';
 import useCompactConversation, { supportsCompaction } from '~/hooks/Chat/useCompactConversation';
 import { useGetLangfuseSessionLinkQuery, useGetStartupConfig } from '~/data-provider';
@@ -18,6 +22,8 @@ interface TokenUsageProps {
   index: number;
   conversation: TConversation | null;
   addedConvo?: TConversation | null;
+  codeEnvironmentMode?: CodeEnvironmentMode;
+  codeWorkspaces?: CodeWorkspaceSelection[];
   isSubmitting: boolean;
 }
 
@@ -272,6 +278,8 @@ function ContextCounterHost({
   index,
   conversation,
   addedConvo,
+  codeEnvironmentMode,
+  codeWorkspaces,
   isSubmitting,
   compactionEnabled,
 }: TokenUsageProps & { compactionEnabled: boolean }) {
@@ -280,6 +288,8 @@ function ContextCounterHost({
     index,
     conversation,
     addedConvo: addedConvo ?? null,
+    codeEnvironmentMode,
+    codeWorkspaces,
     isSubmitting,
     menuOpen,
     compactionEnabled,

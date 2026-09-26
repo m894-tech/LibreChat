@@ -1,6 +1,11 @@
 import { useMemo } from 'react';
 import { Constants } from 'librechat-data-provider';
-import type { TConversation, TContextNextRequestEstimate } from 'librechat-data-provider';
+import type {
+  TConversation,
+  CodeEnvironmentMode,
+  CodeWorkspaceSelection,
+  TContextNextRequestEstimate,
+} from 'librechat-data-provider';
 import type { ContextCounterActions, ContextCounterMode, ContextCounterViewModel } from './types';
 import type { ContextCounterView } from '~/hooks/Chat/contextCounter';
 import useCompactConversation, { supportsCompaction } from '~/hooks/Chat/useCompactConversation';
@@ -10,6 +15,8 @@ interface Params {
   index: number;
   conversation: TConversation | null;
   addedConvo: TConversation | null;
+  codeEnvironmentMode?: CodeEnvironmentMode;
+  codeWorkspaces?: CodeWorkspaceSelection[];
   isSubmitting: boolean;
   /** The dark menu is open — the only state in which estimates are requested (§6.3). */
   menuOpen: boolean;
@@ -70,6 +77,8 @@ export function useContextCounterModel({
   index,
   conversation,
   addedConvo,
+  codeEnvironmentMode,
+  codeWorkspaces,
   isSubmitting,
   menuOpen,
   compactionEnabled,
@@ -84,6 +93,8 @@ export function useContextCounterModel({
     index,
     conversation,
     addedConvo,
+    codeEnvironmentMode,
+    codeWorkspaces,
     draft,
     menuOpen,
     isSubmitting,

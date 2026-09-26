@@ -26,6 +26,8 @@ export type TContextEstimateRequest = Pick<TPayload, 'ephemeralAgent'> &
       | 'maxOutputTokens'
       | 'iconURL'
       | 'chatProjectId'
+      | 'codeEnvironmentMode'
+      | 'codeWorkspaces'
     >
   > & {
     /** `Constants.NEW_CONVO` (or `null`) for a chat that is not persisted yet. */

@@ -330,6 +330,10 @@ const ChatForm = memo(function ChatForm({
 
   const { submitMessage, submitPrompt } = useSubmitMessage();
   const codeWorkspace = useCodeWorkspace(conversation, addedConvo);
+  const estimateCodeWorkspace = codeWorkspace.resolveSubmission(
+    conversation?.codeWorkspaces,
+    conversation?.codeEnvironmentMode,
+  );
 
   /** Queued/steered sends carry their FULL submission context: explicit
    *  (possibly empty) overrides stop `ask` from vacuuming quotes or skill
@@ -900,6 +904,8 @@ const ChatForm = memo(function ChatForm({
                   index={index}
                   conversation={conversation}
                   addedConvo={addedConvo}
+                  codeEnvironmentMode={estimateCodeWorkspace?.codeEnvironmentMode}
+                  codeWorkspaces={estimateCodeWorkspace?.codeWorkspaces}
                   isSubmitting={isSubmitting}
                 />
                 <div

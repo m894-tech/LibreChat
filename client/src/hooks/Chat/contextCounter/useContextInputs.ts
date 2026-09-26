@@ -6,6 +6,8 @@ import type {
   TMessage,
   TConversation,
   TEphemeralAgent,
+  CodeEnvironmentMode,
+  CodeWorkspaceSelection,
   TContextEstimateRequest,
   TContextStaleReason,
   TContextConfiguration,
@@ -17,6 +19,7 @@ import { useLatestMessage } from '~/hooks/Messages/useLatestMessage';
 import { useChatFormContext } from '~/Providers/ChatFormContext';
 import store, { ephemeralAgentByConvoId } from '~/store';
 import { useGetAgentByIdQuery } from '~/data-provider';
+import { getRouteChatProjectId } from '~/utils';
 import useTokenLimits from '../useTokenLimits';
 
 /** Composer state the estimate depends on (§7 draft / вложения). */
@@ -115,6 +118,8 @@ export type UseContextInputsParams = {
   index: number;
   conversation: TConversation | null;
   addedConvo: TConversation | null;
+  codeEnvironmentMode?: CodeEnvironmentMode;
+  codeWorkspaces?: CodeWorkspaceSelection[];
   draft: ComposerDraft;
 };
 
@@ -127,6 +132,8 @@ export default function useContextInputs({
   index,
   conversation,
   addedConvo,
+  codeEnvironmentMode,
+  codeWorkspaces,
   draft,
 }: UseContextInputsParams): ContextCounterInputs {
   const conversationId = conversation?.conversationId ?? Constants.NEW_CONVO;
@@ -143,6 +150,10 @@ export default function useContextInputs({
   const maxOutput = toNumber(conversation?.maxOutputTokens) ?? toNumber(conversation?.max_tokens);
   const conversationTools = conversation?.tools;
   const endpointType = conversation?.endpointType ?? undefined;
+  const chatProjectId =
+    conversationId === Constants.NEW_CONVO
+      ? (getRouteChatProjectId() ?? conversation?.chatProjectId ?? null)
+      : (conversation?.chatProjectId ?? null);
 
   const fingerprintInput = useMemo<TContextFingerprintInput>(() => {
     const configuration: TContextConfiguration = {
@@ -180,7 +191,9 @@ export default function useContextInputs({
       assemblySettingsHash: hashString(
         JSON.stringify({
           addedConvo,
-          chatProjectId: conversation?.chatProjectId ?? null,
+          chatProjectId,
+          codeEnvironmentMode,
+          codeWorkspaces,
           quotes: draft.quotes,
           manualSkills: draft.manualSkills,
         }),
@@ -201,7 +214,9 @@ export default function useContextInputs({
     leaf,
     draft,
     addedConvo,
-    conversation?.chatProjectId,
+    chatProjectId,
+    codeEnvironmentMode,
+    codeWorkspaces,
   ]);
 
   const fingerprint = useMemo(() => hashFingerprint(fingerprintInput), [fingerprintInput]);
@@ -235,7 +250,9 @@ export default function useContextInputs({
       quotes: draft.quotes,
       manualSkills: draft.manualSkills,
       addedConvo: addedConvo ?? undefined,
-      chatProjectId: conversation?.chatProjectId ?? undefined,
+      chatProjectId: chatProjectId ?? undefined,
+      codeEnvironmentMode,
+      codeWorkspaces,
       ephemeralAgent,
     }),
     [
@@ -251,7 +268,9 @@ export default function useContextInputs({
       maxOutput,
       draft,
       addedConvo,
-      conversation?.chatProjectId,
+      chatProjectId,
+      codeEnvironmentMode,
+      codeWorkspaces,
       ephemeralAgent,
     ],
   );
