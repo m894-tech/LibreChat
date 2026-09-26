@@ -2065,11 +2065,7 @@ export const interfaceSchema = z
     webSearch: z.boolean().optional(),
     contextUsage: z.boolean().optional(),
     contextCost: z.boolean().optional(),
-<<<<<<< HEAD
-    /** Context counter v2: the single-menu redesign behind its own switch (rollback = false). */
-=======
     /** Context counter v2 (§11 rollout flag): client state + menu; off keeps the v1 indicator. */
->>>>>>> origin/feat/cc2-client-state
     contextCounterV2: z.boolean().optional(),
     feedback: z.boolean().optional(),
     currency: z
