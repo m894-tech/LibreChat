@@ -321,6 +321,8 @@ export const agents = ({ path = '', options }: { path?: string; options?: object
 
 export const activeJobs = () => `${BASE_URL}/api/agents/chat/active`;
 
+export const contextEstimate = () => `${BASE_URL}/api/agents/context/estimate`;
+
 const agentQueuedTurnsRoot = `${BASE_URL}/api/agents/chat/queued-turns`;
 export const agentQueuedTurns = () => agentQueuedTurnsRoot;
 export const agentQueuedTurnsByConversation = (

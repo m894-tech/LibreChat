@@ -1084,6 +1084,28 @@ export type TAskUserQuestionConfig = z.infer<typeof askUserQuestionConfigSchema>
 export const checkpointerTypeSchema = z.enum(['mongo', 'memory']);
 export type TCheckpointerType = z.infer<typeof checkpointerTypeSchema>;
 
+/**
+ * Server-side dry-run estimate of the next request's context (context counter
+ * v2 §6). The endpoint never calls the model, tools, compression or a paid
+ * tokenizer; the flag exists for rollback (§11), and the limiter bounds an
+ * open menu with auto-retry (§6.6: burst 5, ≤30/min per user + conversation).
+ */
+export const contextEstimateSchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    rateLimit: z
+      .object({
+        burst: z.number().int().min(1).max(100).optional(),
+        perMinute: z.number().int().min(1).max(1000).optional(),
+      })
+      .optional(),
+    /** Upper bound on excluded-message previews returned per estimate (`count` stays exact). */
+    maxExcludedPreviews: z.number().int().min(0).max(200).optional(),
+  })
+  .optional();
+
+export type TContextEstimateConfig = NonNullable<z.infer<typeof contextEstimateSchema>>;
+
 export const checkpointerSchema = z
   .object({
     type: checkpointerTypeSchema.optional(),
@@ -1468,6 +1490,8 @@ export const agentsEndpointSchema = baseEndpointSchema
       /** Durable checkpointer backing tool-approval and Ask User resume.
        *  Defaults to the app's MongoDB when either flow needs it. */
       checkpointer: checkpointerSchema,
+      /** Dry-run estimate endpoint for the context counter; see {@link contextEstimateSchema}. */
+      contextEstimate: contextEstimateSchema,
     }),
   )
   .default({
