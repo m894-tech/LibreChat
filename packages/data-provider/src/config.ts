@@ -1255,15 +1255,6 @@ export const agentsEndpointSchema = baseEndpointSchema
         .min(0)
         .optional()
         .default(DEFAULT_MAX_RETAINED_TOOL_COUNT_CHARS),
-      /** Context counter v2 usage store (§7 `lastCallMeasurement` / `sessionUsage`): persists the
-       * immutable last-call measurement on each response and exposes the per-branch read API
-       * `GET /api/agents/context/usage`. Off by default; the response usage rollup
-       * (`metadata.usage`) is written regardless. */
-      contextUsage: z
-        .object({
-          enabled: z.boolean().optional().default(false),
-        })
-        .optional(),
       maxCitations: z.number().min(1).max(50).optional().default(30),
       maxCitationsPerFile: z.number().min(1).max(10).optional().default(7),
       minRelevanceScore: z.number().min(0.0).max(1.0).optional().default(0.45),

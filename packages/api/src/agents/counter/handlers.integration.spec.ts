@@ -41,7 +41,7 @@ const strangerId = new mongoose.Types.ObjectId().toString();
 const conversationId = '3f6a9c2e-7d41-4b8e-9c1a-2e5b7d9f0a11';
 
 const enabledConfig = {
-  endpoints: { [EModelEndpoint.agents]: { contextUsage: { enabled: true } } },
+  interfaceConfig: { contextCounterV2: true },
 } as unknown as ServerRequest['config'];
 
 function mockRes() {
@@ -256,6 +256,15 @@ describe('GET /api/agents/context/usage — event → measurement → persisted 
     await handler()(mockReq({ conversationId, messageId: 'a2' }), first);
     await handler()(mockReq({ conversationId, messageId: 'a2' }), second);
     expect(second.body).toEqual(first.body);
+  });
+
+  it('accepts `messageId` as an alias of `leafId`', async () => {
+    await seedConversation(ownerId);
+    const byLeaf = mockRes();
+    const byMessage = mockRes();
+    await handler()(mockReq({ conversationId, leafId: 'a2' }), byLeaf);
+    await handler()(mockReq({ conversationId, messageId: 'a2' }), byMessage);
+    expect(byMessage.body).toEqual(byLeaf.body);
   });
 
   it('never folds the sibling branch into the requested one (§10.11)', async () => {

@@ -45,11 +45,11 @@ export function getInsightsAccess(): Promise<TInsightsAccessResponse> {
   return request.get(endpoints.insightsAccess());
 }
 
-export function getAgentContextUsage({
-  conversationId,
-  messageId,
-}: TContextUsageParams): Promise<TContextUsageSnapshot> {
-  return request.get(endpoints.agentContextUsage(conversationId, messageId));
+export function getAgentContextUsage(
+  conversationId: TContextUsageParams['conversationId'],
+  leafId: TContextUsageParams['leafId'],
+): Promise<TContextUsageSnapshot> {
+  return request.get(endpoints.agentContextUsage(conversationId, leafId));
 }
 
 export function getConversationTraceAvailability(
