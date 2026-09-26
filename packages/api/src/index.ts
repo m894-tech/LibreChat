@@ -129,3 +129,7 @@ export type { OpenApiRouterDeps } from './openapi/router';
 export type * from './mcp/types';
 export type * from './flow/types';
 export type * from './types';
+
+/* Design Workspace (default-off; gated by M894_DESIGN_WORKSPACE) */
+export { createDesignRouter } from './design/http';
+export { createDesignRuntime } from './design/runtime';

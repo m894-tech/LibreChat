@@ -294,7 +294,10 @@ router.get('/', async function (req, res) {
       ...buildPostLoginPayload(),
       sharedLinksSnapshotFilesEnabled: sharedLinksEnabled && isFileSnapshotEnabled(appConfig),
       socialLogins: appConfig?.registration?.socialLogins ?? defaultSocialLogins,
-      interface: appConfig?.interfaceConfig,
+      interface: {
+        ...appConfig?.interfaceConfig,
+        design: process.env.M894_DESIGN_WORKSPACE === '1',
+      },
       titleGenerationTiming: resolveTitleTiming({
         appConfig,
         endpoint: EModelEndpoint.agents,

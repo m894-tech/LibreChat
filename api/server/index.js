@@ -336,6 +336,16 @@ const startServer = async () => {
   app.use(express.urlencoded({ extended: true, limit: '3mb' }));
   app.use(handleJsonParseError);
 
+  // Design workspace: mounted BEFORE express-mongo-sanitize because brand token
+  // roles are dot-namespaced keys (e.g. "color.accent") that the global sanitizer
+  // would silently strip from req.body. Gated by M894_DESIGN_WORKSPACE=1.
+  if (process.env.M894_DESIGN_WORKSPACE === '1') {
+    const requireJwtAuth = require('./middleware/requireJwtAuth');
+    const designRouter = require('./routes/design');
+    app.use('/api/design', requireJwtAuth, designRouter);
+    registerShutdownTask('design-runtime', () => designRouter.close());
+  }
+
   /**
    * Express 5 Compatibility: Make req.query writable for mongoSanitize
    * In Express 5, req.query is read-only by default, but express-mongo-sanitize needs to modify it

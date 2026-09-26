@@ -2016,6 +2016,7 @@ export enum RetentionMode {
 
 export const interfaceSchema = z
   .object({
+    design: z.boolean().optional().default(false),
     privacyPolicy: z
       .object({
         externalUrl: z.string().optional(),
@@ -2191,6 +2192,7 @@ export const interfaceSchema = z
     fileSearch: true,
     fileCitations: true,
     buildInfo: true,
+    design: false,
     remoteAgents: {
       use: false,
       create: false,
