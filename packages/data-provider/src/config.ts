@@ -1087,12 +1087,12 @@ export type TCheckpointerType = z.infer<typeof checkpointerTypeSchema>;
 /**
  * Server-side dry-run estimate of the next request's context (context counter
  * v2 §6). The endpoint never calls the model, tools, compression or a paid
- * tokenizer; the flag exists for rollback (§11), and the limiter bounds an
- * open menu with auto-retry (§6.6: burst 5, ≤30/min per user + conversation).
+ * tokenizer. It is gated by `interface.contextCounterV2` (§11); these levers
+ * bound an open menu with auto-retry (§6.6: burst 5, ≤30/min per user +
+ * conversation) and the popover payload.
  */
 export const contextEstimateSchema = z
   .object({
-    enabled: z.boolean().optional(),
     rateLimit: z
       .object({
         burst: z.number().int().min(1).max(100).optional(),
