@@ -42,7 +42,9 @@ export function createTokenBucketLimiter(options: TokenBucketOptions): TokenBuck
   const perMinute = Math.max(1, Math.floor(options.perMinute));
   const refillPerMs = perMinute / 60_000;
   const now = options.now ?? Date.now;
-  const idleTtlMs = options.idleTtlMs ?? DEFAULT_IDLE_TTL_MS;
+  /** A bucket may only be forgotten once it would have refilled completely anyway. */
+  const fullRefillMs = Math.ceil(burst / refillPerMs);
+  const idleTtlMs = Math.max(options.idleTtlMs ?? DEFAULT_IDLE_TTL_MS, fullRefillMs);
   const sweepEvery = Math.max(1, options.sweepEvery ?? DEFAULT_SWEEP_EVERY);
   const buckets = new Map<string, Bucket>();
   let takesSinceSweep = 0;

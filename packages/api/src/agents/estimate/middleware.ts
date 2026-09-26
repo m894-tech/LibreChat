@@ -22,6 +22,25 @@ export function requireContextEstimateEnabled(
   next();
 }
 
+type EstimateBodyFiles = { files?: Array<string | { file_id?: string }> };
+
+/**
+ * The client may send prepared attachments as bare ids; the agent initializer
+ * hydrates `req.body.files[].file_id` exactly as it does for a chat turn, so
+ * ids are lifted into that shape before the shared middleware runs.
+ */
+export function normalizeContextEstimateBody(
+  req: ServerRequest,
+  _res: Response,
+  next: NextFunction,
+): void {
+  const body = req.body as (typeof req.body & EstimateBodyFiles) | undefined;
+  if (body != null && Array.isArray(body.files)) {
+    body.files = body.files.map((file) => (typeof file === 'string' ? { file_id: file } : file));
+  }
+  next();
+}
+
 export type ContextEstimateLimiterOptions = {
   /** Limiter to use; a fresh one is built from the request config when omitted. */
   limiter?: TokenBucketLimiter;

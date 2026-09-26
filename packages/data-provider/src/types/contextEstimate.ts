@@ -1,4 +1,5 @@
 import type { TPayload } from '../types';
+import type { TFile } from './files';
 
 /**
  * Body of `POST /api/agents/context/estimate` (context counter v2 §6). The
@@ -8,7 +9,7 @@ import type { TPayload } from '../types';
  * branch and a monotonically increasing `revision` the response echoes back so
  * a late reply for a superseded draft can be dropped (§6 invariants 2–3).
  */
-export type TContextEstimateRequest = Pick<TPayload, 'conversationId' | 'ephemeralAgent'> &
+export type TContextEstimateRequest = Pick<TPayload, 'ephemeralAgent'> &
   Partial<
     Pick<
       TPayload,
@@ -17,19 +18,30 @@ export type TContextEstimateRequest = Pick<TPayload, 'conversationId' | 'ephemer
       | 'agent_id'
       | 'model'
       | 'spec'
-      | 'files'
       | 'quotes'
       | 'manualSkills'
       | 'addedConvo'
       | 'promptPrefix'
+      | 'maxContextTokens'
+      | 'maxOutputTokens'
       | 'iconURL'
       | 'chatProjectId'
     >
   > & {
+    /** `Constants.NEW_CONVO` (or `null`) for a chat that is not persisted yet. */
+    conversationId: string | null;
     /** Leaf message of the branch to estimate; `Constants.NO_PARENT` for an empty chat. */
     parentMessageId: string;
-    /** Client-side revision of the draft/configuration this estimate is for. */
+    /** Client-side revision of the draft/configuration this estimate is for; echoed back. */
     revision: number;
     /** Draft text the user has typed so far. */
     text?: string;
+    /** Prepared attachments — ids or file objects; an unprocessed one makes the estimate `partial`. */
+    files?: Array<string | Pick<TFile, 'file_id'>>;
+    /**
+     * Client-side §7 fingerprint. Not used by the server, which computes its own
+     * from the resolved plan and returns it as `fingerprint`; clients match late
+     * answers by `revision`.
+     */
+    fingerprint?: string;
   };

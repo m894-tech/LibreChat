@@ -150,7 +150,7 @@ function requestedFileIds(files: TContextEstimateRequest['files']): string[] {
     return [];
   }
   return files
-    .map((file) => (file as Partial<TFile> | undefined)?.file_id)
+    .map((file) => (typeof file === 'string' ? file : file?.file_id))
     .filter((id): id is string => typeof id === 'string' && id.length > 0);
 }
 
@@ -280,8 +280,14 @@ export async function estimateNextRequest(
   const encoding = client.getEncoding();
   const configuration = resolveConfiguration(agent, encoding);
   const branchLeafId = body.parentMessageId || Constants.NO_PARENT;
+  const persistedConversationId =
+    typeof body.conversationId === 'string' &&
+    body.conversationId.length > 0 &&
+    body.conversationId !== Constants.NEW_CONVO
+      ? body.conversationId
+      : undefined;
   const identity = {
-    conversationId: body.conversationId ?? Constants.NEW_CONVO,
+    conversationId: persistedConversationId ?? Constants.NEW_CONVO,
     branchLeafId,
   };
   const revision = Number.isFinite(body.revision) ? Number(body.revision) : 0;
