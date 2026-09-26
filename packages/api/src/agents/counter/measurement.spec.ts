@@ -21,7 +21,7 @@ const snapshot: TContextUsageEvent = {
     messageCount: 12,
     messageTokens: 40_000,
     availableForMessages: 90_000,
-    toolTokenCounts: { web_search: 1_000, 'read_file_mcp_github': 4_000, 'list_mcp_github': 1_000 },
+    toolTokenCounts: { web_search: 1_000, read_file_mcp_github: 4_000, list_mcp_github: 1_000 },
     toolMessageTokens: 9_000,
   },
   contextBudget: 112_000,
