@@ -735,20 +735,31 @@ class BaseClient {
   }
 
   /**
+   * The context-assembly half of a turn: loads the branch, seats the user
+   * message, resolves historical files and builds the model-bound prompt.
+   * Nothing here persists, bills or calls the model — `sendReservedMessage`
+   * continues from the result, and the next-request estimate stops at it, so
+   * both read the exact same plan.
+   *
    * @param {string} message
    * @param {Record<string, unknown>} opts
-   * @param {BalanceReservations} balanceReservations - Holds the balance reservation admitting
-   * this message; released once its usage is recorded, and by `sendMessage` on any other exit.
+   * @returns {Promise<{
+   *   user: string | null,
+   *   head: string,
+   *   isEdited?: boolean,
+   *   conversationId: string,
+   *   responseMessageId: string,
+   *   saveOptions: Record<string, unknown>,
+   *   userMessage: TMessage,
+   *   parentMessageId: string,
+   *   payload: TMessage[],
+   *   tokenCountMap: Record<string, number>,
+   *   promptTokens: number,
+   * }>}
    */
-  async sendReservedMessage(message, opts, balanceReservations) {
-    const appConfig = this.options.req?.config;
-    /** @type {Promise<TMessage>} */
-    let userMessagePromise;
-    /** @type {{ promise: Promise<unknown>, isPending: () => boolean, start: () => Promise<unknown>, cancel: () => Promise<unknown> } | undefined} */
-    let userMessagePersistence;
-    this.modelBoundUserMessagePersistence = undefined;
-    const { user, head, isEdited, conversationId, responseMessageId, saveOptions, userMessage } =
-      await this.handleStartMethods(message, opts);
+  async prepareTurnPrompt(message, opts = {}) {
+    const start = await this.handleStartMethods(message, opts);
+    const { head, isEdited, conversationId, responseMessageId, userMessage } = start;
 
     if (opts.progressCallback) {
       opts.onProgress = opts.progressCallback.call(null, {
@@ -834,7 +845,7 @@ class BaseClient {
           .map((file) => [file.file_id, file]),
       );
     }
-    let {
+    const {
       prompt: payload,
       tokenCountMap,
       promptTokens,
@@ -846,6 +857,33 @@ class BaseClient {
     );
     this.assertBuiltModelBoundContent(payload);
     this.options.startupTelemetry?.mark('messages_built');
+    return { ...start, parentMessageId, payload, tokenCountMap, promptTokens };
+  }
+
+  /**
+   * @param {string} message
+   * @param {Record<string, unknown>} opts
+   * @param {BalanceReservations} balanceReservations - Holds the balance reservation admitting
+   * this message; released once its usage is recorded, and by `sendMessage` on any other exit.
+   */
+  async sendReservedMessage(message, opts, balanceReservations) {
+    const appConfig = this.options.req?.config;
+    /** @type {Promise<TMessage>} */
+    let userMessagePromise;
+    /** @type {{ promise: Promise<unknown>, isPending: () => boolean, start: () => Promise<unknown>, cancel: () => Promise<unknown> } | undefined} */
+    let userMessagePersistence;
+    this.modelBoundUserMessagePersistence = undefined;
+    const {
+      user,
+      isEdited,
+      conversationId,
+      responseMessageId,
+      saveOptions,
+      userMessage,
+      payload,
+      tokenCountMap,
+      promptTokens,
+    } = await this.prepareTurnPrompt(message, opts);
 
     /** A compaction anchor is the persisted leaf, whose own count must stay. */
     if (tokenCountMap && tokenCountMap[userMessage.messageId] && opts.isCompaction !== true) {
