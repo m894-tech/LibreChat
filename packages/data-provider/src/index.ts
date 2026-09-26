@@ -46,8 +46,11 @@ export * from './types/traces';
 export * from './types/subagents';
 export * from './types/queuedTurns';
 export * from './types/contextCounter';
+<<<<<<< HEAD
 /* context counter v2 formulas (§5), rounding (§5.1), usage normalization, RU plurals */
 export * from './counter';
+=======
+>>>>>>> origin/feat/cc2-client-state
 /* access permissions */
 export * from './accessPermissions';
 /* query/mutation keys */
