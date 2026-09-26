@@ -30,6 +30,8 @@ const {
   aggregateEmittedUsage,
   resolveAgentTokenConfig,
   buildPersistedContextUsage,
+  buildLastCallMeasurement,
+  isContextUsageEnabled,
   resolveRetainedToolTokens,
   computeSummaryUsedTokens,
   priorRunOutputTokens,
@@ -3665,6 +3667,26 @@ class AgentClient extends BaseClient {
     const usage = aggregateEmittedUsage(usageEvents);
     if (usage) {
       metadata.usage = usage;
+    }
+    /** Context counter v2 (§7 `lastCallMeasurement`, flag `endpoints.agents.contextUsage`):
+     *  the final primary call's provider usage against the budget of the snapshot that
+     *  preceded it, frozen on the response so a reload reads the same measurement. */
+    if (
+      isContextUsageEnabled(this.options?.req?.config) &&
+      this.conversationId &&
+      this.responseMessageId
+    ) {
+      const lastCall = buildLastCallMeasurement({
+        conversationId: this.conversationId,
+        responseMessageId: this.responseMessageId,
+        usageEvents,
+        snapshot: latestSnapshot,
+        endpoint: this.options.agent?.endpoint ?? this.options.endpoint,
+        agentId: this.options.agent?.id ?? null,
+      });
+      if (lastCall) {
+        metadata.lastCall = lastCall;
+      }
     }
     return Object.keys(metadata).length > 0 ? metadata : undefined;
   }

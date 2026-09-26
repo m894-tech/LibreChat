@@ -273,6 +273,7 @@ describe('usage events through the real agents pipeline', () => {
         output: FIRST_CALL_USAGE.output_tokens + SECOND_CALL_USAGE.output_tokens,
         cacheWrite: SECOND_CALL_USAGE.input_token_details.cache_creation,
         cacheRead: SECOND_CALL_USAGE.input_token_details.cache_read,
+        calls: 2,
       });
       /** contextCost off → no cost folded into the rollup */
       expect(usage.cost).toBeUndefined();
