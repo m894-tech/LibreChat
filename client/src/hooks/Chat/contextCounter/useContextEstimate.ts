@@ -220,7 +220,9 @@ export default function useContextEstimate(
     const wasOpen = prevMenuOpenRef.current;
     prevMenuOpenRef.current = menuOpen;
 
-    if (!enabled) {
+    /** While a turn streams the Send effect already marked the entry `sent`;
+     *  nothing is requested and no other reason overrides that mark. */
+    if (!enabled || isSubmitting) {
       clearTimer();
       return;
     }
@@ -239,7 +241,7 @@ export default function useContextEstimate(
       );
     }
 
-    if (!menuOpen || isSubmitting || cached) {
+    if (!menuOpen || cached) {
       clearTimer();
       return;
     }
