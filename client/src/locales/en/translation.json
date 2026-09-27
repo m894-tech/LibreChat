@@ -3128,5 +3128,7 @@
   "com_ui_session_orch_step_plan": "Plan",
   "com_ui_session_orch_step_leaf": "Leaves",
   "com_ui_session_orch_step_accept": "A5",
-  "com_ui_session_select_project": "Select project"
+  "com_ui_session_select_project": "Select project",
+  "com_ui_automations": "Automations",
+  "com_ui_automations_empty": "No automations yet"
 }

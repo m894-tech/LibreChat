@@ -66,6 +66,8 @@ jest.mock('~/server/routes/agents/management', () => {
   router.use((_req, res) => res.status(200).json({ surface: 'management' }));
   return router;
 });
+jest.mock('~/server/routes/agents/contextUsage', () => require('express').Router());
+jest.mock('~/server/routes/agents/context', () => require('express').Router());
 jest.mock('~/server/controllers/agents/steer', () => {
   const controller = (_req, _res, next) => next();
   controller.SteerDeliveryController = (_req, _res, next) => next();
