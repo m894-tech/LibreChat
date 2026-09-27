@@ -7,6 +7,9 @@ import type {
   TTraceRecordDetail,
 } from './types/traces';
 import type { TInsightsAccessResponse, TInsightsParams, TInsightsResponse } from './types/insights';
+import type { TContextUsageParams, TContextUsageSnapshot } from './types/contextUsage';
+import type * as ce from './types/contextEstimate';
+import type * as cc from './types/contextCounter';
 import type { TFileConfig } from './file-config';
 import type * as tl from './types/tools';
 import type * as t from './types';
@@ -42,6 +45,13 @@ export function getInsights(params: TInsightsParams = {}): Promise<TInsightsResp
 
 export function getInsightsAccess(): Promise<TInsightsAccessResponse> {
   return request.get(endpoints.insightsAccess());
+}
+
+export function getAgentContextUsage(
+  conversationId: TContextUsageParams['conversationId'],
+  leafId: TContextUsageParams['leafId'],
+): Promise<TContextUsageSnapshot> {
+  return request.get(endpoints.agentContextUsage(conversationId, leafId));
 }
 
 export function getConversationTraceAvailability(
@@ -1657,4 +1667,11 @@ export interface ActiveJobsResponse {
 
 export const getActiveJobs = (): Promise<ActiveJobsResponse> => {
   return request.get(endpoints.activeJobs());
+};
+
+/* Context counter v2: server-side dry-run estimate of the next request (§6) */
+export const estimateNextRequestContext = (
+  payload: ce.TContextEstimateRequest,
+): Promise<cc.TContextNextRequestEstimate> => {
+  return request.post(endpoints.contextEstimate(), payload);
 };

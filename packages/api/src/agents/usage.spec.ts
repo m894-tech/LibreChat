@@ -1929,6 +1929,7 @@ describe('aggregateEmittedUsage', () => {
       cacheWrite: 30,
       cacheRead: 50,
       cost: 0.003,
+      calls: 2,
     });
   });
 
@@ -1936,8 +1937,67 @@ describe('aggregateEmittedUsage', () => {
     const rollup = aggregateEmittedUsage([
       { input_tokens: 100, output_tokens: 20, total_tokens: 120, provider: 'openAI' },
     ]);
-    expect(rollup).toEqual({ input: 100, output: 20, cacheWrite: 0, cacheRead: 0 });
+    expect(rollup).toEqual({ input: 100, output: 20, cacheWrite: 0, cacheRead: 0, calls: 1 });
     expect(rollup?.cost).toBeUndefined();
+  });
+
+  it('folds each runId:seq once so a redelivered event does not double the spend (§10.13)', () => {
+    const event: TTokenUsageEvent = {
+      input_tokens: 100,
+      output_tokens: 20,
+      provider: 'openAI',
+      runId: 'run-1',
+      seq: 1,
+      cost: 0.01,
+    };
+    const rollup = aggregateEmittedUsage([event, { ...event }, { ...event, seq: 2 }]);
+    expect(rollup).toEqual({
+      input: 200,
+      output: 40,
+      cacheWrite: 0,
+      cacheRead: 0,
+      cost: 0.02,
+      calls: 2,
+    });
+  });
+
+  it('splits summarization and non-primary calls into their own buckets inside the totals', () => {
+    const rollup = aggregateEmittedUsage([
+      { input_tokens: 100, output_tokens: 20, provider: 'openAI', runId: 'r', seq: 1 },
+      {
+        input_tokens: 400,
+        output_tokens: 50,
+        provider: 'openAI',
+        usage_type: 'summarization',
+        runId: 'r',
+        seq: 2,
+      },
+      {
+        input_tokens: 30,
+        output_tokens: 5,
+        provider: 'openAI',
+        usage_type: 'subagent',
+        runId: 'r',
+        seq: 3,
+      },
+      {
+        input_tokens: 10,
+        output_tokens: 2,
+        provider: 'openAI',
+        usage_type: 'activity-label',
+        runId: 'r',
+        seq: 4,
+      },
+    ]);
+    expect(rollup).toEqual({
+      input: 540,
+      output: 77,
+      cacheWrite: 0,
+      cacheRead: 0,
+      calls: 4,
+      compress: { input: 400, output: 50, cacheWrite: 0, cacheRead: 0, calls: 1 },
+      auxiliary: { input: 40, output: 7, cacheWrite: 0, cacheRead: 0, calls: 2 },
+    });
   });
 
   it('omits cost when any call lacked it (partial pricing failure)', () => {
@@ -1986,7 +2046,15 @@ describe('aggregateEmittedUsage', () => {
     const rollup = aggregateEmittedUsage([
       { input_tokens: 1000, output_tokens: 100, input_token_details: { cache_read: 400 } },
     ]);
-    expect(rollup).toEqual({ input: 600, output: 100, cacheWrite: 0, cacheRead: 400 });
+    /** …but the split is flagged as a heuristic so the session view can hide the cache rows (§5). */
+    expect(rollup).toEqual({
+      input: 600,
+      output: 100,
+      cacheWrite: 0,
+      cacheRead: 400,
+      calls: 1,
+      cacheSplittable: false,
+    });
   });
 });
 
@@ -2403,6 +2471,7 @@ describe('buildAbortedResponseMetadata', () => {
       cacheWrite: 0,
       cacheRead: 0,
       cost: 0.001,
+      calls: 1,
     });
   });
 
@@ -2411,7 +2480,9 @@ describe('buildAbortedResponseMetadata', () => {
       { input_tokens: 100, output_tokens: 20, total_tokens: 120, provider: 'openAI' },
     ];
     const result = buildAbortedResponseMetadata({ tokenUsage: JSON.stringify(events) });
-    expect(result).toEqual({ usage: { input: 100, output: 20, cacheWrite: 0, cacheRead: 0 } });
+    expect(result).toEqual({
+      usage: { input: 100, output: 20, cacheWrite: 0, cacheRead: 0, calls: 1 },
+    });
     expect((result as { contextUsage?: unknown }).contextUsage).toBeUndefined();
   });
 

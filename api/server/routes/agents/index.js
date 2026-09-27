@@ -56,9 +56,11 @@ const {
 } = require('~/server/services/Schedules');
 const responses = require('./responses');
 const management = require('./management');
+const contextUsage = require('./contextUsage');
 const skills = require('./skills');
 const openai = require('./openai');
 const { v1 } = require('./v1');
+const context = require('./context');
 const chat = require('./chat');
 
 const { LIMIT_MESSAGE_IP, LIMIT_MESSAGE_USER } = process.env ?? {};
@@ -1150,6 +1152,8 @@ router.delete(
   AgentQueuedTurnCancelController,
 );
 
+router.use('/context', contextUsage);
+
 router.use('/', v1);
 
 const chatRouter = express.Router();
@@ -1187,5 +1191,6 @@ if (useMessageUserLimiter) {
 
 chatRouter.use('/', chat);
 router.use('/chat', chatRouter);
+router.use('/context', context);
 
 module.exports = router;

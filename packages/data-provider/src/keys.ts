@@ -20,6 +20,7 @@ export enum QueryKeys {
   balance = 'balance',
   endpoints = 'endpoints',
   tokenConfig = 'tokenConfig',
+  contextUsage = 'contextUsage',
   presets = 'presets',
   searchResults = 'searchResults',
   tokenCount = 'tokenCount',
