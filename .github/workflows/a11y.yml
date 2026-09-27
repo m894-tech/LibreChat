@@ -23,6 +23,8 @@ concurrency:
 jobs:
   axe-linter:
     runs-on: ubuntu-latest
+    # m894-tech does not have AXE_LINTER_API_KEY; keep the check visible but non-blocking.
+    continue-on-error: true
     if: >
       (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.run_workflow == 'true')
