@@ -696,7 +696,7 @@ export default function AgentPanel() {
         status: 'error',
       });
     }
-  }, [createAgentCreator, getValues, localize, showAgentCreatorPublish]);
+  }, [createAgentCreator, getValues, localize, showAgentCreatorPublish, showToast]);
 
   const onPublishWithCreator = useCallback(async () => {
     if (!showAgentCreatorPublish || publishCreator.isLoading || validateCreator.isLoading) {

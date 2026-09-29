@@ -2,14 +2,13 @@ import { v4 } from 'uuid';
 import { useStore } from 'jotai';
 import { cloneDeep } from 'lodash';
 import { useNavigate } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSetRecoilState, useRecoilValue, useRecoilCallback } from 'recoil';
 import {
   Constants,
   QueryKeys,
   ContentTypes,
   EModelEndpoint,
-  dataService,
   getEndpointField,
   isAgentsEndpoint,
   parseCompactConvo,
@@ -24,7 +23,6 @@ import type {
   TStartupConfig,
   TEndpointOption,
   TEndpointsConfig,
-  CreateOrchestrationRunResponse,
   EndpointSchemaKey,
 } from 'librechat-data-provider';
 import type { SetterOrUpdater } from 'recoil';
@@ -39,10 +37,7 @@ import {
   getRouteChatProjectId,
   stripStreamedIndexStamps,
 } from '~/utils';
-import {
-  ensureSessionProfile,
-  sessionProfileInstruction,
-} from '~/utils/sessionProfiles';
+import { ensureSessionProfile, sessionProfileInstruction } from '~/utils/sessionProfiles';
 import useFocusRegeneratedResponse from '~/hooks/Chat/useFocusRegeneratedResponse';
 import useGetConversation from '~/hooks/Conversations/useGetConversation';
 import store, { useGetEphemeralAgent, contextSourcesAtom } from '~/store';
@@ -114,33 +109,6 @@ const isAssistantResponseForParent = (
   !message.isCreatedByUser &&
   !!parentMessageId &&
   message.parentMessageId === parentMessageId;
-
-type OrchestrationStartupConfig = TStartupConfig & {
-  endpoints?: {
-    agents?: {
-      orchestration?: {
-        enabled?: boolean;
-        allowedModes?: string[];
-      };
-    };
-  };
-};
-
-const shouldCreateM2OrchestrationRun = (startupConfig?: TStartupConfig): boolean => {
-  const orchestration = (startupConfig as OrchestrationStartupConfig | undefined)?.endpoints?.agents
-    ?.orchestration;
-  return (
-    orchestration?.enabled === true &&
-    (orchestration.allowedModes == null || orchestration.allowedModes.includes('m2'))
-  );
-};
-
-const resolveOrchestrationConversationId = (conversationId?: string | null): string | null => {
-  if (!conversationId || conversationId === Constants.NEW_CONVO || conversationId === 'search') {
-    return null;
-  }
-  return conversationId;
-};
 
 export function getPreliminaryRegenerateResponseMessageId(
   responseMessageId?: string | null,
@@ -254,9 +222,6 @@ export default function useChatFunctions({
   const getSender = useGetSender();
   const { user } = useAuthContext();
   const queryClient = useQueryClient();
-  const createOrchestrationRun = useMutation<CreateOrchestrationRunResponse, Error, string>(
-    (conversationId) => dataService.createOrchestrationRun({ conversationId, mode: 'm2' }),
-  );
   const setFilesToDelete = useSetFilesToDelete();
   const getEphemeralAgent = useGetEphemeralAgent();
   const isTemporary = useRecoilValue(store.isTemporary);
@@ -442,7 +407,9 @@ export default function useChatFunctions({
       orchMode: sessionProfile.orchMode,
       orchParallel: sessionProfile.orchParallel,
       ...(sessionProfile.orchCompare ? { orchCompare: sessionProfile.orchCompare } : {}),
-      ...(sessionProfile.orchParentModel ? { orchParentModel: sessionProfile.orchParentModel } : {}),
+      ...(sessionProfile.orchParentModel
+        ? { orchParentModel: sessionProfile.orchParentModel }
+        : {}),
       ...(sessionProfile.orchParentSpec ? { orchParentSpec: sessionProfile.orchParentSpec } : {}),
       ...(sessionProfile.orchParentEndpoint
         ? { orchParentEndpoint: sessionProfile.orchParentEndpoint }

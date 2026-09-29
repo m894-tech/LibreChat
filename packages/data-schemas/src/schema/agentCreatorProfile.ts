@@ -40,10 +40,7 @@ const agentCreatorProfileSchema: Schema<IAgentCreatorProfile> = new Schema(
   { timestamps: true },
 );
 
-agentCreatorProfileSchema.index(
-  { creatorAgentId: 1, createdBy: 1, tenantId: 1 },
-  { unique: true },
-);
+agentCreatorProfileSchema.index({ creatorAgentId: 1, createdBy: 1, tenantId: 1 }, { unique: true });
 agentCreatorProfileSchema.index({ createdBy: 1, updatedAt: -1, tenantId: 1 });
 
 export default agentCreatorProfileSchema;

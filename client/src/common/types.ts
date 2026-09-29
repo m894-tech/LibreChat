@@ -5,8 +5,8 @@ import type * as InputNumberPrimitive from 'rc-input-number';
 import type { SetterOrUpdater, RecoilState } from 'recoil';
 import type { ColumnDef } from '@tanstack/react-table';
 import type * as t from 'librechat-data-provider';
-import type { SessionProfileState } from '~/utils/sessionProfiles';
 import type { LucideIcon } from 'lucide-react';
+import type { SessionProfileState } from '~/utils/sessionProfiles';
 import type { TranslationKeys } from '~/hooks';
 import { MCPServerDefinition } from '~/hooks/MCP/useMCPServerManager';
 

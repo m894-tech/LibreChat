@@ -441,7 +441,9 @@ describe('createAgentCreatorAgentLookup', () => {
       getAgent,
     });
 
-    await expect(lookupCreatorAgent(createPublishRequest(spec()), 'agent_creator')).resolves.toEqual({
+    await expect(
+      lookupCreatorAgent(createPublishRequest(spec()), 'agent_creator'),
+    ).resolves.toEqual({
       id: 'agent_creator',
       accessible: false,
     });

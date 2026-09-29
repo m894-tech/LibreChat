@@ -782,7 +782,8 @@ const pruneToolResourceFileIdsForAgent = async ({
  * @returns {Promise<Agent|void>}
  */
 const createAgentService = async (req, res, options = {}) => {
-  const { tools, agentData } = options.preparedAgentCreateData ?? prepareAgentCreateData({ body: req.body });
+  const { tools, agentData } =
+    options.preparedAgentCreateData ?? prepareAgentCreateData({ body: req.body });
 
   if (
     (!isCodeInterpreterCapabilityEnabled(req) || !tools.includes(Tools.execute_code)) &&
