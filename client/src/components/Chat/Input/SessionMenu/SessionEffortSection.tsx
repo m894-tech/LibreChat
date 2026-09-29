@@ -96,7 +96,7 @@ export default function SessionEffortSection({
               className={cn(
                 'rounded-md border px-2 py-0.5 text-[11px] leading-snug',
                 selected
-                  ? 'border-amber-500/70 bg-amber-500/15 text-amber-200'
+                  ? 'border-border-heavy bg-surface-active-alt text-text-primary'
                   : 'border-border-light bg-surface-tertiary text-text-secondary hover:border-border-medium hover:text-text-primary',
               )}
             >
