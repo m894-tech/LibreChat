@@ -35,6 +35,9 @@ jest.mock('@librechat/api', () => ({
   exemptAgentTriggerFromIpLimiter: (...args) => mockExemptAgentTrigger(...args),
   exemptFromUserLimiter: (...args) => mockExemptSchedule(...args),
   createMessageFilterPii: jest.fn(() => (_req, _res, next) => next()),
+  createManualOrchestrationRunHandler: jest.fn(() => (_req, res) => res.status(202).json({})),
+  createGetLatestOrchestrationRunHandler: jest.fn(() => (_req, res) => res.status(200).json({})),
+  createCancelOrchestrationRunHandler: jest.fn(() => (_req, res) => res.status(200).json({})),
 }));
 
 jest.mock('~/server/middleware', () => ({
