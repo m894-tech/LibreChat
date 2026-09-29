@@ -7,6 +7,7 @@ import {
   type SessionOrchMode,
 } from '~/utils/sessionProfiles';
 import { useGetOrchestrationRunQuery } from '~/data-provider';
+import { useLocalize } from '~/hooks';
 import { cn } from '~/utils';
 
 type OrchRunBannerView = DataOrchRunView & {
@@ -46,6 +47,7 @@ export default function OrchRunBanner({
   conversationId?: string | null;
   isSubmitting: boolean;
 }) {
+  const localize = useLocalize();
   const convoKey = normalizeSessionProfileConversationId(conversationId);
   const [mode, setMode] = useState<SessionOrchMode>(() => ensureSessionProfile(convoKey).orchMode);
 
@@ -58,7 +60,12 @@ export default function OrchRunBanner({
 
   const pollId = convoKey === 'new' ? 'new' : convoKey;
   const live =
-    isSubmitting || mode === 'm2' || mode === 'm3' || mode === 'compare' || mode === 'team' || mode === 'auto';
+    isSubmitting ||
+    mode === 'm2' ||
+    mode === 'm3' ||
+    mode === 'compare' ||
+    mode === 'team' ||
+    mode === 'auto';
 
   const q = useGetOrchestrationRunQuery(pollId === 'new' ? null : pollId, {
     enabled: live && (isSubmitting || pollId !== 'new'),
@@ -72,7 +79,11 @@ export default function OrchRunBanner({
 
   const items =
     (run?.packages && run.packages.length
-      ? run.packages.map((p) => ({ key: p.id, label: `${p.id}${p.platform ? '@' + p.platform : ''}:${p.state || ''}`, state: p.state }))
+      ? run.packages.map((p) => ({
+          key: p.id,
+          label: `${p.id}${p.platform ? '@' + p.platform : ''}:${p.state || ''}`,
+          state: p.state,
+        }))
       : run?.nodes?.map((n) => ({
           key: n.id,
           label: `${n.id}${n.cls ? ' ' + n.cls : ''}:${n.state || ''}`,
@@ -91,7 +102,9 @@ export default function OrchRunBanner({
       {run?.state ? <span className="text-[10px] text-zinc-400">{run.state}</span> : null}
       {run?.scheduler ? <span className="text-[10px] text-zinc-600">{run.scheduler}</span> : null}
       {waiting ? (
-        <span className="text-[10px] text-[#2CE0CE]">узлы стартуют — не зависло</span>
+        <span className="text-[10px] text-[#2CE0CE]">
+          {localize('com_ui_session_orch_run_waiting')}
+        </span>
       ) : null}
       {items.map((it) => (
         <Chip key={it.key} label={it.label} state={it.state} />
@@ -100,7 +113,9 @@ export default function OrchRunBanner({
         <Chip label={`winner ${run.verdict.choice}`} state="completed" />
       ) : null}
       {isSubmitting && items.some((it) => tone(it.state) === 'run') ? (
-        <span className="text-[10px] text-zinc-500">идёт nested…</span>
+        <span className="text-[10px] text-zinc-500">
+          {localize('com_ui_session_orch_run_nested')}
+        </span>
       ) : null}
     </div>
   );

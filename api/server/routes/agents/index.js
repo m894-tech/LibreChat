@@ -134,7 +134,8 @@ const orchestrationMethods = {
   getConvoOwnership,
 };
 const manualOrchestrationRunHandler = createManualOrchestrationRunHandler(orchestrationMethods);
-const getLatestOrchestrationRunHandler = createGetLatestOrchestrationRunHandler(orchestrationMethods);
+const getLatestOrchestrationRunHandler =
+  createGetLatestOrchestrationRunHandler(orchestrationMethods);
 const cancelOrchestrationRunHandler = createCancelOrchestrationRunHandler(orchestrationMethods);
 
 /**

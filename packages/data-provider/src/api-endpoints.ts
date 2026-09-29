@@ -323,7 +323,8 @@ export const agentCreatorValidate = () => `${agents({ path: 'creator/validate' }
 
 export const agentCreatorPublish = () => `${agents({ path: 'creator/publish' })}`;
 
-export const agentCreatorPublicSkillSearch = () => `${agents({ path: 'creator/skills/public-search' })}`;
+export const agentCreatorPublicSkillSearch = () =>
+  `${agents({ path: 'creator/skills/public-search' })}`;
 
 export const orchestrationRun = () => `${agents({ path: 'orch-run' })}`;
 

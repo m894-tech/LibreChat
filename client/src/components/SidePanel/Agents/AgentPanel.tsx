@@ -196,7 +196,11 @@ export function composeAgentCreatorSpec(
 ): AgentCreatorSpec {
   const { payload, provider, model } = composeAgentUpdatePayload(data, undefined, parameterConfig);
   const skillIds = Array.from(
-    new Set((payload.skills ?? []).map((skillId) => skillId.trim()).filter((skillId) => skillId.length > 0)),
+    new Set(
+      (payload.skills ?? [])
+        .map((skillId) => skillId.trim())
+        .filter((skillId) => skillId.length > 0),
+    ),
   );
 
   return {

@@ -13,7 +13,9 @@ import type { ServerRequest } from '~/types/http';
 export type OrchestrationConfig = NonNullable<TAgentsEndpoint['orchestration']>;
 
 export type OrchestrationRunMethods = {
-  createOrchestrationRun: (run: Omit<OrchestrationRun, 'createdAt' | 'updatedAt'>) => Promise<OrchestrationRun>;
+  createOrchestrationRun: (
+    run: Omit<OrchestrationRun, 'createdAt' | 'updatedAt'>,
+  ) => Promise<OrchestrationRun>;
   getLatestOrchestrationRun: (query: {
     conversationId: string;
     userId: string;
@@ -41,7 +43,13 @@ type OrchestrationOwner = {
   tenantId?: string;
 };
 
-const DEFAULT_ALLOWED_MODES: Array<Exclude<OrchMode, 'off'>> = ['auto', 'team', 'm2', 'm3', 'compare'];
+const DEFAULT_ALLOWED_MODES: Array<Exclude<OrchMode, 'off'>> = [
+  'auto',
+  'team',
+  'm2',
+  'm3',
+  'compare',
+];
 
 const DEFAULT_ORCHESTRATION_CONFIG: OrchestrationConfig = {
   enabled: false,
@@ -75,7 +83,10 @@ function toView(run: OrchestrationRun): OrchRunView {
   };
 }
 
-function parseCreateRequest(body: unknown): { request?: CreateOrchestrationRunRequest; error?: string } {
+function parseCreateRequest(body: unknown): {
+  request?: CreateOrchestrationRunRequest;
+  error?: string;
+} {
   if (!isRecord(body)) {
     return { error: 'Request body must be an object' };
   }
@@ -95,7 +106,9 @@ function parseCreateRequest(body: unknown): { request?: CreateOrchestrationRunRe
 
 export function planNodesForMode(
   mode: Exclude<OrchMode, 'off'>,
-  options: { maxNodesPerRun: number } = { maxNodesPerRun: DEFAULT_ORCHESTRATION_CONFIG.maxNodesPerRun },
+  options: { maxNodesPerRun: number } = {
+    maxNodesPerRun: DEFAULT_ORCHESTRATION_CONFIG.maxNodesPerRun,
+  },
 ): OrchestrationRunNode[] {
   const nodesByMode: Record<Exclude<OrchMode, 'off'>, OrchestrationRunNode[]> = {
     auto: [{ id: 'auto', state: 'pending', cls: 'auto' }],

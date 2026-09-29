@@ -1,10 +1,10 @@
-import type { Document } from 'mongoose';
 import type {
   AgentCreatorPublication,
   AgentCreatorPublicationRecordInput,
   AgentCreatorPreview,
   AgentCreatorSpec,
 } from 'librechat-data-provider';
+import type { Document } from 'mongoose';
 
 export interface IAgentCreatorPublication extends Document {
   publicationId: string;

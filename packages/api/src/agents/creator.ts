@@ -172,23 +172,33 @@ function parseStringOrNull(value: unknown): string | null | undefined {
   return undefined;
 }
 
-function parseSkill(value: unknown, index: number): {
+function parseSkill(
+  value: unknown,
+  index: number,
+): {
   issue?: AgentCreatorValidationIssue;
   skill?: AgentCreatorSkillSpec;
 } {
   if (!isRecord(value)) {
     return {
-      issue: issue('skill_not_selected', 'Each selected skill must include a non-empty id', `skills.${index}`),
+      issue: issue(
+        'skill_not_selected',
+        'Each selected skill must include a non-empty id',
+        `skills.${index}`,
+      ),
     };
   }
 
   const id = typeof value.id === 'string' ? value.id : '';
   const source = typeof value.source === 'string' ? value.source : undefined;
-  return { skill: source == null ? { id } : { id, source: source as AgentCreatorSkillSpec['source'] } };
+  return {
+    skill: source == null ? { id } : { id, source: source as AgentCreatorSkillSpec['source'] },
+  };
 }
 
-
-function isSkillFrontmatterValue(value: unknown): value is NonNullable<AgentCreatorAuthoredSkillDraft['frontmatter']>[string] {
+function isSkillFrontmatterValue(
+  value: unknown,
+): value is NonNullable<AgentCreatorAuthoredSkillDraft['frontmatter']>[string] {
   if (value == null || ['string', 'number', 'boolean'].includes(typeof value)) {
     return true;
   }
@@ -201,7 +211,10 @@ function isSkillFrontmatterValue(value: unknown): value is NonNullable<AgentCrea
   return Object.values(value).every(isSkillFrontmatterValue);
 }
 
-function parseFrontmatter(value: unknown, path: string): {
+function parseFrontmatter(
+  value: unknown,
+  path: string,
+): {
   frontmatter?: AgentCreatorAuthoredSkillDraft['frontmatter'];
   issue?: AgentCreatorValidationIssue;
 } {
@@ -209,12 +222,17 @@ function parseFrontmatter(value: unknown, path: string): {
     return {};
   }
   if (!isRecord(value) || !Object.values(value).every(isSkillFrontmatterValue)) {
-    return { issue: issue('invalid_skill_draft', 'Draft skill frontmatter must be a JSON object', path) };
+    return {
+      issue: issue('invalid_skill_draft', 'Draft skill frontmatter must be a JSON object', path),
+    };
   }
   return { frontmatter: value as AgentCreatorAuthoredSkillDraft['frontmatter'] };
 }
 
-function parseOptionalString(value: unknown, path: string): {
+function parseOptionalString(
+  value: unknown,
+  path: string,
+): {
   value?: string;
   issue?: AgentCreatorValidationIssue;
 } {
@@ -227,29 +245,48 @@ function parseOptionalString(value: unknown, path: string): {
   return { value };
 }
 
-function parseAllowedTools(value: unknown, path: string): {
+function parseAllowedTools(
+  value: unknown,
+  path: string,
+): {
   allowedTools?: string[];
   issue?: AgentCreatorValidationIssue;
 } {
   if (value === undefined) {
     return {};
   }
-  if (!Array.isArray(value) || value.some((tool) => typeof tool !== 'string' || tool.trim().length === 0)) {
+  if (
+    !Array.isArray(value) ||
+    value.some((tool) => typeof tool !== 'string' || tool.trim().length === 0)
+  ) {
     return {
-      issue: issue('invalid_skill_draft', 'Draft skill allowedTools must be non-empty strings', path),
+      issue: issue(
+        'invalid_skill_draft',
+        'Draft skill allowedTools must be non-empty strings',
+        path,
+      ),
     };
   }
   return { allowedTools: Array.from(new Set(value.map((tool) => tool.trim()))) };
 }
 
-function parseAuthoredSkillDraft(value: unknown, index: number): {
+function parseAuthoredSkillDraft(
+  value: unknown,
+  index: number,
+): {
   draft?: AgentCreatorAuthoredSkillDraft;
   issues: AgentCreatorValidationIssue[];
 } {
   const issues: AgentCreatorValidationIssue[] = [];
   if (!isRecord(value)) {
     return {
-      issues: [issue('invalid_skill_draft', 'Each drafted skill must be an object', `draftedSkills.${index}`)],
+      issues: [
+        issue(
+          'invalid_skill_draft',
+          'Each drafted skill must be an object',
+          `draftedSkills.${index}`,
+        ),
+      ],
     };
   }
 
@@ -257,30 +294,47 @@ function parseAuthoredSkillDraft(value: unknown, index: number): {
   const description = typeof value.description === 'string' ? value.description : '';
   const body = typeof value.body === 'string' ? value.body : '';
   if (name.trim().length === 0) {
-    issues.push(issue('invalid_skill_draft', 'Draft skill name is required', `draftedSkills.${index}.name`));
+    issues.push(
+      issue('invalid_skill_draft', 'Draft skill name is required', `draftedSkills.${index}.name`),
+    );
   }
   if (description.trim().length === 0) {
     issues.push(
-      issue('invalid_skill_draft', 'Draft skill description is required', `draftedSkills.${index}.description`),
+      issue(
+        'invalid_skill_draft',
+        'Draft skill description is required',
+        `draftedSkills.${index}.description`,
+      ),
     );
   }
   if (body.trim().length === 0) {
-    issues.push(issue('invalid_skill_draft', 'Draft skill body is required', `draftedSkills.${index}.body`));
+    issues.push(
+      issue('invalid_skill_draft', 'Draft skill body is required', `draftedSkills.${index}.body`),
+    );
   }
 
-  const displayTitle = parseOptionalString(value.displayTitle, `draftedSkills.${index}.displayTitle`);
+  const displayTitle = parseOptionalString(
+    value.displayTitle,
+    `draftedSkills.${index}.displayTitle`,
+  );
   const category = parseOptionalString(value.category, `draftedSkills.${index}.category`);
   const frontmatter = parseFrontmatter(value.frontmatter, `draftedSkills.${index}.frontmatter`);
   const allowedTools = parseAllowedTools(value.allowedTools, `draftedSkills.${index}.allowedTools`);
-  [displayTitle.issue, category.issue, frontmatter.issue, allowedTools.issue].forEach((draftIssue) => {
-    if (draftIssue != null) {
-      issues.push(draftIssue);
-    }
-  });
+  [displayTitle.issue, category.issue, frontmatter.issue, allowedTools.issue].forEach(
+    (draftIssue) => {
+      if (draftIssue != null) {
+        issues.push(draftIssue);
+      }
+    },
+  );
 
   if (value.alwaysApply === true) {
     issues.push(
-      issue('invalid_skill_draft', 'Agent Creator authored skills cannot set alwaysApply', `draftedSkills.${index}.alwaysApply`),
+      issue(
+        'invalid_skill_draft',
+        'Agent Creator authored skills cannot set alwaysApply',
+        `draftedSkills.${index}.alwaysApply`,
+      ),
     );
   }
   const bodyAlwaysApply = body.length > 0 ? parseSkillMarkdown(body).alwaysApply : undefined;
@@ -293,7 +347,10 @@ function parseAuthoredSkillDraft(value: unknown, index: number): {
       ),
     );
   }
-  if (frontmatter.frontmatter?.['always-apply'] === true || frontmatter.frontmatter?.alwaysApply === true) {
+  if (
+    frontmatter.frontmatter?.['always-apply'] === true ||
+    frontmatter.frontmatter?.alwaysApply === true
+  ) {
     issues.push(
       issue(
         'invalid_skill_draft',
@@ -371,7 +428,8 @@ function parseAgentCreatorSpec(input: unknown): ParsedAgentCreatorSpec {
   const model = body.model === null || typeof body.model === 'string' ? body.model : null;
   const description = parseStringOrNull(body.description);
   const instructions = parseStringOrNull(body.instructions);
-  const skillsScope = typeof body.skills_scope === 'string' ? (body.skills_scope as SkillsScope) : undefined;
+  const skillsScope =
+    typeof body.skills_scope === 'string' ? (body.skills_scope as SkillsScope) : undefined;
 
   return {
     issues,
@@ -382,7 +440,10 @@ function parseAgentCreatorSpec(input: unknown): ParsedAgentCreatorSpec {
       provider,
       model,
       model_parameters: isRecord(body.model_parameters)
-        ? ({ ...DEFAULT_MODEL_PARAMETERS, ...body.model_parameters } as AgentCreatorSpec['model_parameters'])
+        ? ({
+            ...DEFAULT_MODEL_PARAMETERS,
+            ...body.model_parameters,
+          } as AgentCreatorSpec['model_parameters'])
         : DEFAULT_MODEL_PARAMETERS,
       skills,
       ...(draftedSkills.length > 0 && { draftedSkills }),
@@ -410,7 +471,9 @@ function isPublicCandidateSkillId(id: string): boolean {
   return id.trim().startsWith(AGENT_CREATOR_PUBLIC_CANDIDATE_ID_PREFIX);
 }
 
-function validateSkillSources(skills: readonly AgentCreatorSkillSpec[]): AgentCreatorValidationIssue[] {
+function validateSkillSources(
+  skills: readonly AgentCreatorSkillSpec[],
+): AgentCreatorValidationIssue[] {
   return skills.flatMap((skill, index) => {
     const issues: AgentCreatorValidationIssue[] = [];
     if (isPublicCandidateSkillId(skill.id)) {
@@ -459,11 +522,7 @@ function validateSkillAuthoring(
     return [];
   }
   return [
-    issue(
-      'skill_authoring_disabled',
-      'Agent Creator skill authoring is disabled',
-      'draftedSkills',
-    ),
+    issue('skill_authoring_disabled', 'Agent Creator skill authoring is disabled', 'draftedSkills'),
   ];
 }
 
@@ -514,7 +573,9 @@ export async function validateAgentCreatorSpec({
 
   const skillIds = getSkillIds(spec.skills);
   if (skillIds.length !== spec.skills.length) {
-    issues.push(issue('skill_not_selected', 'Each selected skill must include a non-empty id', 'skills'));
+    issues.push(
+      issue('skill_not_selected', 'Each selected skill must include a non-empty id', 'skills'),
+    );
   }
 
   const lookupIds = skillIds.filter((id) => !isPublicCandidateSkillId(id));
@@ -528,7 +589,9 @@ export async function validateAgentCreatorSpec({
         return;
       }
       if (result.accessible !== true) {
-        issues.push(issue('skill_not_accessible', `Selected skill is not accessible: ${id}`, 'skills'));
+        issues.push(
+          issue('skill_not_accessible', `Selected skill is not accessible: ${id}`, 'skills'),
+        );
       }
     });
   }
@@ -596,7 +659,6 @@ export function createAgentCreatorValidateHandler(deps: AgentCreatorHandlerDeps)
   };
 }
 
-
 function getCreatedSkillId(skill: AgentCreatorCreatedSkill): string {
   return skill.id ?? skill._id?.toString() ?? '';
 }
@@ -610,7 +672,10 @@ function toDraftSkillFrontmatter(draft: AgentCreatorAuthoredSkillDraft): Record<
   };
 }
 
-async function cleanupDraftSkills(deleteSkill: AgentCreatorDeleteSkill, skillIds: readonly string[]) {
+async function cleanupDraftSkills(
+  deleteSkill: AgentCreatorDeleteSkill,
+  skillIds: readonly string[],
+) {
   await Promise.allSettled(skillIds.map((id) => deleteSkill(id)));
 }
 
@@ -723,7 +788,9 @@ export function createAgentCreatorPublishHandler({
           permissions: [Permissions.USE, Permissions.CREATE],
         }))
       ) {
-        return res.status(403).json({ error: 'Skill creation permission is required for drafted skills' });
+        return res
+          .status(403)
+          .json({ error: 'Skill creation permission is required for drafted skills' });
       }
       const createdSkillIds = await createAuthoredDraftSkills({
         drafts: draftedSkills,

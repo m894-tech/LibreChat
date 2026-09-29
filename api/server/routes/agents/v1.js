@@ -10,9 +10,18 @@ const {
 const { PermissionTypes, Permissions, PermissionBits } = require('librechat-data-provider');
 const { configMiddleware, canAccessAgentResource } = require('~/server/middleware');
 const { findAccessibleResources, grantPermission } = require('~/server/services/PermissionService');
-const { getSkillDbMethods, withDeploymentSkillIds } = require('~/server/services/Endpoints/agents/skillDeps');
+const {
+  getSkillDbMethods,
+  withDeploymentSkillIds,
+} = require('~/server/services/Endpoints/agents/skillDeps');
 const v1 = require('~/server/controllers/agents/v1');
-const { getRoleByName, createSkill, deleteAgent, deleteSkill, recordAgentCreatorPublication } = require('~/models');
+const {
+  getRoleByName,
+  createSkill,
+  deleteAgent,
+  deleteSkill,
+  recordAgentCreatorPublication,
+} = require('~/models');
 const actions = require('./actions');
 const tools = require('./tools');
 

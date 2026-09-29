@@ -126,7 +126,10 @@ describe('createManualOrchestrationRun', () => {
       body: { conversationId: 'conversation-1', mode: 'team' },
       config: enabledConfig,
       owner,
-      methods: { createOrchestrationRun, getConvoOwnership: jest.fn(async () => ({ user: 'user-1' })) },
+      methods: {
+        createOrchestrationRun,
+        getConvoOwnership: jest.fn(async () => ({ user: 'user-1' })),
+      },
     });
 
     expect(createOrchestrationRun).toHaveBeenCalledWith(

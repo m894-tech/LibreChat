@@ -937,9 +937,7 @@ const createAgentService = async (req, res, options = {}) => {
         grantedBy: userId,
       }),
     ]);
-    logger.debug(
-      `[createAgent] Granted owner permissions to user ${userId} for agent ${agent.id}`,
-    );
+    logger.debug(`[createAgent] Granted owner permissions to user ${userId} for agent ${agent.id}`);
   } catch (permissionError) {
     logger.error(
       `[createAgent] Failed to grant owner permissions for agent ${agent.id}:`,

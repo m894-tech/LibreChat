@@ -1,11 +1,9 @@
-import type { Model } from 'mongoose';
 import type { AgentCreatorPublication } from 'librechat-data-provider';
+import type { Model } from 'mongoose';
 import type { AgentCreatorPublicationInput, IAgentCreatorPublication } from '~/types';
 import { serializeAgentCreatorPublication } from '~/types';
 
-export function createAgentCreatorPublicationMethods(
-  mongoose: typeof import('mongoose'),
-): {
+export function createAgentCreatorPublicationMethods(mongoose: typeof import('mongoose')): {
   recordAgentCreatorPublication: (
     publication: AgentCreatorPublicationInput,
   ) => Promise<AgentCreatorPublication>;

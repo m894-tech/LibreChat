@@ -12,9 +12,7 @@ function tenantFilter(tenantId: string | undefined): { tenantId?: string } {
   return tenantId == null ? {} : { tenantId };
 }
 
-export function createOrchestrationRunMethods(
-  mongoose: typeof import('mongoose'),
-): {
+export function createOrchestrationRunMethods(mongoose: typeof import('mongoose')): {
   createOrchestrationRun: (run: OrchestrationRunInput) => Promise<OrchestrationRun>;
   getLatestOrchestrationRun: (
     query: LatestOrchestrationRunQuery,
@@ -23,9 +21,7 @@ export function createOrchestrationRunMethods(
     query: OrchestrationRunIdentityQuery,
   ) => Promise<OrchestrationRun | null>;
 } {
-  async function createOrchestrationRun(
-    run: OrchestrationRunInput,
-  ): Promise<OrchestrationRun> {
+  async function createOrchestrationRun(run: OrchestrationRunInput): Promise<OrchestrationRun> {
     const OrchestrationRunModel = mongoose.models.OrchestrationRun as Model<IOrchestrationRun>;
     const createdAt = run.createdAt == null ? new Date() : new Date(run.createdAt);
     const updatedAt = run.updatedAt == null ? createdAt : new Date(run.updatedAt);

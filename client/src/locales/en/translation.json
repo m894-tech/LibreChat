@@ -3128,6 +3128,8 @@
   "com_ui_session_orch_progress_m3_parallel": "M3 · parallel independents, not Team",
   "com_ui_session_orch_progress_compare": "Compare · c1/c2 + judge",
   "com_ui_session_orch_progress_team": "M2-interim · no packages",
+  "com_ui_session_orch_run_waiting": "Nodes are starting — not stuck",
+  "com_ui_session_orch_run_nested": "Nested run in progress…",
   "com_ui_session_orch_step_plan": "Plan",
   "com_ui_session_orch_step_leaf": "Leaves",
   "com_ui_session_orch_step_accept": "A5",

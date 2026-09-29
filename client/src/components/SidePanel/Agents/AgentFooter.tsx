@@ -68,7 +68,10 @@ export default function AgentFooter({
   const canShareRemoteAgent = hasRemoteAgentPermission(PermissionBits.SHARE);
   const isAdmin = user?.role === SystemRoles.ADMIN;
   const isSaving =
-    createMutation.isLoading || updateMutation.isLoading || isAvatarUploading || isAgentCreatorPublishing;
+    createMutation.isLoading ||
+    updateMutation.isLoading ||
+    isAvatarUploading ||
+    isAgentCreatorPublishing;
   const saveLabel = agent_id ? localize('com_ui_save') : localize('com_ui_create');
   const renderSaveButton = () => (
     <span className="t-icon-swap" data-state={isSaving ? 'b' : 'a'} aria-hidden={false}>

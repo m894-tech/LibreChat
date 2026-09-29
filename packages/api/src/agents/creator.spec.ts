@@ -143,8 +143,6 @@ describe('validateAgentCreatorSpec', () => {
     );
   });
 
-
-
   it('rejects public sources and public-candidate ids even when public search is enabled', async () => {
     const lookupSkills = jest.fn(async () => [{ id: 'skill-1', accessible: true }]);
     const result = await validateAgentCreatorSpec({
@@ -165,7 +163,9 @@ describe('validateAgentCreatorSpec', () => {
     });
 
     expect(result.valid).toBe(false);
-    expect(result.issues.filter((item) => item.code === 'invalid_skill_source').length).toBeGreaterThanOrEqual(3);
+    expect(
+      result.issues.filter((item) => item.code === 'invalid_skill_source').length,
+    ).toBeGreaterThanOrEqual(3);
     expect(lookupSkills).toHaveBeenCalledWith(['public-skill']);
   });
 
@@ -363,7 +363,8 @@ function createPublishHandler(
     hasSkillCreatePermission?: jest.Mock;
   } = {},
 ) {
-  const createSkill = skillDeps.createSkill ??
+  const createSkill =
+    skillDeps.createSkill ??
     jest.fn(async () => ({ skill: { _id: { toString: () => 'created-skill-1' } } }));
   const deleteAgent = skillDeps.deleteAgent ?? jest.fn(async () => ({ deleted: true }));
   const deleteSkill = skillDeps.deleteSkill ?? jest.fn(async () => ({ deleted: true }));
@@ -415,7 +416,6 @@ describe('createAgentCreatorPublishHandler', () => {
     expect(recordPublication).not.toHaveBeenCalled();
     expect(next).not.toHaveBeenCalled();
   });
-
 
   it('does not call createAgent when skills include public-candidate ids', async () => {
     const createAgent = jest.fn();
@@ -532,8 +532,6 @@ describe('createAgentCreatorPublishHandler', () => {
     expect(next).toHaveBeenCalledWith(error);
   });
 
-
-
   it('does not require SKILLS.CREATE for selected-skill-only publish', async () => {
     const createAgent = jest.fn((request: ServerRequest) =>
       Promise.resolve({ id: 'agent_created', ...request.body }),
@@ -592,8 +590,12 @@ describe('createAgentCreatorPublishHandler', () => {
     const createAgent = jest.fn((request: ServerRequest) =>
       Promise.resolve({ id: 'agent_created', ...request.body }),
     );
-    const createSkill = jest.fn(async () => ({ skill: { _id: { toString: () => 'created-skill-1' } } }));
-    const { handler, grantPermission } = createPublishHandler(createAgent, jest.fn(), { createSkill });
+    const createSkill = jest.fn(async () => ({
+      skill: { _id: { toString: () => 'created-skill-1' } },
+    }));
+    const { handler, grantPermission } = createPublishHandler(createAgent, jest.fn(), {
+      createSkill,
+    });
     const req = createPublishRequest(
       spec({
         draftedSkills: [
@@ -612,7 +614,9 @@ describe('createAgentCreatorPublishHandler', () => {
 
     await handler(req, res as Response, next);
 
-    expect(createSkill).toHaveBeenCalledWith(expect.objectContaining({ author: objectIdLike.toString() }));
+    expect(createSkill).toHaveBeenCalledWith(
+      expect.objectContaining({ author: objectIdLike.toString() }),
+    );
     expect(grantPermission).toHaveBeenCalledWith(
       expect.objectContaining({
         principalId: objectIdLike.toString(),
@@ -628,8 +632,12 @@ describe('createAgentCreatorPublishHandler', () => {
       createBody = request.body;
       return Promise.resolve({ id: 'agent_created', ...request.body });
     });
-    const createSkill = jest.fn(async () => ({ skill: { _id: { toString: () => 'created-skill-1' } } }));
-    const { handler, grantPermission } = createPublishHandler(createAgent, jest.fn(), { createSkill });
+    const createSkill = jest.fn(async () => ({
+      skill: { _id: { toString: () => 'created-skill-1' } },
+    }));
+    const { handler, grantPermission } = createPublishHandler(createAgent, jest.fn(), {
+      createSkill,
+    });
     const req = createPublishRequest(
       spec({
         draftedSkills: [
@@ -678,7 +686,9 @@ describe('createAgentCreatorPublishHandler', () => {
     const createAgent = jest.fn(async () => {
       throw error;
     });
-    const createSkill = jest.fn(async () => ({ skill: { _id: { toString: () => 'created-skill-1' } } }));
+    const createSkill = jest.fn(async () => ({
+      skill: { _id: { toString: () => 'created-skill-1' } },
+    }));
     const deleteSkill = jest.fn(async () => ({ deleted: true }));
     const { handler } = createPublishHandler(createAgent, jest.fn(), { createSkill, deleteSkill });
     const req = createPublishRequest(
@@ -748,7 +758,9 @@ describe('createAgentCreatorPublishHandler', () => {
       throw error;
     });
     const deleteAgent = jest.fn(async () => ({ deleted: true }));
-    const createSkill = jest.fn(async () => ({ skill: { _id: { toString: () => 'created-skill-1' } } }));
+    const createSkill = jest.fn(async () => ({
+      skill: { _id: { toString: () => 'created-skill-1' } },
+    }));
     const deleteSkill = jest.fn(async () => ({ deleted: true }));
     const { handler } = createPublishHandler(createAgent, recordPublication, {
       createSkill,

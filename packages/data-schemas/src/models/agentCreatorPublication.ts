@@ -1,7 +1,7 @@
 import { Model } from 'mongoose';
 import type { IAgentCreatorPublication } from '~/types';
-import { applyTenantIsolation } from '~/models/plugins/tenantIsolation';
 import agentCreatorPublicationSchema from '~/schema/agentCreatorPublication';
+import { applyTenantIsolation } from '~/models/plugins/tenantIsolation';
 
 export function createAgentCreatorPublicationModel(
   mongoose: typeof import('mongoose'),

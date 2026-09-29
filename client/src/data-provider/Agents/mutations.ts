@@ -110,7 +110,8 @@ export const useValidateAgentCreatorMutation = (
   options?: t.AgentCreatorValidateMutationOptions,
 ): UseMutationResult<t.AgentCreatorValidateResponse, Error, t.AgentCreatorSpec> => {
   return useMutation(
-    (agentCreatorSpec: t.AgentCreatorSpec) => dataService.validateAgentCreatorSpec(agentCreatorSpec),
+    (agentCreatorSpec: t.AgentCreatorSpec) =>
+      dataService.validateAgentCreatorSpec(agentCreatorSpec),
     {
       onMutate: (variables) => options?.onMutate?.(variables),
       onError: (error, variables, context) => options?.onError?.(error, variables, context),
@@ -142,11 +143,7 @@ export const usePublishAgentCreatorMutation = (
 
 export const useCreateOrchestrationRunMutation = (
   options?: t.CreateOrchestrationRunMutationOptions,
-): UseMutationResult<
-  t.CreateOrchestrationRunResponse,
-  Error,
-  t.CreateOrchestrationRunRequest
-> => {
+): UseMutationResult<t.CreateOrchestrationRunResponse, Error, t.CreateOrchestrationRunRequest> => {
   const queryClient = useQueryClient();
   return useMutation(
     (payload: t.CreateOrchestrationRunRequest) => dataService.createOrchestrationRun(payload),
@@ -164,11 +161,7 @@ export const useCreateOrchestrationRunMutation = (
 
 export const useCancelOrchestrationRunMutation = (
   options?: t.CancelOrchestrationRunMutationOptions,
-): UseMutationResult<
-  t.CancelOrchestrationRunResponse,
-  Error,
-  t.CancelOrchestrationRunRequest
-> => {
+): UseMutationResult<t.CancelOrchestrationRunResponse, Error, t.CancelOrchestrationRunRequest> => {
   const queryClient = useQueryClient();
   return useMutation(
     (payload: t.CancelOrchestrationRunRequest) => dataService.cancelOrchestrationRun(payload),
