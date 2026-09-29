@@ -19,6 +19,7 @@ export * from './agent';
 export * from './agentApiKey';
 export * from './agentCategory';
 export * from './agentCreatorPublication';
+export * from './agentCreatorProfile';
 export * from './orchestrationRun';
 export * from './codeEnvironment';
 export * from './role';

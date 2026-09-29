@@ -22,6 +22,9 @@ import {
   ActionMetadata,
   Agent,
   AgentCreateParams,
+  AgentCreatorCreateRequest,
+  AgentCreatorCreateResponse,
+  AgentCreatorPublishRequest,
   AgentCreatorPublishResponse,
   AgentCreatorSpec,
   AgentCreatorValidateResponse,
@@ -146,6 +149,11 @@ export type UploadAgentAvatarOptions = MutationOptions<Agent, AgentAvatarVariabl
 
 export type CreateAgentMutationOptions = MutationOptions<Agent, AgentCreateParams>;
 
+export type CreateAgentCreatorMutationOptions = MutationOptions<
+  AgentCreatorCreateResponse,
+  AgentCreatorCreateRequest
+>;
+
 export type AgentCreatorValidateMutationOptions = MutationOptions<
   AgentCreatorValidateResponse,
   AgentCreatorSpec
@@ -153,7 +161,7 @@ export type AgentCreatorValidateMutationOptions = MutationOptions<
 
 export type AgentCreatorPublishMutationOptions = MutationOptions<
   AgentCreatorPublishResponse,
-  AgentCreatorSpec
+  AgentCreatorPublishRequest
 >;
 
 export type CreateOrchestrationRunMutationOptions = MutationOptions<

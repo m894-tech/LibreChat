@@ -27,7 +27,9 @@ export default function AgentFooter({
   setCurrentAgentId,
   isAvatarUploading = false,
   isAgentCreatorPublishing = false,
+  isAgentCreatorCreating = false,
   showAgentCreatorPublish = false,
+  onCreateAgentCreator,
   onPublishWithCreator,
 }: Pick<
   AgentPanelProps,
@@ -36,7 +38,9 @@ export default function AgentFooter({
   updateMutation: ReturnType<typeof useUpdateAgentMutation>;
   isAvatarUploading?: boolean;
   isAgentCreatorPublishing?: boolean;
+  isAgentCreatorCreating?: boolean;
   showAgentCreatorPublish?: boolean;
+  onCreateAgentCreator?: () => void;
   onPublishWithCreator?: () => void;
 }) {
   const localize = useLocalize();
@@ -71,7 +75,8 @@ export default function AgentFooter({
     createMutation.isLoading ||
     updateMutation.isLoading ||
     isAvatarUploading ||
-    isAgentCreatorPublishing;
+    isAgentCreatorPublishing ||
+    isAgentCreatorCreating;
   const saveLabel = agent_id ? localize('com_ui_save') : localize('com_ui_create');
   const renderSaveButton = () => (
     <span className="t-icon-swap" data-state={isSaving ? 'b' : 'a'} aria-hidden={false}>
@@ -138,6 +143,23 @@ export default function AgentFooter({
           )}
         {(agent?.author === user?.id || user?.role === SystemRoles.ADMIN || canEditThisAgent) &&
           !permissionsLoading && <DuplicateAgent agent_id={agent_id} />}
+        {showButtons && showAgentCreatorPublish && !agent_id && (
+          <Button
+            type="button"
+            variant="outline"
+            className="h-9 w-full px-4 py-2 font-semibold"
+            disabled={isSaving}
+            aria-busy={isAgentCreatorCreating}
+            aria-label={localize('com_agents_creator_create')}
+            onClick={onCreateAgentCreator}
+          >
+            {isAgentCreatorCreating ? (
+              <Spinner className="icon-md" aria-hidden="true" />
+            ) : (
+              localize('com_agents_creator_create')
+            )}
+          </Button>
+        )}
         {showButtons && showAgentCreatorPublish && (
           <Button
             type="button"

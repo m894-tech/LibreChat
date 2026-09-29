@@ -6,6 +6,7 @@ import {
   Permissions,
   PermissionTypes,
   PrincipalType,
+  removeNullishValues,
   ResourceType,
   SkillsScope as SkillScopes,
 } from 'librechat-data-provider';
@@ -13,7 +14,10 @@ import type {
   Agent,
   AgentCreateParams,
   AgentCreatorAuthoredSkillDraft,
+  AgentCreatorCreateRequest,
+  AgentCreatorCreateResponse,
   AgentCreatorPreview,
+  AgentCreatorProfile,
   AgentCreatorProvenance,
   AgentCreatorPublicationRecordInput,
   AgentCreatorSkillSpec,
@@ -25,7 +29,9 @@ import type {
 } from 'librechat-data-provider';
 import type { NextFunction, Response } from 'express';
 import type { ServerRequest } from '~/types/http';
+import { normalizeToolResourceFiles } from './orphans';
 import { parseSkillMarkdown } from '../skills/parse';
+import { agentCreateSchema } from './validation';
 
 export type AgentCreatorConfig = NonNullable<TAgentsEndpoint['creator']>;
 
@@ -104,13 +110,57 @@ export type AgentCreatorHandlerDeps = {
     ids: readonly { toString(): string }[],
   ) => readonly { toString(): string }[] | Promise<readonly { toString(): string }[]>;
   getSkillDbMethods: () => AgentCreatorSkillDbMethods;
+  getAgent?: AgentCreatorGetAgent;
 };
 
 export type AgentCreatorCreateAgentService = (
   req: ServerRequest,
   res: Response,
-  options?: { creatorProvenance?: AgentCreatorProvenance },
+  options?: { preparedAgentCreateData?: PreparedAgentCreateData },
 ) => Promise<Agent | void>;
+
+export type AgentCreatorLookupAgentRecord = {
+  _id?: { toString(): string };
+  id?: string;
+};
+
+export type AgentCreatorGetAgent = (search: {
+  id: string;
+  tenantId?: string;
+}) => Promise<AgentCreatorLookupAgentRecord | null | undefined>;
+
+export type AgentCreatorAgentLookupResult = {
+  id: string;
+  accessible: boolean;
+};
+
+export type AgentCreatorAgentLookup = (
+  req: ServerRequest,
+  id: string,
+) => Promise<AgentCreatorAgentLookupResult>;
+
+export type AgentCreatorRememberChild = (params: {
+  creatorAgentId: string;
+  createdBy: string;
+  tenantId?: string;
+  child: {
+    agentId: string;
+    name: string;
+    publicationId: string;
+    createdAt: string;
+  };
+}) => Promise<AgentCreatorProfile>;
+
+export type AgentCreatorUpsertProfile = (profile: {
+  creatorAgentId: string;
+  createdBy: string;
+  tenantId?: string;
+  preferences?: {
+    defaultProvider?: AgentCreatorCreateRequest['provider'];
+    defaultModel?: string;
+    defaultSkillsScope?: SkillsScope;
+  };
+}) => Promise<AgentCreatorProfile>;
 
 export type AgentCreatorDeleteAgent = (search: {
   id: string;
@@ -124,7 +174,14 @@ export type AgentCreatorPublishHandlerDeps = AgentCreatorHandlerDeps & {
   deleteSkill: AgentCreatorDeleteSkill;
   grantPermission: AgentCreatorGrantPermission;
   hasSkillCreatePermission: AgentCreatorSkillCreatePermission;
+  lookupCreatorAgent: AgentCreatorAgentLookup;
   recordPublication: (publication: AgentCreatorPublicationRecordInput) => Promise<unknown>;
+  rememberChild?: AgentCreatorRememberChild;
+};
+
+export type AgentCreatorCreateHandlerDeps = {
+  createAgent: AgentCreatorCreateAgentService;
+  upsertProfile: AgentCreatorUpsertProfile;
 };
 
 type ParsedAgentCreatorSpec = {
@@ -607,6 +664,32 @@ export async function validateAgentCreatorSpec({
   };
 }
 
+export type PrepareAgentCreateDataParams = {
+  body: ServerRequest['body'];
+  creatorProvenance?: AgentCreatorProvenance;
+};
+
+export type PreparedAgentCreateData = {
+  tools: string[];
+  agentData: Omit<Agent, 'tools'>;
+};
+
+export function prepareAgentCreateData({
+  body,
+  creatorProvenance,
+}: PrepareAgentCreateDataParams): PreparedAgentCreateData {
+  const bodyRecord = body as Partial<AgentCreateParams> & Pick<Agent, 'tool_resources'>;
+  normalizeToolResourceFiles(bodyRecord.tool_resources);
+  const validatedData = agentCreateSchema.parse(body);
+  const { tools = [], ...agentData } = removeNullishValues(validatedData, true);
+  const preparedAgentData = agentData as Omit<Agent, 'tools'>;
+  return {
+    tools,
+    agentData:
+      creatorProvenance == null ? preparedAgentData : { ...preparedAgentData, creatorProvenance },
+  };
+}
+
 export function createAgentCreatorSkillLookup({
   findAccessibleResources,
   withDeploymentSkillIds,
@@ -636,6 +719,117 @@ export function createAgentCreatorSkillLookup({
         return { id, accessible: skill != null && accessibleSkillIds.has(id) };
       }),
     );
+  };
+}
+
+export function createAgentCreatorAgentLookup({
+  findAccessibleResources,
+  getAgent,
+}: AgentCreatorHandlerDeps): AgentCreatorAgentLookup {
+  return async function lookupCreatorAgent(req: ServerRequest, id: string) {
+    const user = req.user;
+    if (user == null) {
+      return { id, accessible: false };
+    }
+    const existingAgent = await getAgent?.({ id, tenantId: user.tenantId });
+    if (existingAgent == null) {
+      return { id, accessible: false };
+    }
+    const accessibleResources = await findAccessibleResources({
+      userId: user.id,
+      role: user.role,
+      resourceType: ResourceType.AGENT,
+      requiredPermissions: PermissionBits.VIEW,
+    });
+    return {
+      id,
+      accessible: accessibleResources.some(
+        (resourceId) =>
+          resourceId.toString() === id || resourceId.toString() === existingAgent._id?.toString(),
+      ),
+    };
+  };
+}
+
+function getAgentCreatorPublishSpec(body: ServerRequest['body']): {
+  spec: AgentCreatorSpec | unknown;
+  creatorAgentId?: string;
+} {
+  const candidate = body as unknown;
+  if (!isRecord(candidate) || !isRecord(candidate.spec)) {
+    return { spec: body };
+  }
+  return {
+    spec: candidate.spec,
+    creatorAgentId:
+      typeof candidate.creatorAgentId === 'string' ? candidate.creatorAgentId : undefined,
+  };
+}
+
+export function createAgentCreatorCreateHandler({
+  createAgent,
+  upsertProfile,
+}: AgentCreatorCreateHandlerDeps) {
+  return async function createAgentCreator(
+    req: ServerRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<Response | void> {
+    try {
+      const config = resolveConfig(req.config?.endpoints?.agents?.creator);
+      if (!config.enabled) {
+        return res.status(400).json({ error: 'Agent Creator is disabled' });
+      }
+
+      const userId = req.user?.id;
+      if (userId == null) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      const body = req.body as unknown;
+      if (!isRecord(body) || typeof body.provider !== 'string' || typeof body.model !== 'string') {
+        return res.status(400).json({ error: 'Agent Creator requires provider and model' });
+      }
+
+      const requestBody = body as AgentCreatorCreateRequest;
+      const originalBody = req.body;
+      const createBody: AgentCreateParams = {
+        name: 'Agent Creator',
+        description: 'Persistent agent that helps create and publish reusable agents.',
+        instructions:
+          'You are Agent Creator. Help the user design, validate, and publish permanent unique agents. Remember preferences and child agents you create. Ask for confirmation before publishing a child agent.',
+        provider: requestBody.provider,
+        model: requestBody.model,
+        model_parameters: DEFAULT_MODEL_PARAMETERS,
+        tools: [],
+        skills: [],
+        skills_enabled: false,
+        skill_authoring_enabled: config.allowSkillAuthoring,
+        skills_scope: config.defaultSkillsScope,
+        memory_scope: 'agent',
+      };
+      req.body = createBody as ServerRequest['body'];
+      try {
+        const agent = await createAgent(req, res);
+        if (agent == null) {
+          return;
+        }
+        const profile = await upsertProfile({
+          creatorAgentId: agent.id,
+          createdBy: userId,
+          tenantId: req.user?.tenantId,
+          preferences: {
+            defaultProvider: requestBody.provider,
+            defaultModel: requestBody.model,
+            defaultSkillsScope: config.defaultSkillsScope,
+          },
+        });
+        return res.status(201).json({ agent, profile } satisfies AgentCreatorCreateResponse);
+      } finally {
+        req.body = originalBody;
+      }
+    } catch (error) {
+      return next(error);
+    }
   };
 }
 
@@ -745,7 +939,9 @@ export function createAgentCreatorPublishHandler({
   deleteSkill,
   grantPermission,
   hasSkillCreatePermission,
+  lookupCreatorAgent,
   recordPublication,
+  rememberChild,
   ...deps
 }: AgentCreatorPublishHandlerDeps) {
   const lookupSkills = createAgentCreatorSkillLookup(deps);
@@ -755,9 +951,10 @@ export function createAgentCreatorPublishHandler({
     next: NextFunction,
   ): Promise<Response | void> {
     try {
+      const publishRequest = getAgentCreatorPublishSpec(req.body);
       const result = await validateAgentCreatorSpec({
         config: req.config?.endpoints?.agents?.creator,
-        spec: req.body,
+        spec: publishRequest.spec,
         lookupSkills: (ids) => lookupSkills(req, ids),
       });
       if (!result.valid || result.preview == null) {
@@ -770,6 +967,12 @@ export function createAgentCreatorPublishHandler({
       }
 
       const createdAt = new Date().toISOString();
+      if (publishRequest.creatorAgentId != null && rememberChild != null) {
+        const creatorAgent = await lookupCreatorAgent(req, publishRequest.creatorAgentId);
+        if (!creatorAgent.accessible) {
+          return res.status(403).json({ error: 'Creator agent is not accessible' });
+        }
+      }
       const publicationId = randomUUID();
       const creatorProvenance: AgentCreatorProvenance = {
         publicationId,
@@ -778,7 +981,7 @@ export function createAgentCreatorPublishHandler({
         source: 'agent_creator',
       };
       const originalBody = req.body;
-      const parsedSpec = parseAgentCreatorSpec(originalBody).spec;
+      const parsedSpec = parseAgentCreatorSpec(publishRequest.spec).spec;
       const draftedSkills = parsedSpec.draftedSkills ?? [];
       if (
         draftedSkills.length > 0 &&
@@ -802,15 +1005,20 @@ export function createAgentCreatorPublishHandler({
       const finalSkillIds = [...(result.preview.skills ?? []), ...createdSkillIds];
       const createBody: AgentCreateParams = {
         ...result.preview,
+        provider: parsedSpec.provider,
         skills: finalSkillIds,
         skills_enabled: finalSkillIds.length > 0,
         skill_authoring_enabled: false,
       };
-      req.body = createBody as ServerRequest['body'];
+      const preparedAgentCreateData = prepareAgentCreateData({
+        body: createBody as ServerRequest['body'],
+        creatorProvenance,
+      });
+      req.body = preparedAgentCreateData.agentData as ServerRequest['body'];
       let agent: Agent | void;
       try {
         try {
-          agent = await createAgent(req, res, { creatorProvenance });
+          agent = await createAgent(req, res, { preparedAgentCreateData });
         } catch (error) {
           await cleanupDraftSkills(deleteSkill, createdSkillIds);
           throw error;
@@ -827,8 +1035,21 @@ export function createAgentCreatorPublishHandler({
             createdAt,
             source: 'agent_creator',
             specSnapshot: parsedSpec,
-            previewSnapshot: createBody,
+            previewSnapshot: preparedAgentCreateData.agentData,
           });
+          if (publishRequest.creatorAgentId != null && rememberChild != null) {
+            await rememberChild({
+              creatorAgentId: publishRequest.creatorAgentId,
+              createdBy: userId,
+              tenantId: req.user?.tenantId,
+              child: {
+                agentId: agent.id,
+                name: agent.name ?? preparedAgentCreateData.agentData.name ?? agent.id,
+                publicationId,
+                createdAt,
+              },
+            });
+          }
         } catch (error) {
           await Promise.allSettled([
             deleteAgent({ id: agent.id, tenantId: req.user?.tenantId }),

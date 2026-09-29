@@ -4,11 +4,11 @@ const fs = require('fs').promises;
 const { nanoid } = require('nanoid');
 const { logger } = require('@librechat/data-schemas');
 const {
+  prepareAgentCreateData,
   refreshS3Url,
   splitMCPToolKey,
   buildServerNameAliases,
   findShadowedServerNames,
-  agentCreateSchema,
   agentUpdateSchema,
   agentSubagentsSchema,
   refreshListAvatars,
@@ -779,21 +779,11 @@ const pruneToolResourceFileIdsForAgent = async ({
  * created agent on success so callers can continue without response interception.
  * @param {ServerRequest} req
  * @param {ServerResponse} res
- * @param {{ creatorProvenance?: import('librechat-data-provider').AgentCreatorProvenance }} [options]
  * @returns {Promise<Agent|void>}
  */
 const createAgentService = async (req, res, options = {}) => {
-  /**
-   * Hydrated resource records are a client transport shape, not a persisted
-   * Agent shape. Canonicalize them before the strict IDs-only schema strips
-   * `files`, then let the schema validate the resulting `file_ids`.
-   */
-  normalizeToolResourceFiles(req.body?.tool_resources);
-  const validatedData = agentCreateSchema.parse(req.body);
-  const { tools = [], ...agentData } = removeNullishValues(validatedData);
-  if (options.creatorProvenance != null) {
-    agentData.creatorProvenance = options.creatorProvenance;
-  }
+  const { tools, agentData } =
+    options.preparedAgentCreateData ?? prepareAgentCreateData({ body: req.body });
 
   if (
     (!isCodeInterpreterCapabilityEnabled(req) || !tools.includes(Tools.execute_code)) &&

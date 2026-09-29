@@ -106,6 +106,25 @@ export const useCreateAgentMutation = (
   });
 };
 
+export const useCreateAgentCreatorMutation = (
+  options?: t.CreateAgentCreatorMutationOptions,
+): UseMutationResult<t.AgentCreatorCreateResponse, Error, t.AgentCreatorCreateRequest> => {
+  const queryClient = useQueryClient();
+  return useMutation(
+    (requestBody: t.AgentCreatorCreateRequest) => dataService.createAgentCreator(requestBody),
+    {
+      onMutate: (variables) => options?.onMutate?.(variables),
+      onError: (error, variables, context) => options?.onError?.(error, variables, context),
+      onSuccess: (response, variables, context) => {
+        addCreatedAgentToAgentListCaches(queryClient, response.agent);
+        invalidateAgentMarketplaceQueries(queryClient);
+
+        return options?.onSuccess?.(response, variables, context);
+      },
+    },
+  );
+};
+
 export const useValidateAgentCreatorMutation = (
   options?: t.AgentCreatorValidateMutationOptions,
 ): UseMutationResult<t.AgentCreatorValidateResponse, Error, t.AgentCreatorSpec> => {
@@ -124,10 +143,10 @@ export const useValidateAgentCreatorMutation = (
 
 export const usePublishAgentCreatorMutation = (
   options?: t.AgentCreatorPublishMutationOptions,
-): UseMutationResult<t.AgentCreatorPublishResponse, Error, t.AgentCreatorSpec> => {
+): UseMutationResult<t.AgentCreatorPublishResponse, Error, t.AgentCreatorPublishRequest> => {
   const queryClient = useQueryClient();
   return useMutation(
-    (agentCreatorSpec: t.AgentCreatorSpec) => dataService.publishAgentCreatorSpec(agentCreatorSpec),
+    (requestBody: t.AgentCreatorPublishRequest) => dataService.publishAgentCreatorSpec(requestBody),
     {
       onMutate: (variables) => options?.onMutate?.(variables),
       onError: (error, variables, context) => options?.onError?.(error, variables, context),
