@@ -12,12 +12,27 @@ import type {
   TSkillListResponse,
 } from './skills';
 import {
+  Action,
+  ActionMetadata,
+  Agent,
+  AgentCreateParams,
+  AgentCreatorPublishResponse,
+  AgentCreatorSpec,
+  AgentCreatorValidateResponse,
+  AgentUpdateParams,
+} from './agents';
+import {
   Assistant,
   AssistantCreateParams,
   AssistantUpdateParams,
   AssistantDocument,
 } from './assistants';
-import { Action, ActionMetadata, Agent, AgentCreateParams, AgentUpdateParams } from './agents';
+import type {
+  CancelOrchestrationRunRequest,
+  CancelOrchestrationRunResponse,
+  CreateOrchestrationRunRequest,
+  CreateOrchestrationRunResponse,
+} from './orchestration';
 import { Tools, FunctionTool } from './tools';
 import * as p from '../permissions';
 import * as types from '../types';
@@ -130,6 +145,26 @@ export type UpdateAgentActionVariables = {
 export type UploadAgentAvatarOptions = MutationOptions<Agent, AgentAvatarVariables>;
 
 export type CreateAgentMutationOptions = MutationOptions<Agent, AgentCreateParams>;
+
+export type AgentCreatorValidateMutationOptions = MutationOptions<
+  AgentCreatorValidateResponse,
+  AgentCreatorSpec
+>;
+
+export type AgentCreatorPublishMutationOptions = MutationOptions<
+  AgentCreatorPublishResponse,
+  AgentCreatorSpec
+>;
+
+export type CreateOrchestrationRunMutationOptions = MutationOptions<
+  CreateOrchestrationRunResponse,
+  CreateOrchestrationRunRequest
+>;
+
+export type CancelOrchestrationRunMutationOptions = MutationOptions<
+  CancelOrchestrationRunResponse,
+  CancelOrchestrationRunRequest
+>;
 
 export type UpdateAgentVariables = {
   agent_id: string;

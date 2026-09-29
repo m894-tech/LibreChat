@@ -319,6 +319,20 @@ export const agents = ({ path = '', options }: { path?: string; options?: object
   return url;
 };
 
+export const agentCreatorValidate = () => `${agents({ path: 'creator/validate' })}`;
+
+export const agentCreatorPublish = () => `${agents({ path: 'creator/publish' })}`;
+
+export const agentCreatorPublicSkillSearch = () => `${agents({ path: 'creator/skills/public-search' })}`;
+
+export const orchestrationRun = () => `${agents({ path: 'orch-run' })}`;
+
+export const orchestrationRunByConversation = (conversationId: string) =>
+  `${agents({ path: `orch-run/${encodeURIComponent(conversationId)}` })}`;
+
+export const cancelOrchestrationRun = (runId: string) =>
+  `${agents({ path: `orch-run/${encodeURIComponent(runId)}/cancel` })}`;
+
 export const activeJobs = () => `${BASE_URL}/api/agents/chat/active`;
 
 export const contextEstimate = () => `${BASE_URL}/api/agents/context/estimate`;

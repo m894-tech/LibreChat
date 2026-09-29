@@ -82,6 +82,8 @@ export enum QueryKeys {
   agentApiKeys = 'agentApiKeys',
   /* Skills */
   skills = 'skills',
+  agentCreatorPublicSkills = 'agentCreatorPublicSkills',
+  orchestrationRun = 'orchestrationRun',
   skill = 'skill',
   skillFiles = 'skillFiles',
   skillFileContent = 'skillFileContent',
@@ -167,5 +169,7 @@ export enum MutationKeys {
   pairCodeEnvironment = 'pairCodeEnvironment',
   updateCodeEnvironmentSettings = 'updateCodeEnvironmentSettings',
   deleteCodeEnvironment = 'deleteCodeEnvironment',
+  createOrchestrationRun = 'createOrchestrationRun',
+  cancelOrchestrationRun = 'cancelOrchestrationRun',
   moveConversationCodeEnvironment = 'moveConversationCodeEnvironment',
 }

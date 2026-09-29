@@ -67,6 +67,26 @@ const mergeAgentListRow = (previous: t.Agent, next: t.Agent): t.Agent => {
   return { ...next, isEditable: previous.isEditable };
 };
 
+const addCreatedAgentToAgentListCaches = (queryClient: QueryClient, newAgent: t.Agent): void => {
+  allAgentViewAndEditQueryKeys.forEach((key) => {
+    const listRes = queryClient.getQueryData<t.AgentListResponse>([QueryKeys.agents, key]);
+    if (!listRes) {
+      return;
+    }
+    /** The create succeeded, so the caller can edit it. Mutation responses carry no
+     *  `isEditable`; without this the cached row loses the field the list sets. */
+    const currentAgents = [
+      { ...newAgent, isEditable: true },
+      ...JSON.parse(JSON.stringify(listRes.data)),
+    ];
+
+    queryClient.setQueryData<t.AgentListResponse>([QueryKeys.agents, key], {
+      ...listRes,
+      data: currentAgents,
+    });
+  });
+};
+
 /**
  * Create a new agent
  */
@@ -78,30 +98,90 @@ export const useCreateAgentMutation = (
     onMutate: (variables) => options?.onMutate?.(variables),
     onError: (error, variables, context) => options?.onError?.(error, variables, context),
     onSuccess: (newAgent, variables, context) => {
-      ((keys: t.AgentListParams[]) => {
-        keys.forEach((key) => {
-          const listRes = queryClient.getQueryData<t.AgentListResponse>([QueryKeys.agents, key]);
-          if (!listRes) {
-            return options?.onSuccess?.(newAgent, variables, context);
-          }
-          /** The create succeeded, so the caller can edit it. Mutation responses carry no
-           *  `isEditable`; without this the cached row loses the field the list sets. */
-          const currentAgents = [
-            { ...newAgent, isEditable: true },
-            ...JSON.parse(JSON.stringify(listRes.data)),
-          ];
-
-          queryClient.setQueryData<t.AgentListResponse>([QueryKeys.agents, key], {
-            ...listRes,
-            data: currentAgents,
-          });
-        });
-      })(allAgentViewAndEditQueryKeys);
+      addCreatedAgentToAgentListCaches(queryClient, newAgent);
       invalidateAgentMarketplaceQueries(queryClient);
 
       return options?.onSuccess?.(newAgent, variables, context);
     },
   });
+};
+
+export const useValidateAgentCreatorMutation = (
+  options?: t.AgentCreatorValidateMutationOptions,
+): UseMutationResult<t.AgentCreatorValidateResponse, Error, t.AgentCreatorSpec> => {
+  return useMutation(
+    (agentCreatorSpec: t.AgentCreatorSpec) => dataService.validateAgentCreatorSpec(agentCreatorSpec),
+    {
+      onMutate: (variables) => options?.onMutate?.(variables),
+      onError: (error, variables, context) => options?.onError?.(error, variables, context),
+      onSuccess: (result, variables, context) => {
+        return options?.onSuccess?.(result, variables, context);
+      },
+    },
+  );
+};
+
+export const usePublishAgentCreatorMutation = (
+  options?: t.AgentCreatorPublishMutationOptions,
+): UseMutationResult<t.AgentCreatorPublishResponse, Error, t.AgentCreatorSpec> => {
+  const queryClient = useQueryClient();
+  return useMutation(
+    (agentCreatorSpec: t.AgentCreatorSpec) => dataService.publishAgentCreatorSpec(agentCreatorSpec),
+    {
+      onMutate: (variables) => options?.onMutate?.(variables),
+      onError: (error, variables, context) => options?.onError?.(error, variables, context),
+      onSuccess: (newAgent, variables, context) => {
+        addCreatedAgentToAgentListCaches(queryClient, newAgent);
+        invalidateAgentMarketplaceQueries(queryClient);
+
+        return options?.onSuccess?.(newAgent, variables, context);
+      },
+    },
+  );
+};
+
+export const useCreateOrchestrationRunMutation = (
+  options?: t.CreateOrchestrationRunMutationOptions,
+): UseMutationResult<
+  t.CreateOrchestrationRunResponse,
+  Error,
+  t.CreateOrchestrationRunRequest
+> => {
+  const queryClient = useQueryClient();
+  return useMutation(
+    (payload: t.CreateOrchestrationRunRequest) => dataService.createOrchestrationRun(payload),
+    {
+      mutationKey: [MutationKeys.createOrchestrationRun],
+      onMutate: (variables) => options?.onMutate?.(variables),
+      onError: (error, variables, context) => options?.onError?.(error, variables, context),
+      onSuccess: (run, variables, context) => {
+        queryClient.setQueryData([QueryKeys.orchestrationRun, run.conversationId], run);
+        return options?.onSuccess?.(run, variables, context);
+      },
+    },
+  );
+};
+
+export const useCancelOrchestrationRunMutation = (
+  options?: t.CancelOrchestrationRunMutationOptions,
+): UseMutationResult<
+  t.CancelOrchestrationRunResponse,
+  Error,
+  t.CancelOrchestrationRunRequest
+> => {
+  const queryClient = useQueryClient();
+  return useMutation(
+    (payload: t.CancelOrchestrationRunRequest) => dataService.cancelOrchestrationRun(payload),
+    {
+      mutationKey: [MutationKeys.cancelOrchestrationRun],
+      onMutate: (variables) => options?.onMutate?.(variables),
+      onError: (error, variables, context) => options?.onError?.(error, variables, context),
+      onSuccess: (run, variables, context) => {
+        queryClient.setQueryData([QueryKeys.orchestrationRun, run.conversationId], run);
+        return options?.onSuccess?.(run, variables, context);
+      },
+    },
+  );
 };
 
 /**

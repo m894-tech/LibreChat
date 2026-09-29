@@ -162,6 +162,19 @@ const agentSchema: Schema<IAgent> = new Schema<IAgent>(
       enum: ['user', 'agent'],
       default: undefined,
     },
+    /** Compact Agent Creator provenance stamp; absent for non-Creator agents. */
+    creatorProvenance: {
+      type: new Schema(
+        {
+          publicationId: { type: String, required: true },
+          createdBy: { type: String, required: true },
+          createdAt: { type: String, required: true },
+          source: { type: String, enum: ['agent_creator'], required: true },
+        },
+        { _id: false },
+      ),
+      default: undefined,
+    },
     tenantId: {
       type: String,
       index: true,

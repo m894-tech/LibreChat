@@ -16,17 +16,19 @@ import {
   resolveStatefulCodeEnvironment,
   isAssistantsEndpoint,
 } from 'librechat-data-provider';
-import type { Agent, AgentUpdateParams } from 'librechat-data-provider';
+import type { Agent, AgentCreatorSpec, AgentUpdateParams } from 'librechat-data-provider';
 import type { FieldNamesMarkedBoolean } from 'react-hook-form';
 import type { TranslationKeys } from '~/hooks/useLocalize';
 import type { AgentParameterConfig } from './parameters';
 import type { AgentForm, StringOption } from '~/common';
 import {
   useCreateAgentMutation,
+  usePublishAgentCreatorMutation,
   useUpdateAgentMutation,
   useGetAgentByIdQuery,
   useGetExpandedAgentByIdQuery,
   useUploadAgentAvatarMutation,
+  useValidateAgentCreatorMutation,
 } from '~/data-provider';
 import {
   createProviderOption,
@@ -182,6 +184,31 @@ export function composeAgentUpdatePayload(
     provider,
     model,
   } as const;
+}
+
+/**
+ * Projects the current Agent Builder form into an R0/R1 Agent Creator draft.
+ * Selected skill ids only — no public search or authored skills.
+ */
+export function composeAgentCreatorSpec(
+  data: AgentForm,
+  parameterConfig?: AgentParameterConfig,
+): AgentCreatorSpec {
+  const { payload, provider, model } = composeAgentUpdatePayload(data, undefined, parameterConfig);
+  const skillIds = Array.from(
+    new Set((payload.skills ?? []).map((skillId) => skillId.trim()).filter((skillId) => skillId.length > 0)),
+  );
+
+  return {
+    name: data.name ?? '',
+    description: payload.description ?? null,
+    instructions: payload.instructions ?? null,
+    provider: provider as AgentCreatorSpec['provider'],
+    model: model.length > 0 ? model : null,
+    model_parameters: payload.model_parameters ?? data.model_parameters,
+    skills: skillIds.map((id) => ({ id, source: 'selected' as const })),
+    ...(payload.skills_scope != null ? { skills_scope: payload.skills_scope } : {}),
+  };
 }
 
 type UploadAvatarFn = (variables: { agent_id: string; formData: FormData }) => Promise<Agent>;
@@ -605,6 +632,65 @@ export default function AgentPanel() {
     },
   });
 
+  const validateCreator = useValidateAgentCreatorMutation();
+  const publishCreator = usePublishAgentCreatorMutation({
+    onSuccess: (data) => {
+      setCurrentAgentId(data.id);
+      showToast({
+        message: `${localize('com_assistants_create_success')} ${
+          data.name ?? localize('com_ui_agent')
+        }`,
+      });
+    },
+  });
+
+  const showAgentCreatorPublish = agentsConfig?.creator?.enabled === true;
+
+  const onPublishWithCreator = useCallback(async () => {
+    if (!showAgentCreatorPublish || publishCreator.isLoading || validateCreator.isLoading) {
+      return;
+    }
+
+    const data = getValues();
+    const creatorSpec = composeAgentCreatorSpec(data, {
+      endpointsConfig,
+      startupConfig,
+    });
+
+    try {
+      const validation = await validateCreator.mutateAsync(creatorSpec);
+      if (!validation.valid) {
+        const firstIssue = validation.issues[0]?.message;
+        showToast({
+          message: firstIssue
+            ? `${localize('com_agents_creator_validate_error')}: ${firstIssue}`
+            : localize('com_agents_creator_validate_error'),
+          status: 'error',
+        });
+        return;
+      }
+
+      await publishCreator.mutateAsync(creatorSpec);
+    } catch (err) {
+      const error = err as Error;
+      showToast({
+        message: `${localize('com_agents_creator_publish_error')}${
+          error.message ? ` ${localize('com_ui_error')}: ${error.message}` : ''
+        }`,
+        status: 'error',
+      });
+    }
+  }, [
+    endpointsConfig,
+    getValues,
+    localize,
+    publishCreator,
+    showAgentCreatorPublish,
+    showToast,
+    startupConfig,
+    validateCreator,
+  ]);
+
   const onSubmit = useCallback(
     async (data: AgentForm) => {
       const tools = Array.from(new Set([...(data.tools ?? []), ...resolveCapabilityTools(data)]));
@@ -792,6 +878,9 @@ export default function AgentPanel() {
             activePanel={activePanel}
             setActivePanel={setActivePanel}
             setCurrentAgentId={setCurrentAgentId}
+            showAgentCreatorPublish={showAgentCreatorPublish}
+            isAgentCreatorPublishing={validateCreator.isLoading || publishCreator.isLoading}
+            onPublishWithCreator={onPublishWithCreator}
           />
         )}
       </form>

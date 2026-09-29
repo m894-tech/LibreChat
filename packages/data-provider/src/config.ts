@@ -16,6 +16,7 @@ import {
   isAgentsEndpoint,
   eReasoningParameterFormatSchema,
   eReasoningResponseKeySchema,
+  SkillsScope,
 } from './schemas';
 import {
   REFILL_INTERVAL_UNITS,
@@ -1479,6 +1480,28 @@ export const agentsEndpointSchema = baseEndpointSchema
       skills: z
         .object({
           maxCatalogSkills: z.number().int().min(1).max(100).optional(),
+        })
+        .optional(),
+      creator: z
+        .object({
+          enabled: z.boolean().optional().default(false),
+          allowPublicSkillSearch: z.boolean().optional().default(false),
+          allowSkillAuthoring: z.boolean().optional().default(false),
+          maxDraftSkills: z.number().int().min(1).max(100).optional().default(10),
+          defaultSkillsScope: z
+            .enum([SkillsScope.selected])
+            .optional()
+            .default(SkillsScope.selected),
+        })
+        .optional(),
+      orchestration: z
+        .object({
+          enabled: z.boolean().optional().default(false),
+          allowedModes: z
+            .array(z.enum(['auto', 'team', 'm2', 'm3', 'compare']))
+            .optional()
+            .default(['auto', 'team', 'm2', 'm3', 'compare']),
+          maxNodesPerRun: z.number().int().min(1).max(256).optional().default(16),
         })
         .optional(),
       managementApi: managementApiSchema.optional(),

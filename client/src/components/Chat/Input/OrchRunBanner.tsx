@@ -1,20 +1,16 @@
 import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { apiBaseUrl, request } from 'librechat-data-provider';
-import { cn } from '~/utils';
+import type { OrchRunView as DataOrchRunView } from 'librechat-data-provider';
 import {
   ensureSessionProfile,
   normalizeSessionProfileConversationId,
   SESSION_PROFILE_CHANGED_EVENT,
   type SessionOrchMode,
 } from '~/utils/sessionProfiles';
+import { useGetOrchestrationRunQuery } from '~/data-provider';
+import { cn } from '~/utils';
 
-type OrchRunView = {
-  state?: string | null;
-  resolvedMode?: string | null;
-  scheduler?: string | null;
+type OrchRunBannerView = DataOrchRunView & {
   packages?: Array<{ id: string; platform?: string; state?: string }>;
-  nodes?: Array<{ id: string; state?: string; cls?: string }>;
   verdict?: { choice?: string } | null;
 };
 
@@ -64,20 +60,11 @@ export default function OrchRunBanner({
   const live =
     isSubmitting || mode === 'm2' || mode === 'm3' || mode === 'compare' || mode === 'team' || mode === 'auto';
 
-  const q = useQuery({
-    queryKey: ['orch-run-banner', pollId, isSubmitting],
-    queryFn: async () => {
-      try {
-        return await request.get<OrchRunView>(`${apiBaseUrl()}/api/agents/orch-run/${pollId}`);
-      } catch {
-        return null;
-      }
-    },
+  const q = useGetOrchestrationRunQuery(pollId === 'new' ? null : pollId, {
     enabled: live && (isSubmitting || pollId !== 'new'),
     refetchInterval: isSubmitting ? 2000 : 8000,
-    retry: false,
   });
-  const run = q.data;
+  const run = q.data as OrchRunBannerView | null | undefined;
 
   if (mode === 'off' && !run) {
     return null;

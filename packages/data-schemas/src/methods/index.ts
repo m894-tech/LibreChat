@@ -27,6 +27,13 @@ import {
 } from './favorite';
 /* Agent Categories */
 import { createAgentCategoryMethods, type AgentCategoryMethods } from './agentCategory';
+/* Agent Creator publications */
+import {
+  createAgentCreatorPublicationMethods,
+  type AgentCreatorPublicationMethods,
+} from './agentCreatorPublication';
+/* Orchestration runs */
+import { createOrchestrationRunMethods, type OrchestrationRunMethods } from './orchestrationRun';
 /* Agent API Keys */
 import { createAgentApiKeyMethods, type AgentApiKeyMethods } from './agentApiKey';
 /* MCP Servers */
@@ -229,6 +236,8 @@ export type AllMethods = UserMethods &
   MemoryMethods &
   ToolFavoriteMethods &
   AgentCategoryMethods &
+  AgentCreatorPublicationMethods &
+  OrchestrationRunMethods &
   AgentApiKeyMethods &
   MCPServerMethods &
   CodeEnvironmentMethods &
@@ -453,6 +462,8 @@ export function createMethods(
     ...createToolFavoriteMethods(mongoose),
     ...createAgentCategoryMethods(mongoose),
     ...createAgentApiKeyMethods(mongoose),
+    ...createAgentCreatorPublicationMethods(mongoose),
+    ...createOrchestrationRunMethods(mongoose),
     ...createMCPServerMethods(mongoose),
     ...createCodeEnvironmentMethods(mongoose),
     ...createAccessRoleMethods(mongoose),
@@ -508,6 +519,8 @@ export type {
   FileOwnerScope,
   MemoryMethods,
   ToolFavoriteMethods,
+  AgentCreatorPublicationMethods,
+  OrchestrationRunMethods,
   AgentCategoryMethods,
   AgentApiKeyMethods,
   MCPServerMethods,

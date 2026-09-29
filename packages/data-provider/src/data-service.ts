@@ -14,6 +14,7 @@ import type { TFileConfig } from './file-config';
 import type * as tl from './types/tools';
 import type * as t from './types';
 import * as permissions from './accessPermissions';
+import * as orch from './types/orchestration';
 import * as endpoints from './api-endpoints';
 import { uploadEventStream } from './upload';
 import * as mcp from './types/mcpServers';
@@ -680,6 +681,40 @@ export const deleteAction = async ({
 
 export const createAgent = ({ ...data }: ag.AgentCreateParams): Promise<ag.Agent> => {
   return request.post(endpoints.agents({}), data);
+};
+
+export const validateAgentCreatorSpec = (
+  spec: ag.AgentCreatorSpec,
+): Promise<ag.AgentCreatorValidateResponse> => {
+  return request.post(endpoints.agentCreatorValidate(), spec);
+};
+
+export const publishAgentCreatorSpec = (
+  spec: ag.AgentCreatorSpec,
+): Promise<ag.AgentCreatorPublishResponse> => {
+  return request.post(endpoints.agentCreatorPublish(), spec);
+};
+
+export const searchAgentCreatorPublicSkills = (
+  payload: ag.AgentCreatorPublicSkillSearchRequest,
+): Promise<ag.AgentCreatorPublicSkillSearchResponse> => {
+  return request.post(endpoints.agentCreatorPublicSkillSearch(), payload);
+};
+
+export const createOrchestrationRun = (
+  payload: orch.CreateOrchestrationRunRequest,
+): Promise<orch.CreateOrchestrationRunResponse> => {
+  return request.post(endpoints.orchestrationRun(), payload);
+};
+
+export const getOrchestrationRun = (conversationId: string): Promise<orch.OrchRunView> => {
+  return request.get(endpoints.orchestrationRunByConversation(conversationId));
+};
+
+export const cancelOrchestrationRun = (
+  payload: orch.CancelOrchestrationRunRequest,
+): Promise<orch.CancelOrchestrationRunResponse> => {
+  return request.patch(endpoints.cancelOrchestrationRun(payload.runId));
 };
 
 export const getAgentById = ({ agent_id }: { agent_id: string }): Promise<ag.Agent> => {
