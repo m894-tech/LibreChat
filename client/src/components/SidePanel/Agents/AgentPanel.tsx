@@ -1,9 +1,20 @@
 import React, { useMemo, useCallback, useEffect, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import isEqual from 'lodash/isEqual';
-import { Button, useToastContext } from '@librechat/client';
 import { useWatch, useForm, FormProvider } from 'react-hook-form';
 import { useGetModelsQuery } from 'librechat-data-provider/react-query';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Button,
+  useToastContext,
+} from '@librechat/client';
 import {
   MemoryScope,
   SystemRoles,
@@ -16,7 +27,13 @@ import {
   resolveStatefulCodeEnvironment,
   isAssistantsEndpoint,
 } from 'librechat-data-provider';
-import type { Agent, AgentCreatorSpec, AgentUpdateParams } from 'librechat-data-provider';
+import type {
+  Agent,
+  AgentCreatorPreview,
+  AgentCreatorSpec,
+  AgentUpdateParams,
+  TModelSpec,
+} from 'librechat-data-provider';
 import type { FieldNamesMarkedBoolean } from 'react-hook-form';
 import type { TranslationKeys } from '~/hooks/useLocalize';
 import type { AgentParameterConfig } from './parameters';
@@ -74,6 +91,14 @@ function normalizeAgentProvider(provider: AgentForm['provider']): string {
     return '';
   }
   return String(provider.value);
+}
+
+function resolveCompatibleModelSpec(
+  modelSpecs: TModelSpec[] | undefined,
+  provider: string,
+  model: string,
+): TModelSpec | undefined {
+  return modelSpecs?.find((spec) => spec.preset?.endpoint === provider && spec.preset.model === model);
 }
 
 /**
@@ -665,6 +690,11 @@ export default function AgentPanel() {
   });
 
   const showAgentCreatorPublish = agentsConfig?.creator?.enabled === true;
+  const [pendingCreatorPublish, setPendingCreatorPublish] = useState<{
+    spec: AgentCreatorSpec;
+    creatorAgentId?: string;
+    preview: AgentCreatorPreview;
+  } | null>(null);
 
   const onCreateAgentCreator = useCallback(async () => {
     if (!showAgentCreatorPublish || createAgentCreator.isLoading) {
@@ -681,11 +711,32 @@ export default function AgentPanel() {
       });
       return;
     }
+    if (!modelsReady || modelsError) {
+      showToast({
+        message: localize('com_error_models_not_loaded'),
+        status: 'error',
+      });
+      return;
+    }
+
+    const modelSpec = resolveCompatibleModelSpec(
+      startupConfig?.modelSpecs?.list as TModelSpec[] | undefined,
+      provider,
+      model,
+    );
+    if (startupConfig?.modelSpecs?.enforce === true && modelSpec == null) {
+      showToast({
+        message: localize('com_agents_creator_create_missing_model_spec'),
+        status: 'error',
+      });
+      return;
+    }
 
     try {
       await createAgentCreator.mutateAsync({
         provider: provider as AgentCreatorSpec['provider'],
         model,
+        ...(modelSpec != null && { spec: modelSpec.name }),
       });
     } catch (err) {
       const error = err as Error;
@@ -696,7 +747,16 @@ export default function AgentPanel() {
         status: 'error',
       });
     }
-  }, [createAgentCreator, getValues, localize, showAgentCreatorPublish, showToast]);
+  }, [
+    createAgentCreator,
+    getValues,
+    localize,
+    modelsError,
+    modelsReady,
+    showAgentCreatorPublish,
+    showToast,
+    startupConfig?.modelSpecs,
+  ]);
 
   const onPublishWithCreator = useCallback(async () => {
     if (!showAgentCreatorPublish || publishCreator.isLoading || validateCreator.isLoading) {
@@ -708,9 +768,18 @@ export default function AgentPanel() {
       endpointsConfig,
       startupConfig,
     });
+    const provider = normalizeAgentProvider(data.provider);
+    const model = data.model ?? '';
+    const modelSpec = resolveCompatibleModelSpec(
+      startupConfig?.modelSpecs?.list as TModelSpec[] | undefined,
+      provider,
+      model,
+    );
+    const creatorSpecWithModelSpec: AgentCreatorSpec =
+      modelSpec == null ? creatorSpec : { ...creatorSpec, spec: modelSpec.name };
 
     try {
-      const validation = await validateCreator.mutateAsync(creatorSpec);
+      const validation = await validateCreator.mutateAsync(creatorSpecWithModelSpec);
       if (!validation.valid) {
         const firstIssue = validation.issues[0]?.message;
         showToast({
@@ -722,7 +791,19 @@ export default function AgentPanel() {
         return;
       }
 
-      await publishCreator.mutateAsync({ spec: creatorSpec, creatorAgentId: data.id || undefined });
+      if (validation.preview == null) {
+        showToast({
+          message: localize('com_agents_creator_validate_error'),
+          status: 'error',
+        });
+        return;
+      }
+
+      setPendingCreatorPublish({
+        spec: creatorSpecWithModelSpec,
+        creatorAgentId: data.id || undefined,
+        preview: validation.preview,
+      });
     } catch (err) {
       const error = err as Error;
       showToast({
@@ -742,6 +823,28 @@ export default function AgentPanel() {
     startupConfig,
     validateCreator,
   ]);
+
+  const onConfirmCreatorPublish = useCallback(async () => {
+    if (pendingCreatorPublish == null || publishCreator.isLoading) {
+      return;
+    }
+
+    try {
+      await publishCreator.mutateAsync({
+        spec: pendingCreatorPublish.spec,
+        creatorAgentId: pendingCreatorPublish.creatorAgentId,
+      });
+      setPendingCreatorPublish(null);
+    } catch (err) {
+      const error = err as Error;
+      showToast({
+        message: `${localize('com_agents_creator_publish_error')}${
+          error.message ? ` ${localize('com_ui_error')}: ${error.message}` : ''
+        }`,
+        status: 'error',
+      });
+    }
+  }, [localize, pendingCreatorPublish, publishCreator, showToast]);
 
   const onSubmit = useCallback(
     async (data: AgentForm) => {
@@ -938,6 +1041,68 @@ export default function AgentPanel() {
           />
         )}
       </form>
+      <AlertDialog
+        open={pendingCreatorPublish != null}
+        onOpenChange={(open) => {
+          if (!open && !publishCreator.isLoading) {
+            setPendingCreatorPublish(null);
+          }
+        }}
+      >
+        <AlertDialogContent className="w-11/12 max-w-lg rounded-theme-surface sm:rounded-theme-surface">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{localize('com_agents_creator_publish_preview_title')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {localize('com_agents_creator_publish_preview_description')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {pendingCreatorPublish?.preview != null && (
+            <div className="space-y-3 rounded-theme-surface border border-border-light bg-surface-secondary p-3 text-sm text-text-primary">
+              <div>
+                <p className="font-medium">{pendingCreatorPublish.preview.name}</p>
+                {pendingCreatorPublish.preview.description != null && (
+                  <p className="text-text-secondary">{pendingCreatorPublish.preview.description}</p>
+                )}
+              </div>
+              <dl className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-2">
+                <dt className="text-text-secondary">{localize('com_agents_creator_preview_model')}</dt>
+                <dd>
+                  {pendingCreatorPublish.preview.provider} / {pendingCreatorPublish.preview.model}
+                </dd>
+                <dt className="text-text-secondary">{localize('com_agents_creator_preview_spec')}</dt>
+                <dd>{pendingCreatorPublish.preview.spec ?? localize('com_agents_creator_preview_no_spec')}</dd>
+                <dt className="text-text-secondary">{localize('com_agents_creator_preview_skills')}</dt>
+                <dd>{pendingCreatorPublish.preview.skills?.length ?? 0}</dd>
+              </dl>
+              {pendingCreatorPublish.preview.instructions != null && (
+                <p className="max-h-32 overflow-y-auto whitespace-pre-wrap text-text-secondary">
+                  {pendingCreatorPublish.preview.instructions}
+                </p>
+              )}
+              {(pendingCreatorPublish.preview.skills_enabled === false ||
+                (pendingCreatorPublish.preview.skills?.length ?? 0) === 0) && (
+                <p className="text-text-secondary">{localize('com_agents_creator_preview_no_runtime_magic')}</p>
+              )}
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={publishCreator.isLoading}>
+              {localize('com_ui_cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={publishCreator.isLoading}
+              onClick={(event) => {
+                event.preventDefault();
+                void onConfirmCreatorPublish();
+              }}
+            >
+              {publishCreator.isLoading
+                ? localize('com_agents_creator_publish_confirming')
+                : localize('com_agents_creator_publish_confirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </FormProvider>
   );
 }

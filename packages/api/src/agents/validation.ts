@@ -443,6 +443,7 @@ export const agentBaseSchema: z.ZodObject<
         >
       >
     >;
+    spec: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     model_parameters: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
     tools: z.ZodOptional<z.ZodArray<z.ZodString, 'many'>>;
     skills: z.ZodOptional<z.ZodArray<z.ZodString, 'many'>>;
@@ -570,6 +571,7 @@ export const agentBaseSchema: z.ZodObject<
   description: z.string().nullable().optional(),
   instructions: z.string().nullable().optional(),
   avatar: agentAvatarSchema.nullable().optional(),
+  spec: z.string().nullable().optional(),
   model_parameters: z.record(z.unknown()).optional(),
   tools: z.array(z.string()).optional(),
   skills: z.array(z.string()).optional(),
@@ -745,6 +747,7 @@ export const agentCreateSchema: z.ZodObject<
   } & {
     provider: z.ZodString;
     model: z.ZodNullable<z.ZodString>;
+    spec: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     tools: z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, 'many'>>>;
   },
   'strip'
@@ -752,6 +755,14 @@ export const agentCreateSchema: z.ZodObject<
   provider: z.string(),
   model: z.string().nullable(),
   tools: z.array(z.string()).optional().default([]),
+  creatorProvenance: z
+    .object({
+      publicationId: z.string().min(1),
+      createdBy: z.string().min(1),
+      createdAt: z.string().min(1),
+      source: z.literal('agent_creator'),
+    })
+    .optional(),
 });
 
 /** Update schema extends base with all fields optional and additional update-only fields */
@@ -760,6 +771,7 @@ export const agentUpdateSchema: z.ZodObject<
     name: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     description: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     instructions: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    spec: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     model_parameters: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
     tools: z.ZodOptional<z.ZodArray<z.ZodString, 'many'>>;
     skills: z.ZodOptional<z.ZodArray<z.ZodString, 'many'>>;

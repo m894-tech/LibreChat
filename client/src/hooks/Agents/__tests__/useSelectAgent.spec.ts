@@ -2,10 +2,21 @@ import { renderHook, act } from '@testing-library/react';
 import { EModelEndpoint } from 'librechat-data-provider';
 import type { TConversation } from 'librechat-data-provider';
 
+type MockAgent = {
+  id: string;
+  name: string;
+  spec?: string | null;
+};
+
+type MockAgentsMap = Record<string, MockAgent | undefined>;
+
 const mockNewConversation = jest.fn();
 const mockFetchQuery = jest.fn();
 const mockGetConversation = jest.fn();
 const mockGetDefaultConversation = jest.fn();
+const mockAgentsMapContext = jest.fn<MockAgentsMap | undefined, []>(() => ({
+  'agent-1': { id: 'agent-1', name: 'Agent' },
+}));
 
 jest.mock('@tanstack/react-query', () => ({
   useQueryClient: jest.fn(() => ({ fetchQuery: mockFetchQuery })),
@@ -27,7 +38,7 @@ jest.mock('~/hooks/Conversations/useDefaultConvo', () => ({
 }));
 
 jest.mock('~/Providers/AgentsMapContext', () => ({
-  useAgentsMapContext: jest.fn(() => ({ 'agent-1': { id: 'agent-1', name: 'Agent' } })),
+  useAgentsMapContext: () => mockAgentsMapContext(),
 }));
 
 jest.mock('~/utils', () => ({
@@ -45,6 +56,7 @@ import useSelectAgent from '../useSelectAgent';
 describe('useSelectAgent', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockAgentsMapContext.mockReturnValue({ 'agent-1': { id: 'agent-1', name: 'Agent' } });
     mockGetConversation.mockResolvedValue({ endpoint: EModelEndpoint.agents } as TConversation);
     mockGetDefaultConversation.mockImplementation(
       ({
@@ -125,6 +137,49 @@ describe('useSelectAgent', () => {
       iconURL: null,
       modelLabel: null,
       codeWorkspaces: undefined,
+    });
+  });
+
+  it('uses a persisted model spec from the agent map in the first composer update', async () => {
+    mockAgentsMapContext.mockReturnValue({
+      'agent-1': { id: 'agent-1', name: 'Agent', spec: 'openai-mini' },
+    });
+    mockFetchQuery.mockResolvedValue({ id: 'agent-1', name: 'Full Agent', spec: 'openai-mini' });
+    const { result } = renderHook(() => useSelectAgent());
+
+    await act(async () => {
+      await result.current.onSelect('agent-1');
+    });
+
+    expect(mockNewConversation.mock.calls[0][0].template).toMatchObject({
+      agent_id: 'agent-1',
+      spec: 'openai-mini',
+    });
+    expect(mockNewConversation.mock.calls[1][0].template).toMatchObject({
+      agent_id: 'agent-1',
+      spec: 'openai-mini',
+    });
+  });
+
+  it('restores the persisted model spec when full agent details arrive', async () => {
+    mockFetchQuery.mockResolvedValue({ id: 'agent-1', name: 'Full Agent', spec: 'openai-mini' });
+    const { result } = renderHook(() => useSelectAgent());
+
+    await act(async () => {
+      await result.current.onSelect('agent-1');
+    });
+
+    expect(mockNewConversation.mock.calls[0][0].template).toMatchObject({
+      agent_id: 'agent-1',
+      spec: null,
+    });
+    expect(mockNewConversation.mock.calls[1][0].template).toMatchObject({
+      agent_id: 'agent-1',
+      spec: 'openai-mini',
+    });
+    expect(mockNewConversation.mock.calls[1][0].preset).toMatchObject({
+      agent_id: 'agent-1',
+      spec: 'openai-mini',
     });
   });
 

@@ -207,6 +207,27 @@ const DEFAULT_MODEL_PARAMETERS: AgentCreatorSpec['model_parameters'] = {
   presence_penalty: null,
 };
 
+export const AGENT_CREATOR_NAME = 'Agent Creator';
+
+export const AGENT_CREATOR_DESCRIPTION =
+  'Dedicated Agent Creator that helps design, preview, validate, and safely publish reusable agents.';
+
+export const AGENT_CREATOR_INSTRUCTIONS = `You are Agent Creator, a dedicated assistant for designing and safely publishing reusable LibreChat agents. Do not behave like a generic blank agent.
+
+Your operating loop:
+1. Start by asking concise clarifying questions when the user's goal, audience, tools, skills, model, memory needs, or safety constraints are ambiguous. Do not invent missing requirements silently.
+2. Turn the answers into a draft agent spec with name, description, instructions, model/provider recommendation, model-parameter rationale, required tools, selected skills, memory scope, and child-agent relationships.
+3. Recommend tools, skills, and models only when they fit the job. Explain tradeoffs briefly, prefer least-privilege tool access, and call out unsupported or risky requests.
+4. Consider memory and preferences explicitly: remember the user's creator preferences, preserve the list of child agents you publish, and recommend whether each child agent should use shared user memory or agent-scoped memory.
+5. Show a readable preview before any publish action, including instructions, tools, skills, model, memory behavior, and publish consequences.
+6. Require explicit user confirmation before publishing, updating, or sharing any child agent. Validation is not confirmation.
+7. Publish safely: avoid secrets in prompts, do not enable unnecessary tools or always-on skills, keep permissions private by default, and ask before making an agent available beyond the current user.
+8. After publishing, summarize what was created, why the model/tools/skills were chosen, and what the user can test next.`;
+
+export function createCanonicalAgentCreatorInstructions(): string {
+  return AGENT_CREATOR_INSTRUCTIONS;
+}
+
 function issue(
   code: AgentCreatorValidationIssue['code'],
   message: string,
@@ -227,6 +248,62 @@ function parseStringOrNull(value: unknown): string | null | undefined {
   if (value === undefined) return undefined;
   if (value === null || typeof value === 'string') return value;
   return undefined;
+}
+
+type ModelSpecCandidate = {
+  name?: string;
+  preset?: {
+    endpoint?: string | null;
+    model?: string | null;
+  } | null;
+};
+
+type ResolveRequiredModelSpecParams = {
+  req: ServerRequest;
+  provider: string;
+  model: string;
+  spec?: string | null;
+};
+
+function isCompatibleModelSpec(candidate: ModelSpecCandidate, provider: string, model: string): boolean {
+  return candidate.preset?.endpoint === provider && candidate.preset.model === model;
+}
+
+function resolveRequiredModelSpec({
+  req,
+  provider,
+  model,
+  spec,
+}: ResolveRequiredModelSpecParams): { spec?: string; error?: string } {
+  const selectedSpec = typeof spec === 'string' && spec.trim().length > 0 ? spec.trim() : undefined;
+  const modelSpecs = req.config?.modelSpecs;
+  const specs = (modelSpecs?.list ?? []) as ModelSpecCandidate[];
+
+  if (selectedSpec != null) {
+    const matchedSpec = specs.find((candidate) => candidate.name === selectedSpec);
+    if (matchedSpec == null) {
+      return modelSpecs?.enforce === true
+        ? { error: 'Agent Creator requires a selected model spec from the configured list' }
+        : { spec: selectedSpec };
+    }
+    if (!isCompatibleModelSpec(matchedSpec, provider, model)) {
+      return {
+        error: 'Agent Creator selected model spec does not match the selected provider and model',
+      };
+    }
+    return { spec: selectedSpec };
+  }
+
+  const compatibleSpec = specs.find((candidate) => isCompatibleModelSpec(candidate, provider, model));
+  if (compatibleSpec?.name != null) {
+    return { spec: compatibleSpec.name };
+  }
+
+  if (modelSpecs?.enforce === true) {
+    return { error: 'Agent Creator requires a matching model spec for the selected provider and model' };
+  }
+
+  return {};
 }
 
 function parseSkill(
@@ -483,6 +560,7 @@ function parseAgentCreatorSpec(input: unknown): ParsedAgentCreatorSpec {
   }
 
   const model = body.model === null || typeof body.model === 'string' ? body.model : null;
+  const spec = parseStringOrNull(body.spec);
   const description = parseStringOrNull(body.description);
   const instructions = parseStringOrNull(body.instructions);
   const skillsScope =
@@ -496,6 +574,7 @@ function parseAgentCreatorSpec(input: unknown): ParsedAgentCreatorSpec {
       ...(instructions !== undefined && { instructions }),
       provider,
       model,
+      ...(spec !== undefined && { spec }),
       model_parameters: isRecord(body.model_parameters)
         ? ({
             ...DEFAULT_MODEL_PARAMETERS,
@@ -520,6 +599,9 @@ function validateRequiredFields(spec: AgentCreatorSpec): AgentCreatorValidationI
   }
   if (spec.provider == null || String(spec.provider).trim().length === 0) {
     issues.push(issue('missing_required_field', 'Agent provider is required', 'provider'));
+  }
+  if (spec.model == null || String(spec.model).trim().length === 0) {
+    issues.push(issue('missing_required_field', 'Agent model is required', 'model'));
   }
   return issues;
 }
@@ -590,6 +672,7 @@ function buildPreview(spec: AgentCreatorSpec, skillIds: string[]): AgentCreatorP
     instructions: spec.instructions ?? null,
     provider: spec.provider,
     model: spec.model,
+    spec: spec.spec ?? null,
     model_parameters: spec.model_parameters,
     skills: skillIds,
     skills_enabled: skillIds.length + (spec.draftedSkills?.length ?? 0) > 0,
@@ -791,14 +874,24 @@ export function createAgentCreatorCreateHandler({
       }
 
       const requestBody = body as AgentCreatorCreateRequest;
-      const originalBody = req.body;
-      const createBody: AgentCreateParams = {
-        name: 'Agent Creator',
-        description: 'Persistent agent that helps create and publish reusable agents.',
-        instructions:
-          'You are Agent Creator. Help the user design, validate, and publish permanent unique agents. Remember preferences and child agents you create. Ask for confirmation before publishing a child agent.',
+      const modelSpecResolution = resolveRequiredModelSpec({
+        req,
         provider: requestBody.provider,
         model: requestBody.model,
+        spec: requestBody.spec,
+      });
+      if (modelSpecResolution.error != null) {
+        return res.status(400).json({ error: modelSpecResolution.error });
+      }
+
+      const originalBody = req.body;
+      const createBody: AgentCreateParams = {
+        name: AGENT_CREATOR_NAME,
+        description: AGENT_CREATOR_DESCRIPTION,
+        instructions: createCanonicalAgentCreatorInstructions(),
+        provider: requestBody.provider,
+        model: requestBody.model,
+        ...(modelSpecResolution.spec != null && { spec: modelSpecResolution.spec }),
         model_parameters: DEFAULT_MODEL_PARAMETERS,
         tools: [],
         skills: [],
@@ -1002,10 +1095,25 @@ export function createAgentCreatorPublishHandler({
         deleteSkill,
         grantPermission,
       });
+      const modelSpecResolution = resolveRequiredModelSpec({
+        req,
+        provider: parsedSpec.provider,
+        model: parsedSpec.model ?? '',
+        spec: parsedSpec.spec ?? undefined,
+      });
+      if (modelSpecResolution.error != null) {
+        await cleanupDraftSkills(deleteSkill, createdSkillIds);
+        return res.status(400).json({
+          valid: false,
+          issues: [issue('missing_required_field', modelSpecResolution.error, 'spec')],
+        });
+      }
       const finalSkillIds = [...(result.preview.skills ?? []), ...createdSkillIds];
       const createBody: AgentCreateParams = {
         ...result.preview,
         provider: parsedSpec.provider,
+        model: parsedSpec.model,
+        ...(modelSpecResolution.spec != null && { spec: modelSpecResolution.spec }),
         skills: finalSkillIds,
         skills_enabled: finalSkillIds.length > 0,
         skill_authoring_enabled: false,

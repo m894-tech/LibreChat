@@ -37,6 +37,7 @@ export type AgentCreatorSpec = {
   instructions?: string | null;
   provider: AgentProvider;
   model: string | null;
+  spec?: string | null;
   model_parameters: AgentModelParameters;
   skills: AgentCreatorSkillSpec[];
   draftedSkills?: AgentCreatorAuthoredSkillDraft[];
@@ -68,6 +69,7 @@ export type AgentCreatorPreview = Pick<
   | 'instructions'
   | 'provider'
   | 'model'
+  | 'spec'
   | 'model_parameters'
   | 'skills'
   | 'skills_enabled'
@@ -165,6 +167,7 @@ export type AgentCreatorProfileInput = {
 export type AgentCreatorCreateRequest = {
   provider: AgentProvider;
   model: string;
+  spec?: string | null;
 };
 
 export type AgentCreatorCreateResponse = {
@@ -1166,6 +1169,7 @@ export type Agent = {
   metadata?: Record<string, unknown>;
   provider: AgentProvider;
   model: string | null;
+  spec?: string | null;
   model_parameters: AgentModelParameters;
   conversation_starters?: string[];
   tool_resources?: AgentToolResources;
@@ -1238,6 +1242,7 @@ export type AgentCreateParams = {
   tools?: Array<FunctionTool | string>;
   provider: AgentProvider;
   model: string | null;
+  spec?: string | null;
   model_parameters: AgentModelParameters;
 } & Pick<
   Agent,
@@ -1273,6 +1278,7 @@ export type AgentUpdateParams = {
   tool_resources?: ToolResources;
   provider?: AgentProvider;
   model?: string | null;
+  spec?: string | null;
   model_parameters?: AgentModelParameters;
 } & Pick<
   Agent,

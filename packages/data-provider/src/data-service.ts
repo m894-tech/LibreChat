@@ -698,8 +698,11 @@ export const validateAgentCreatorSpec = (
 export const publishAgentCreatorSpec = (
   requestBody: ag.AgentCreatorPublishRequest,
 ): Promise<ag.AgentCreatorPublishResponse> => {
+  const maybeBody = requestBody as Partial<ag.AgentCreatorPublishBody>;
   const payload: ag.AgentCreatorPublishBody =
-    'spec' in requestBody ? requestBody : { spec: requestBody };
+    typeof maybeBody.spec === 'object' && maybeBody.spec != null
+      ? (maybeBody as ag.AgentCreatorPublishBody)
+      : { spec: requestBody as ag.AgentCreatorSpec };
   return request.post(endpoints.agentCreatorPublish(), payload);
 };
 
