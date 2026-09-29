@@ -9,6 +9,7 @@ import type {
   TSubmission,
 } from 'librechat-data-provider';
 import { revealedQueuedTurnFamily } from '~/store/steer';
+import { saveSessionProfile, sessionProfileStorageKey } from '~/utils/sessionProfiles';
 import useChatFunctions from '../useChatFunctions';
 import { isPasteSubmitted } from '~/utils';
 
@@ -31,12 +32,26 @@ const mockCodeWorkspace = {
   resolveSubmission: mockResolveCodeWorkspaceSubmission,
   rememberSelection: jest.fn(),
 };
+const localStorageStore: Record<string, string> = {};
+const localStorageMock = {
+  getItem: (key: string) => (key in localStorageStore ? localStorageStore[key] : null),
+  setItem: (key: string, value: string) => {
+    localStorageStore[key] = String(value);
+  },
+  removeItem: (key: string) => {
+    delete localStorageStore[key];
+  },
+  clear: () => {
+    Object.keys(localStorageStore).forEach((key) => delete localStorageStore[key]);
+  },
+};
 
 jest.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
 }));
 
 jest.mock('@tanstack/react-query', () => ({
+  useMutation: () => ({ mutateAsync: jest.fn() }),
   useQueryClient: () => ({
     getQueryData: mockGetQueryData,
     getQueryState: jest.fn(() => undefined),
@@ -156,9 +171,67 @@ function renderAsk(
 describe('useChatFunctions ask', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    localStorageMock.clear();
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: localStorageMock,
+    });
     mockGetQueryData.mockReturnValue({});
     mockGetLatestConversation.mockReturnValue(null);
     mockResolveCodeWorkspaceSubmission.mockReturnValue({});
+  });
+
+  it('adds m2 orchestration mode to the chat submission payload', () => {
+    saveSessionProfile({ orchMode: 'm2' }, 'conversation-1');
+    const { result, setSubmission } = renderAsk([]);
+
+    act(() => {
+      result.current.ask({ text: 'Run with M2', conversationId: 'conversation-1' });
+    });
+
+    const submission = setSubmission.mock.calls.at(-1)?.[0] as TSubmission;
+    const payload = createPayload(submission).payload;
+    expect(submission.orchMode).toBe('m2');
+    expect(submission.sessionProfile?.orchMode).toBe('m2');
+    expect(payload.orchMode).toBe('m2');
+    expect(payload.sessionProfile?.orchMode).toBe('m2');
+    expect(payload.sessionProfileInstruction).toMatch(/Orch mode: honest M2/);
+  });
+
+  it('adds m3 orchestration mode to the chat submission payload', () => {
+    saveSessionProfile({ orchMode: 'm3', orchParallel: true }, 'conversation-1');
+    const { result, setSubmission } = renderAsk([]);
+
+    act(() => {
+      result.current.ask({ text: 'Run with M3', conversationId: 'conversation-1' });
+    });
+
+    const submission = setSubmission.mock.calls.at(-1)?.[0] as TSubmission;
+    const payload = createPayload(submission).payload;
+    expect(submission.orchMode).toBe('m3');
+    expect(submission.orchParallel).toBe(true);
+    expect(submission.sessionProfile?.orchMode).toBe('m3');
+    expect(payload.orchMode).toBe('m3');
+    expect(payload.orchParallel).toBe(true);
+    expect(payload.sessionProfile?.orchMode).toBe('m3');
+    expect(payload.sessionProfile?.orchParallel).toBe(true);
+    expect(payload.sessionProfileInstruction).toMatch(/Orch mode: M3/);
+  });
+
+  it('keeps the default off orchestration mode compatible', () => {
+    const { result, setSubmission } = renderAsk([]);
+
+    act(() => {
+      result.current.ask({ text: 'Run normally', conversationId: 'conversation-1' });
+    });
+
+    const submission = setSubmission.mock.calls.at(-1)?.[0] as TSubmission;
+    const payload = createPayload(submission).payload;
+    expect(localStorageStore[sessionProfileStorageKey('conversation-1')]).toBeUndefined();
+    expect(submission.orchMode).toBe('off');
+    expect(submission.sessionProfile?.orchMode).toBe('off');
+    expect(payload.orchMode).toBe('off');
+    expect(payload.sessionProfile?.orchMode).toBe('off');
   });
 
   it('reads an approval-mode selection made immediately before send', () => {

@@ -32,6 +32,10 @@ import {
   createAgentCreatorPublicationMethods,
   type AgentCreatorPublicationMethods,
 } from './agentCreatorPublication';
+import {
+  createAgentCreatorProfileMethods,
+  type AgentCreatorProfileMethods,
+} from './agentCreatorProfile';
 /* Orchestration runs */
 import { createOrchestrationRunMethods, type OrchestrationRunMethods } from './orchestrationRun';
 /* Agent API Keys */
@@ -237,6 +241,7 @@ export type AllMethods = UserMethods &
   ToolFavoriteMethods &
   AgentCategoryMethods &
   AgentCreatorPublicationMethods &
+  AgentCreatorProfileMethods &
   OrchestrationRunMethods &
   AgentApiKeyMethods &
   MCPServerMethods &
@@ -463,6 +468,7 @@ export function createMethods(
     ...createAgentCategoryMethods(mongoose),
     ...createAgentApiKeyMethods(mongoose),
     ...createAgentCreatorPublicationMethods(mongoose),
+    ...createAgentCreatorProfileMethods(mongoose),
     ...createOrchestrationRunMethods(mongoose),
     ...createMCPServerMethods(mongoose),
     ...createCodeEnvironmentMethods(mongoose),
@@ -520,6 +526,7 @@ export type {
   MemoryMethods,
   ToolFavoriteMethods,
   AgentCreatorPublicationMethods,
+  AgentCreatorProfileMethods,
   OrchestrationRunMethods,
   AgentCategoryMethods,
   AgentApiKeyMethods,

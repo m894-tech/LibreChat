@@ -20,9 +20,10 @@ import type { Agent, AgentCreatorSpec, AgentUpdateParams } from 'librechat-data-
 import type { FieldNamesMarkedBoolean } from 'react-hook-form';
 import type { TranslationKeys } from '~/hooks/useLocalize';
 import type { AgentParameterConfig } from './parameters';
-import type { AgentForm, StringOption } from '~/common';
+import type { AgentForm } from '~/common';
 import {
   useCreateAgentMutation,
+  useCreateAgentCreatorMutation,
   usePublishAgentCreatorMutation,
   useUpdateAgentMutation,
   useGetAgentByIdQuery,
@@ -63,6 +64,16 @@ function getUpdateToastMessage(
     return localize('com_ui_no_changes');
   }
   return localize('com_assistants_update_success_name', { name: name ?? localize('com_ui_agent') });
+}
+
+function normalizeAgentProvider(provider: AgentForm['provider']): string {
+  if (typeof provider === 'string') {
+    return provider;
+  }
+  if (provider?.value == null) {
+    return '';
+  }
+  return String(provider.value);
 }
 
 /**
@@ -119,8 +130,7 @@ export function composeAgentUpdatePayload(
   const shouldResetAvatar =
     avatarActionState === 'reset' && Boolean(agent_id) && !isEphemeralAgent(agent_id);
   const model = _model ?? '';
-  const provider =
-    (typeof _provider === 'string' ? _provider : (_provider as StringOption).value) ?? '';
+  const provider = normalizeAgentProvider(_provider);
   /** Pruning reads the complete schema, not the rendered subset, so a role-gated
    *  parameter is preserved rather than deleted when someone without the
    *  permission saves an unrelated edit. `webSearchAllowed` narrows only
@@ -511,10 +521,7 @@ export default function AgentPanel() {
     }
 
     const selectedProviderOption = getValues('provider');
-    const selectedProvider =
-      (typeof selectedProviderOption === 'string'
-        ? selectedProviderOption
-        : (selectedProviderOption as StringOption | undefined)?.value) ?? '';
+    const selectedProvider = normalizeAgentProvider(selectedProviderOption);
     const selectedModel = getValues('model') ?? '';
 
     if (storedSelection.provider !== selectedProvider) {
@@ -637,6 +644,15 @@ export default function AgentPanel() {
   });
 
   const validateCreator = useValidateAgentCreatorMutation();
+  const createAgentCreator = useCreateAgentCreatorMutation({
+    onSuccess: ({ agent }) => {
+      setCurrentAgentId(agent.id);
+      showToast({
+        status: 'success',
+        message: `${localize('com_agents_creator_created')} ${agent.name ?? ''}`.trim(),
+      });
+    },
+  });
   const publishCreator = usePublishAgentCreatorMutation({
     onSuccess: (data) => {
       setCurrentAgentId(data.id);
@@ -649,6 +665,38 @@ export default function AgentPanel() {
   });
 
   const showAgentCreatorPublish = agentsConfig?.creator?.enabled === true;
+
+  const onCreateAgentCreator = useCallback(async () => {
+    if (!showAgentCreatorPublish || createAgentCreator.isLoading) {
+      return;
+    }
+
+    const data = getValues();
+    const provider = normalizeAgentProvider(data.provider);
+    const model = data.model ?? '';
+    if (!provider || !model) {
+      showToast({
+        message: localize('com_agents_creator_create_missing_model'),
+        status: 'error',
+      });
+      return;
+    }
+
+    try {
+      await createAgentCreator.mutateAsync({
+        provider: provider as AgentCreatorSpec['provider'],
+        model,
+      });
+    } catch (err) {
+      const error = err as Error;
+      showToast({
+        message: `${localize('com_agents_creator_create_error')}${
+          error.message ? ` ${localize('com_ui_error')}: ${error.message}` : ''
+        }`,
+        status: 'error',
+      });
+    }
+  }, [createAgentCreator, getValues, localize, showAgentCreatorPublish]);
 
   const onPublishWithCreator = useCallback(async () => {
     if (!showAgentCreatorPublish || publishCreator.isLoading || validateCreator.isLoading) {
@@ -674,7 +722,7 @@ export default function AgentPanel() {
         return;
       }
 
-      await publishCreator.mutateAsync(creatorSpec);
+      await publishCreator.mutateAsync({ spec: creatorSpec, creatorAgentId: data.id || undefined });
     } catch (err) {
       const error = err as Error;
       showToast({
@@ -884,6 +932,8 @@ export default function AgentPanel() {
             setCurrentAgentId={setCurrentAgentId}
             showAgentCreatorPublish={showAgentCreatorPublish}
             isAgentCreatorPublishing={validateCreator.isLoading || publishCreator.isLoading}
+            isAgentCreatorCreating={createAgentCreator.isLoading}
+            onCreateAgentCreator={onCreateAgentCreator}
             onPublishWithCreator={onPublishWithCreator}
           />
         )}

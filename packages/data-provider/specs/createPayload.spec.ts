@@ -63,6 +63,66 @@ describe('createPayload server URL', () => {
 
     expect(server).toBe(EndpointURLs[EModelEndpoint.assistants]);
   });
+  it('forwards the selected orchestration mode through top-level and session profile fields', () => {
+    const submission = makeSubmission('agents');
+    submission.orchMode = 'm2';
+    submission.sessionProfile = {
+      profile: 'fast',
+      createContract: 'none',
+      executePolicy: 'ask',
+      orchMode: 'm2',
+      orchParallel: false,
+    };
+
+    const { payload } = createPayload(submission);
+
+    expect(payload.orchMode).toBe('m2');
+    expect(payload.sessionProfile?.orchMode).toBe('m2');
+  });
+
+  it('forwards m3 orchestration flags for the legacy resolver', () => {
+    const submission = makeSubmission('agents');
+    submission.orchMode = 'm3';
+    submission.orchParallel = true;
+    submission.sessionProfile = {
+      profile: 'fast',
+      createContract: 'none',
+      executePolicy: 'ask',
+      orchMode: 'm3',
+      orchParallel: true,
+    };
+
+    const { payload } = createPayload(submission);
+
+    expect(payload.orchMode).toBe('m3');
+    expect(payload.orchParallel).toBe(true);
+    expect(payload.sessionProfile?.orchMode).toBe('m3');
+    expect(payload.sessionProfile?.orchParallel).toBe(true);
+  });
+
+  it('preserves off as the explicit compatible default when present', () => {
+    const submission = makeSubmission('agents');
+    submission.orchMode = 'off';
+    submission.sessionProfile = {
+      profile: 'fast',
+      createContract: 'none',
+      executePolicy: 'ask',
+      orchMode: 'off',
+      orchParallel: false,
+    };
+
+    const { payload } = createPayload(submission);
+
+    expect(payload.orchMode).toBe('off');
+    expect(payload.sessionProfile?.orchMode).toBe('off');
+  });
+
+  it('leaves legacy submissions without orchestration fields compatible', () => {
+    const { payload } = createPayload(makeSubmission('agents'));
+
+    expect(payload.orchMode).toBeUndefined();
+    expect(payload.sessionProfile).toBeUndefined();
+  });
 });
 
 describe('createPayload compaction', () => {

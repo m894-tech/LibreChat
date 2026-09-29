@@ -319,6 +319,8 @@ export const agents = ({ path = '', options }: { path?: string; options?: object
   return url;
 };
 
+export const agentCreator = () => `${agents({ path: 'creator' })}`;
+
 export const agentCreatorValidate = () => `${agents({ path: 'creator/validate' })}`;
 
 export const agentCreatorPublish = () => `${agents({ path: 'creator/publish' })}`;

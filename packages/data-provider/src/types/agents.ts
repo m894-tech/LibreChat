@@ -81,8 +81,6 @@ export type AgentCreatorValidateResponse = {
   preview?: AgentCreatorPreview;
 };
 
-export type AgentCreatorPublishResponse = Agent;
-
 export type AgentCreatorPublicSkillSearchRequest = {
   query: string;
   limit?: number;
@@ -134,6 +132,54 @@ export type AgentCreatorPublicationRecordInput = {
   specSnapshot: AgentCreatorSpec;
   previewSnapshot: AgentCreatorPreview;
 };
+
+export type AgentCreatorPreferenceMemory = {
+  defaultProvider?: AgentProvider;
+  defaultModel?: string;
+  defaultSkillsScope?: SkillsScope;
+};
+
+export type AgentCreatorChildAgentMemory = {
+  agentId: string;
+  name: string;
+  publicationId: string;
+  createdAt: string | Date;
+};
+
+export type AgentCreatorProfile = {
+  creatorAgentId: string;
+  createdBy: string;
+  preferences: AgentCreatorPreferenceMemory;
+  childAgents: AgentCreatorChildAgentMemory[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AgentCreatorProfileInput = {
+  creatorAgentId: string;
+  createdBy: string;
+  tenantId?: string;
+  preferences?: AgentCreatorPreferenceMemory;
+};
+
+export type AgentCreatorCreateRequest = {
+  provider: AgentProvider;
+  model: string;
+};
+
+export type AgentCreatorCreateResponse = {
+  agent: Agent;
+  profile: AgentCreatorProfile;
+};
+
+export type AgentCreatorPublishBody = {
+  spec: AgentCreatorSpec;
+  creatorAgentId?: string;
+};
+
+export type AgentCreatorPublishRequest = AgentCreatorSpec | AgentCreatorPublishBody;
+
+export type AgentCreatorPublishResponse = Agent;
 
 export {
   STATEFUL_CODE_ENVIRONMENTS,

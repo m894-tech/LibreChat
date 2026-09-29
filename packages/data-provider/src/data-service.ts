@@ -683,6 +683,12 @@ export const createAgent = ({ ...data }: ag.AgentCreateParams): Promise<ag.Agent
   return request.post(endpoints.agents({}), data);
 };
 
+export const createAgentCreator = (
+  requestBody: ag.AgentCreatorCreateRequest,
+): Promise<ag.AgentCreatorCreateResponse> => {
+  return request.post(endpoints.agentCreator(), requestBody);
+};
+
 export const validateAgentCreatorSpec = (
   spec: ag.AgentCreatorSpec,
 ): Promise<ag.AgentCreatorValidateResponse> => {
@@ -690,9 +696,11 @@ export const validateAgentCreatorSpec = (
 };
 
 export const publishAgentCreatorSpec = (
-  spec: ag.AgentCreatorSpec,
+  requestBody: ag.AgentCreatorPublishRequest,
 ): Promise<ag.AgentCreatorPublishResponse> => {
-  return request.post(endpoints.agentCreatorPublish(), spec);
+  const payload: ag.AgentCreatorPublishBody =
+    'spec' in requestBody ? requestBody : { spec: requestBody };
+  return request.post(endpoints.agentCreatorPublish(), payload);
 };
 
 export const searchAgentCreatorPublicSkills = (

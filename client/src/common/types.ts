@@ -5,6 +5,7 @@ import type * as InputNumberPrimitive from 'rc-input-number';
 import type { SetterOrUpdater, RecoilState } from 'recoil';
 import type { ColumnDef } from '@tanstack/react-table';
 import type * as t from 'librechat-data-provider';
+import type { SessionProfileState } from '~/utils/sessionProfiles';
 import type { LucideIcon } from 'lucide-react';
 import type { TranslationKeys } from '~/hooks';
 import { MCPServerDefinition } from '~/hooks/MCP/useMCPServerManager';
@@ -343,20 +344,7 @@ export type QueuedComposerItem = {
   nativeKnobs: t.TNativeKnobs | null;
   addedConvo?: t.TConversation;
   responseFormat?: 'default' | 'concise' | 'detailed' | 'json';
-  sessionProfile?: {
-    profile:
-      | 'fast'
-      | 'think'
-      | 'research'
-      | 'create'
-      | 'execute'
-      | 'plan'
-      | 'review'
-      | 'teach'
-      | 'debug';
-    createContract: 'none' | 'site' | 'slides' | 'pdf' | 'table' | 'email' | 'memo' | 'diagram';
-    executePolicy: 'ask' | 'autorun';
-  };
+  sessionProfile?: SessionProfileState;
 };
 
 export type TOptions = {

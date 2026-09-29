@@ -154,10 +154,13 @@ describe('usePublishAgentCreatorMutation', () => {
     });
 
     await act(async () => {
-      await result.current.mutateAsync(payload);
+      await result.current.mutateAsync({ spec: payload, creatorAgentId: 'agent_creator' });
     });
 
-    expect(dataService.publishAgentCreatorSpec).toHaveBeenCalledWith(payload);
+    expect(dataService.publishAgentCreatorSpec).toHaveBeenCalledWith({
+      spec: payload,
+      creatorAgentId: 'agent_creator',
+    });
     expect(queryClient.getQueryData<AgentListResponse>(viewListKey)?.data).toEqual([
       { ...publishedAgent, isEditable: true },
       existingAgent,
@@ -165,6 +168,29 @@ describe('usePublishAgentCreatorMutation', () => {
     expect(queryClient.getQueryData<AgentListResponse>(editListKey)?.data).toEqual([
       { ...publishedAgent, isEditable: true },
     ]);
+  });
+
+  it('accepts a legacy direct Agent Creator spec payload', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: false,
+        },
+      },
+    });
+    const payload = agentCreatorSpec();
+    const publishedAgent = createAgent('agent_published');
+    jest.mocked(dataService.publishAgentCreatorSpec).mockResolvedValue(publishedAgent);
+
+    const { result } = renderHook(() => usePublishAgentCreatorMutation(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync(payload);
+    });
+
+    expect(dataService.publishAgentCreatorSpec).toHaveBeenCalledWith(payload);
   });
 });
 

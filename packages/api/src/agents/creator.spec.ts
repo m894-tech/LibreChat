@@ -2,7 +2,11 @@ import { EModelEndpoint, PermissionTypes, Permissions, SkillsScope } from 'libre
 import type { AgentCreatorSpec } from 'librechat-data-provider';
 import type { NextFunction, Response } from 'express';
 import type { ServerRequest } from '~/types/http';
-import { createAgentCreatorPublishHandler, validateAgentCreatorSpec } from './creator';
+import {
+  createAgentCreatorAgentLookup,
+  createAgentCreatorPublishHandler,
+  validateAgentCreatorSpec,
+} from './creator';
 
 const modelParameters = {
   temperature: null,
@@ -16,7 +20,7 @@ const modelParameters = {
 
 const spec = (overrides: Partial<AgentCreatorSpec> = {}): AgentCreatorSpec => ({
   name: 'Research helper',
-  provider: EModelEndpoint.agents,
+  provider: 'openAI',
   model: 'gpt-4o-mini',
   model_parameters: modelParameters,
   skills: [{ id: 'skill-1' }],
@@ -361,6 +365,8 @@ function createPublishHandler(
     deleteSkill?: jest.Mock;
     grantPermission?: jest.Mock;
     hasSkillCreatePermission?: jest.Mock;
+    lookupCreatorAgent?: jest.Mock;
+    rememberChild?: jest.Mock;
   } = {},
 ) {
   const createSkill =
@@ -370,6 +376,10 @@ function createPublishHandler(
   const deleteSkill = skillDeps.deleteSkill ?? jest.fn(async () => ({ deleted: true }));
   const grantPermission = skillDeps.grantPermission ?? jest.fn(async () => undefined);
   const hasSkillCreatePermission = skillDeps.hasSkillCreatePermission ?? jest.fn(async () => true);
+  const lookupCreatorAgent =
+    skillDeps.lookupCreatorAgent ??
+    jest.fn(async (_req: ServerRequest, id: string) => ({ id, accessible: true }));
+  const rememberChild = skillDeps.rememberChild;
   return {
     handler: createAgentCreatorPublishHandler({
       createAgent,
@@ -378,21 +388,66 @@ function createPublishHandler(
       deleteSkill,
       grantPermission,
       hasSkillCreatePermission,
+      lookupCreatorAgent,
       recordPublication,
       findAccessibleResources: async () => ['skill-1'],
       withDeploymentSkillIds: (ids) => ids,
       getSkillDbMethods: () => ({
         getSkillById: async (id) => (id === 'skill-1' ? { id } : null),
       }),
+      rememberChild,
     }),
     createSkill,
     deleteAgent,
     deleteSkill,
     grantPermission,
     hasSkillCreatePermission,
+    lookupCreatorAgent,
+    rememberChild,
     recordPublication,
   };
 }
+
+describe('createAgentCreatorAgentLookup', () => {
+  it('requires an existing agent and view access before profile writes', async () => {
+    const findAccessibleResources = jest.fn(async () => ['mongo-agent-id']);
+    const getAgent = jest.fn(async () => ({ _id: { toString: () => 'mongo-agent-id' } }));
+    const lookupCreatorAgent = createAgentCreatorAgentLookup({
+      findAccessibleResources,
+      withDeploymentSkillIds: (ids) => ids,
+      getSkillDbMethods: () => ({ getSkillById: async () => null }),
+      getAgent,
+    });
+    const req = createPublishRequest(spec());
+    req.user = { ...req.user, tenantId: 'tenant-1' } as ServerRequest['user'];
+
+    await expect(lookupCreatorAgent(req, 'agent_creator')).resolves.toEqual({
+      id: 'agent_creator',
+      accessible: true,
+    });
+    expect(getAgent).toHaveBeenCalledWith({ id: 'agent_creator', tenantId: 'tenant-1' });
+    expect(findAccessibleResources).toHaveBeenCalledWith(
+      expect.objectContaining({ resourceType: 'agent', requiredPermissions: 1 }),
+    );
+  });
+
+  it('fails closed when the creator agent does not exist', async () => {
+    const findAccessibleResources = jest.fn(async () => ['agent_creator']);
+    const getAgent = jest.fn(async () => null);
+    const lookupCreatorAgent = createAgentCreatorAgentLookup({
+      findAccessibleResources,
+      withDeploymentSkillIds: (ids) => ids,
+      getSkillDbMethods: () => ({ getSkillById: async () => null }),
+      getAgent,
+    });
+
+    await expect(lookupCreatorAgent(createPublishRequest(spec()), 'agent_creator')).resolves.toEqual({
+      id: 'agent_creator',
+      accessible: false,
+    });
+    expect(findAccessibleResources).not.toHaveBeenCalled();
+  });
+});
 
 describe('createAgentCreatorPublishHandler', () => {
   it('returns 400 when creator is disabled and does not call createAgent', async () => {
@@ -463,13 +518,13 @@ describe('createAgentCreatorPublishHandler', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it('passes validation preview and internal provenance to createAgent, then records publication', async () => {
+  it('passes provenance-bearing body to createAgent, then records publication', async () => {
     let createBody: unknown;
     let createOptions: unknown;
     const createAgent = jest.fn((request: ServerRequest, _response: Response, options: object) => {
       createBody = request.body;
       createOptions = options;
-      return Promise.resolve({ id: 'agent_created', ...request.body, ...options });
+      return Promise.resolve({ id: 'agent_created', ...request.body });
     });
     const { handler, recordPublication } = createPublishHandler(createAgent);
     const req = createPublishRequest(spec({ name: '  Research helper  ' }));
@@ -485,13 +540,13 @@ describe('createAgentCreatorPublishHandler', () => {
       skills_enabled: true,
       skills_scope: SkillsScope.selected,
       skill_authoring_enabled: false,
-    });
-    expect(createBody).not.toHaveProperty('creatorProvenance');
-    expect(createOptions).toMatchObject({
       creatorProvenance: {
         createdBy: 'user-1',
         source: 'agent_creator',
       },
+    });
+    expect(createOptions).toMatchObject({
+      preparedAgentCreateData: { agentData: createBody },
     });
     expect(recordPublication).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -500,7 +555,10 @@ describe('createAgentCreatorPublishHandler', () => {
         createdBy: 'user-1',
         source: 'agent_creator',
         specSnapshot: expect.objectContaining({ name: '  Research helper  ' }),
-        previewSnapshot: expect.objectContaining({ name: 'Research helper' }),
+        previewSnapshot: expect.objectContaining({
+          name: 'Research helper',
+          creatorProvenance: expect.objectContaining({ source: 'agent_creator' }),
+        }),
       }),
     );
     expect(res.status).toHaveBeenCalledWith(201);
@@ -791,5 +849,62 @@ describe('createAgentCreatorPublishHandler', () => {
     expect(res.status).not.toHaveBeenCalledWith(201);
     expect(req.body).toBe(originalBody);
     expect(next).toHaveBeenCalledWith(error);
+  });
+
+  it('rejects inaccessible creatorAgentId before creating the child agent', async () => {
+    const createAgent = jest.fn();
+    const rememberChild = jest.fn();
+    const lookupCreatorAgent = jest.fn(async (_req: ServerRequest, id: string) => ({
+      id,
+      accessible: false,
+    }));
+    const { handler, recordPublication } = createPublishHandler(createAgent, jest.fn(), {
+      lookupCreatorAgent,
+      rememberChild,
+    });
+    const req = createPublishRequest({
+      spec: spec(),
+      creatorAgentId: 'agent_forbidden',
+    } as unknown as AgentCreatorSpec);
+    const res = createMockResponse();
+    const next = jest.fn() as NextFunction;
+
+    await handler(req, res as Response, next);
+
+    expect(lookupCreatorAgent).toHaveBeenCalledWith(req, 'agent_forbidden');
+    expect(createAgent).not.toHaveBeenCalled();
+    expect(recordPublication).not.toHaveBeenCalled();
+    expect(rememberChild).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('remembers child only after verifying creatorAgentId accessibility', async () => {
+    const createAgent = jest.fn((request: ServerRequest) =>
+      Promise.resolve({ id: 'agent_created', ...request.body }),
+    );
+    const rememberChild = jest.fn(async () => ({ creatorAgentId: 'agent_creator' }));
+    const lookupCreatorAgent = jest.fn(async (_req: ServerRequest, id: string) => ({
+      id,
+      accessible: true,
+    }));
+    const { handler } = createPublishHandler(createAgent, jest.fn(), {
+      lookupCreatorAgent,
+      rememberChild,
+    });
+    const req = createPublishRequest({
+      spec: spec(),
+      creatorAgentId: 'agent_creator',
+    } as unknown as AgentCreatorSpec);
+    const res = createMockResponse();
+    const next = jest.fn() as NextFunction;
+
+    await handler(req, res as Response, next);
+
+    expect(lookupCreatorAgent).toHaveBeenCalledWith(req, 'agent_creator');
+    expect(rememberChild).toHaveBeenCalledWith(
+      expect.objectContaining({ creatorAgentId: 'agent_creator', createdBy: 'user-1' }),
+    );
+    expect(res.status).toHaveBeenCalledWith(201);
   });
 });

@@ -1,7 +1,9 @@
 const express = require('express');
 const {
   generateCheckAccess,
+  createAgentCreatorCreateHandler,
   createAgentCreatorPublishHandler,
+  createAgentCreatorAgentLookup,
   checkAccessWithRequestCache,
   createAgentCreatorValidateHandler,
   createAgentCreatorPublicSkillSearchHandler,
@@ -15,13 +17,16 @@ const {
   withDeploymentSkillIds,
 } = require('~/server/services/Endpoints/agents/skillDeps');
 const v1 = require('~/server/controllers/agents/v1');
+const db = require('~/models');
 const {
   getRoleByName,
   createSkill,
   deleteAgent,
   deleteSkill,
   recordAgentCreatorPublication,
-} = require('~/models');
+  rememberAgentCreatorChild,
+  upsertAgentCreatorProfile,
+} = db;
 const actions = require('./actions');
 const tools = require('./tools');
 
@@ -39,10 +44,20 @@ const checkAgentCreate = generateCheckAccess({
   getRoleByName,
 });
 
+const agentCreatorCreateHandler = createAgentCreatorCreateHandler({
+  createAgent: v1.createAgentService,
+  upsertProfile: upsertAgentCreatorProfile,
+});
 const agentCreatorValidateHandler = createAgentCreatorValidateHandler({
   findAccessibleResources,
   withDeploymentSkillIds,
   getSkillDbMethods,
+});
+const agentCreatorAgentLookup = createAgentCreatorAgentLookup({
+  findAccessibleResources,
+  withDeploymentSkillIds,
+  getSkillDbMethods,
+  getAgent: db.getAgent,
 });
 const agentCreatorPublishHandler = createAgentCreatorPublishHandler({
   findAccessibleResources,
@@ -61,7 +76,9 @@ const agentCreatorPublishHandler = createAgentCreatorPublishHandler({
       permissions,
       getRoleByName,
     }),
+  lookupCreatorAgent: agentCreatorAgentLookup,
   recordPublication: recordAgentCreatorPublication,
+  rememberChild: rememberAgentCreatorChild,
 });
 const agentCreatorPublicSkillSearchHandler = createAgentCreatorPublicSkillSearchHandler({
   searchPublicSkills: noopAgentCreatorPublicSkillSearchProvider,
@@ -92,6 +109,7 @@ router.get('/categories', v1.getAgentCategories);
  */
 router.post('/', checkAgentCreate, configMiddleware, v1.createAgent);
 
+router.post('/creator', checkAgentCreate, configMiddleware, agentCreatorCreateHandler);
 router.post('/creator/validate', checkAgentCreate, configMiddleware, agentCreatorValidateHandler);
 router.post('/creator/publish', checkAgentCreate, configMiddleware, agentCreatorPublishHandler);
 router.post(
