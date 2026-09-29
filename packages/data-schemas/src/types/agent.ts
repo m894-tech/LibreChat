@@ -7,6 +7,7 @@ import type {
   AgentToolResources,
   AgentSubagentsConfig,
   AgentGitIdentity,
+  AgentCreatorProvenance,
 } from 'librechat-data-provider';
 
 export interface ISupportContact {
@@ -63,5 +64,7 @@ export interface IAgent extends Omit<Document, 'model'> {
   subagents?: AgentSubagentsConfig;
   /** Memory partition: 'agent' isolates memories per (user, agent); default shared pool */
   memory_scope?: MemoryScope;
+  /** Compact Agent Creator provenance stamp; absent for non-Creator agents. */
+  creatorProvenance?: AgentCreatorProvenance;
   tenantId?: string;
 }

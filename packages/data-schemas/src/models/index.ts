@@ -1,4 +1,5 @@
 import { createAgentQueuedTurnModel, createAgentQueuedTurnSequenceModel } from './queuedTurn';
+import { createAgentCreatorPublicationModel } from './agentCreatorPublication';
 import { createAgentTriggerLaneSequenceModel } from './triggerLaneSequence';
 import { createScheduleModel, createScheduleRunModel } from './schedule';
 import { createSkillSyncCredentialModel } from './skillSyncCredential';
@@ -6,6 +7,7 @@ import { createOpenIDRefreshFlightModel } from './openidRefreshFlight';
 import { createAgentTriggerUserPurgeModel } from './triggerUserPurge';
 import { createRefreshTokenBridgeModel } from './refreshTokenBridge';
 import { createAgentTriggerDeliveryModel } from './triggerDelivery';
+import { createOrchestrationRunModel } from './orchestrationRun';
 import { createSkillSyncStatusModel } from './skillSyncStatus';
 import { createConversationTagModel } from './conversationTag';
 import { createCodeEnvironmentModel } from './codeEnvironment';
@@ -60,6 +62,8 @@ export function createModels(mongoose: typeof import('mongoose')): {
   Agent: ReturnType<typeof createAgentModel>;
   AgentApiKey: ReturnType<typeof createAgentApiKeyModel>;
   AgentCategory: ReturnType<typeof createAgentCategoryModel>;
+  AgentCreatorPublication: ReturnType<typeof createAgentCreatorPublicationModel>;
+  OrchestrationRun: ReturnType<typeof createOrchestrationRunModel>;
   MCPServer: ReturnType<typeof createMCPServerModel>;
   Role: ReturnType<typeof createRoleModel>;
   Action: ReturnType<typeof createActionModel>;
@@ -109,6 +113,8 @@ export function createModels(mongoose: typeof import('mongoose')): {
     Agent: createAgentModel(mongoose),
     AgentApiKey: createAgentApiKeyModel(mongoose),
     AgentCategory: createAgentCategoryModel(mongoose),
+    AgentCreatorPublication: createAgentCreatorPublicationModel(mongoose),
+    OrchestrationRun: createOrchestrationRunModel(mongoose),
     MCPServer: createMCPServerModel(mongoose),
     Role: createRoleModel(mongoose),
     Action: createActionModel(mongoose),

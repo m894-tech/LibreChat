@@ -23,6 +23,9 @@ const {
   isConfirmedGenerationRetry,
   generationRetryProbeLimiter,
   generationRetryLimiter,
+  createManualOrchestrationRunHandler,
+  createGetLatestOrchestrationRunHandler,
+  createCancelOrchestrationRunHandler,
 } = require('@librechat/api');
 const { createSseStreamTelemetry } = require('@librechat/api/telemetry');
 const { logger } = require('@librechat/data-schemas');
@@ -48,7 +51,14 @@ const {
   getServerGenerationProtocol,
   negotiateExistingGenerationProtocol,
 } = require('~/server/controllers/agents/protocol');
-const { getFiles, saveMessage } = require('~/models');
+const {
+  getFiles,
+  saveMessage,
+  createOrchestrationRun,
+  getLatestOrchestrationRun,
+  cancelOrchestrationRun,
+  getConvoOwnership,
+} = require('~/models');
 const {
   recordScheduleOutcome,
   beginScheduledStop,
@@ -117,6 +127,17 @@ async function sendJoblessStatus(req, res, conversationId) {
 
 const router = express.Router();
 
+const orchestrationMethods = {
+  createOrchestrationRun,
+  getLatestOrchestrationRun,
+  cancelOrchestrationRun,
+  getConvoOwnership,
+};
+const manualOrchestrationRunHandler = createManualOrchestrationRunHandler(orchestrationMethods);
+const getLatestOrchestrationRunHandler =
+  createGetLatestOrchestrationRunHandler(orchestrationMethods);
+const cancelOrchestrationRunHandler = createCancelOrchestrationRunHandler(orchestrationMethods);
+
 /**
  * Open Responses API routes (API key authentication handled in route file)
  * Mounted at /agents/v1/responses (full path: /api/agents/v1/responses)
@@ -150,21 +171,9 @@ router.use((req, _res, next) => {
 router.use(checkBan);
 router.use(uaParser);
 
-router.get('/orch-run/:conversationId', async (req, res) => {
-  try {
-    const orch = require('/opt/librechat-mcp/orch-canon-resolve');
-    if (typeof orch.getOrchRunForUser !== 'function') {
-      return res.status(501).json({ error: 'unwired' });
-    }
-    const run = await orch.getOrchRunForUser(req.user, req.params.conversationId);
-    if (!run) {
-      return res.status(404).json({ error: 'not found' });
-    }
-    return res.json(run);
-  } catch (e) {
-    return res.status(500).json({ error: String((e && e.message) || e) });
-  }
-});
+router.post('/orch-run', configMiddleware, manualOrchestrationRunHandler);
+router.get('/orch-run/:conversationId', getLatestOrchestrationRunHandler);
+router.patch('/orch-run/:runId/cancel', cancelOrchestrationRunHandler);
 
 /**
  * Stream endpoints - mounted before chatRouter to bypass rate limiters

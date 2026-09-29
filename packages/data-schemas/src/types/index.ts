@@ -18,6 +18,8 @@ export * from './message';
 export * from './agent';
 export * from './agentApiKey';
 export * from './agentCategory';
+export * from './agentCreatorPublication';
+export * from './orchestrationRun';
 export * from './codeEnvironment';
 export * from './role';
 export * from './query';

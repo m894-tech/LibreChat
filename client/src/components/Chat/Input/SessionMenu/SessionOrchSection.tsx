@@ -48,8 +48,8 @@ function Chip({
       className={cn(
         'rounded-full border px-2 py-0.5 text-xs',
         active
-          ? 'border-[#2CE0CE] bg-[#2CE0CE]/15 text-zinc-100'
-          : 'border-zinc-600 text-zinc-200 hover:border-zinc-400 hover:text-zinc-50',
+          ? 'border-border-heavy bg-surface-active-alt text-text-primary'
+          : 'border-border-medium text-text-secondary hover:border-border-heavy hover:text-text-primary',
       )}
     >
       {children}

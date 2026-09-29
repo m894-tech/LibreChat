@@ -2,9 +2,9 @@ import { createElement } from 'react';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { dataService, QueryKeys, EModelEndpoint, PermissionBits } from 'librechat-data-provider';
-import type { AgentListResponse } from 'librechat-data-provider';
+import type { AgentListResponse, OrchRunView } from 'librechat-data-provider';
 import type { ReactNode } from 'react';
-import { defaultAgentParams, useListAgentsQuery } from '../queries';
+import { defaultAgentParams, useGetOrchestrationRunQuery, useListAgentsQuery } from '../queries';
 
 jest.mock('librechat-data-provider', () => {
   const actual = jest.requireActual('librechat-data-provider');
@@ -13,11 +13,15 @@ jest.mock('librechat-data-provider', () => {
     dataService: {
       ...actual.dataService,
       listAgents: jest.fn(),
+      getOrchestrationRun: jest.fn(),
     },
   };
 });
 
 const listAgents = dataService.listAgents as jest.MockedFunction<typeof dataService.listAgents>;
+const getOrchestrationRun = dataService.getOrchestrationRun as jest.MockedFunction<
+  typeof dataService.getOrchestrationRun
+>;
 
 const page = (ids: string[], after: string | null): AgentListResponse =>
   ({
@@ -87,5 +91,35 @@ describe('useListAgentsQuery', () => {
     expect(listAgents).toHaveBeenLastCalledWith(expect.objectContaining({ cursor: 'cursor-1' }));
     expect(result.current.data?.data.map((agent) => agent.id)).toEqual(['a', 'b', 'c']);
     expect(result.current.data?.has_more).toBe(false);
+  });
+});
+
+describe('useGetOrchestrationRunQuery', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('uses data-service and QueryKeys for orchestration run lookup', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const run = {
+      runId: 'run-1',
+      conversationId: 'conversation-1',
+      requestedMode: 'm2',
+      resolvedMode: 'm2',
+      scheduler: 'manual',
+      state: 'pending',
+      nodes: [{ id: 'm2', state: 'pending' }],
+    } satisfies OrchRunView;
+    getOrchestrationRun.mockResolvedValue(run);
+
+    const { result } = renderHook(() => useGetOrchestrationRunQuery('conversation-1'), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(getOrchestrationRun).toHaveBeenCalledWith('conversation-1');
+    expect(queryClient.getQueryData([QueryKeys.orchestrationRun, 'conversation-1'])).toBe(run);
   });
 });

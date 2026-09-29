@@ -14,6 +14,8 @@ export * from './counter';
 export * from './control';
 export * from './conversation';
 export * from './creates';
+export * from './candidates';
+export * from './orchestration';
 export * from './deletion';
 export * from './discovery';
 export * from './edges';
