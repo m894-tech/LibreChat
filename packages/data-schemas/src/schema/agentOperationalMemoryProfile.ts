@@ -50,7 +50,10 @@ const agentOperationalMemoryProfileSchema: Schema<IAgentOperationalMemoryProfile
   { timestamps: true },
 );
 
-agentOperationalMemoryProfileSchema.index({ agentId: 1, createdBy: 1, tenantId: 1 }, { unique: true });
+agentOperationalMemoryProfileSchema.index(
+  { agentId: 1, createdBy: 1, tenantId: 1 },
+  { unique: true },
+);
 agentOperationalMemoryProfileSchema.index({ createdBy: 1, updatedAt: -1, tenantId: 1 });
 
 export default agentOperationalMemoryProfileSchema;

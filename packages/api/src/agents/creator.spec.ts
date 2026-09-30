@@ -57,7 +57,7 @@ describe('validateAgentCreatorSpec', () => {
     expect(instructions).toContain('draft agent spec');
     expect(instructions).toContain('Show a readable preview');
     expect(instructions).toContain('Require explicit user confirmation before publishing');
-    expect(instructions).toContain('remember the user\'s creator preferences');
+    expect(instructions).toContain("remember the user's creator preferences");
     expect(instructions).toContain('child agents');
     expect(instructions).toContain('Recommend tools, skills, and models');
     expect(instructions).toContain('Publish safely');
@@ -448,7 +448,11 @@ function createCreatorConfig(): ServerRequest['config'] {
   } as ServerRequest['config'];
 }
 
-function createAgentCreatorRequest(body: { provider?: unknown; model?: unknown; spec?: unknown }): ServerRequest {
+function createAgentCreatorRequest(body: {
+  provider?: unknown;
+  model?: unknown;
+  spec?: unknown;
+}): ServerRequest {
   return {
     body,
     config: createCreatorConfig(),
@@ -800,7 +804,8 @@ describe('createAgentCreatorPublishHandler', () => {
       createOptions = options;
       return Promise.resolve({ id: 'agent_created', ...request.body });
     });
-    const { handler, recordPublication, initializeOperationalMemory } = createPublishHandler(createAgent);
+    const { handler, recordPublication, initializeOperationalMemory } =
+      createPublishHandler(createAgent);
     const req = createPublishRequest(spec({ name: '  Research helper  ' }));
     const res = createMockResponse();
     const next = jest.fn() as NextFunction;

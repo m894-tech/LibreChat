@@ -32,6 +32,8 @@ export function serializeAgentCreatorPublication(
     source: publication.source,
     specSnapshot: publication.specSnapshot,
     previewSnapshot: publication.previewSnapshot,
-    ...(publication.operationalMemorySnapshot ? { operationalMemorySnapshot: publication.operationalMemorySnapshot } : {}),
+    ...(publication.operationalMemorySnapshot
+      ? { operationalMemorySnapshot: publication.operationalMemorySnapshot }
+      : {}),
   };
 }

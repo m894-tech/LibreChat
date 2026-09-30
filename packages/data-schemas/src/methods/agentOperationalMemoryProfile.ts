@@ -6,7 +6,8 @@ import type {
 } from '~/types';
 import { serializeAgentOperationalMemoryProfile } from '~/types';
 
-const hasTenantId = (tenantId: string | undefined): tenantId is string => tenantId != null && tenantId !== '';
+const hasTenantId = (tenantId: string | undefined): tenantId is string =>
+  tenantId != null && tenantId !== '';
 
 const createTenantFilter = (tenantId: string | undefined) =>
   hasTenantId(tenantId) ? { tenantId } : { tenantId: { $exists: false } };

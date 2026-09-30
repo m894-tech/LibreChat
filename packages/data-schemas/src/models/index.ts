@@ -1,6 +1,6 @@
 import { createAgentQueuedTurnModel, createAgentQueuedTurnSequenceModel } from './queuedTurn';
-import { createAgentCreatorPublicationModel } from './agentCreatorPublication';
 import { createAgentOperationalMemoryProfileModel } from './agentOperationalMemoryProfile';
+import { createAgentCreatorPublicationModel } from './agentCreatorPublication';
 import { createAgentTriggerLaneSequenceModel } from './triggerLaneSequence';
 import { createScheduleModel, createScheduleRunModel } from './schedule';
 import { createAgentCreatorProfileModel } from './agentCreatorProfile';

@@ -755,14 +755,6 @@ export const agentCreateSchema: z.ZodObject<
   provider: z.string(),
   model: z.string().nullable(),
   tools: z.array(z.string()).optional().default([]),
-  creatorProvenance: z
-    .object({
-      publicationId: z.string().min(1),
-      createdBy: z.string().min(1),
-      createdAt: z.string().min(1),
-      source: z.literal('agent_creator'),
-    })
-    .optional(),
 });
 
 /** Update schema extends base with all fields optional and additional update-only fields */

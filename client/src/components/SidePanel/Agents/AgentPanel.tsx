@@ -98,7 +98,9 @@ function resolveCompatibleModelSpec(
   provider: string,
   model: string,
 ): TModelSpec | undefined {
-  return modelSpecs?.find((spec) => spec.preset?.endpoint === provider && spec.preset.model === model);
+  return modelSpecs?.find(
+    (spec) => spec.preset?.endpoint === provider && spec.preset.model === model,
+  );
 }
 
 /**
@@ -1052,7 +1054,9 @@ export default function AgentPanel() {
       >
         <AlertDialogContent className="w-11/12 max-w-lg rounded-theme-surface sm:rounded-theme-surface">
           <AlertDialogHeader>
-            <AlertDialogTitle>{localize('com_agents_creator_publish_preview_title')}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {localize('com_agents_creator_publish_preview_title')}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {localize('com_agents_creator_publish_preview_description')}
             </AlertDialogDescription>
@@ -1066,15 +1070,26 @@ export default function AgentPanel() {
                 )}
               </div>
               <dl className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-2">
-                <dt className="text-text-secondary">{localize('com_agents_creator_preview_model')}</dt>
+                <dt className="text-text-secondary">
+                  {localize('com_agents_creator_preview_model')}
+                </dt>
                 <dd>
                   {pendingCreatorPublish.preview.provider} / {pendingCreatorPublish.preview.model}
                 </dd>
-                <dt className="text-text-secondary">{localize('com_agents_creator_preview_spec')}</dt>
-                <dd>{pendingCreatorPublish.preview.spec ?? localize('com_agents_creator_preview_no_spec')}</dd>
-                <dt className="text-text-secondary">{localize('com_agents_creator_preview_skills')}</dt>
+                <dt className="text-text-secondary">
+                  {localize('com_agents_creator_preview_spec')}
+                </dt>
+                <dd>
+                  {pendingCreatorPublish.preview.spec ??
+                    localize('com_agents_creator_preview_no_spec')}
+                </dd>
+                <dt className="text-text-secondary">
+                  {localize('com_agents_creator_preview_skills')}
+                </dt>
                 <dd>{pendingCreatorPublish.preview.skills?.length ?? 0}</dd>
-                <dt className="text-text-secondary">{localize('com_agents_creator_preview_memory_scope')}</dt>
+                <dt className="text-text-secondary">
+                  {localize('com_agents_creator_preview_memory_scope')}
+                </dt>
                 <dd>
                   {localize(
                     pendingCreatorPublish.preview.memory_scope === MemoryScope.agent
@@ -1112,7 +1127,9 @@ export default function AgentPanel() {
               )}
               {(pendingCreatorPublish.preview.skills_enabled === false ||
                 (pendingCreatorPublish.preview.skills?.length ?? 0) === 0) && (
-                <p className="text-text-secondary">{localize('com_agents_creator_preview_no_runtime_magic')}</p>
+                <p className="text-text-secondary">
+                  {localize('com_agents_creator_preview_no_runtime_magic')}
+                </p>
               )}
             </div>
           )}

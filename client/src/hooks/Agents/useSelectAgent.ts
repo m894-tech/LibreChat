@@ -93,7 +93,11 @@ export default function useSelectAgent() {
         if (fullAgent) {
           await updateConversation(
             fullAgent,
-            { ...template, agent_id: fullAgent.id, spec: fullAgent.spec ?? specDisplayFieldReset.spec },
+            {
+              ...template,
+              agent_id: fullAgent.id,
+              spec: fullAgent.spec ?? specDisplayFieldReset.spec,
+            },
             true,
           );
         }

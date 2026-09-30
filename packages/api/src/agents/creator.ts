@@ -280,16 +280,18 @@ type ResolveRequiredModelSpecParams = {
   spec?: string | null;
 };
 
-function isCompatibleModelSpec(candidate: ModelSpecCandidate, provider: string, model: string): boolean {
+function isCompatibleModelSpec(
+  candidate: ModelSpecCandidate,
+  provider: string,
+  model: string,
+): boolean {
   return candidate.preset?.endpoint === provider && candidate.preset.model === model;
 }
 
-function resolveRequiredModelSpec({
-  req,
-  provider,
-  model,
-  spec,
-}: ResolveRequiredModelSpecParams): { spec?: string; error?: string } {
+function resolveRequiredModelSpec({ req, provider, model, spec }: ResolveRequiredModelSpecParams): {
+  spec?: string;
+  error?: string;
+} {
   const selectedSpec = typeof spec === 'string' && spec.trim().length > 0 ? spec.trim() : undefined;
   const modelSpecs = req.config?.modelSpecs;
   const specs = (modelSpecs?.list ?? []) as ModelSpecCandidate[];
@@ -309,13 +311,17 @@ function resolveRequiredModelSpec({
     return { spec: selectedSpec };
   }
 
-  const compatibleSpec = specs.find((candidate) => isCompatibleModelSpec(candidate, provider, model));
+  const compatibleSpec = specs.find((candidate) =>
+    isCompatibleModelSpec(candidate, provider, model),
+  );
   if (compatibleSpec?.name != null) {
     return { spec: compatibleSpec.name };
   }
 
   if (modelSpecs?.enforce === true) {
-    return { error: 'Agent Creator requires a matching model spec for the selected provider and model' };
+    return {
+      error: 'Agent Creator requires a matching model spec for the selected provider and model',
+    };
   }
 
   return {};
@@ -686,14 +692,19 @@ function validateSkillAuthoring(
 }
 
 const ROLE_MATCHERS: Array<{ role: AgentOperationalMemoryRole; pattern: RegExp }> = [
-  { role: 'coder', pattern: /\b(code|coder|coding|developer|engineer|typescript|javascript|debug|repo)\b/i },
+  {
+    role: 'coder',
+    pattern: /\b(code|coder|coding|developer|engineer|typescript|javascript|debug|repo)\b/i,
+  },
   { role: 'researcher', pattern: /\b(research|investigate|literature|sources|evidence)\b/i },
   { role: 'analyst', pattern: /\b(analysis|analyst|data|metric|forecast|model|experiment)\b/i },
   { role: 'creator', pattern: /\b(agent creator|create agents|publish agents|builder)\b/i },
 ];
 
 function inferOperationalMemoryRole(spec: AgentCreatorSpec): AgentOperationalMemoryRole {
-  const text = [spec.name, spec.description, spec.instructions, spec.spec].filter(Boolean).join('\n');
+  const text = [spec.name, spec.description, spec.instructions, spec.spec]
+    .filter(Boolean)
+    .join('\n');
   return ROLE_MATCHERS.find(({ pattern }) => pattern.test(text))?.role ?? 'general';
 }
 
