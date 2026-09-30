@@ -63,11 +63,12 @@ const charCounter: TokenCounter = (message: BaseMessage): number => {
   }
   if (Array.isArray(content)) {
     let length = 3;
-    for (const part of content) {
+    const parts = content as readonly (string | { text?: unknown })[];
+    for (const part of parts) {
       if (typeof part === 'string') {
         length += part.length;
-      } else if (typeof (part as { text?: unknown })?.text === 'string') {
-        length += (part as { text: string }).text.length;
+      } else if (typeof part.text === 'string') {
+        length += part.text.length;
       }
     }
     return length;
