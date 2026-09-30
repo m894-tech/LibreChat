@@ -2002,6 +2002,12 @@
               "source"
             ]
           },
+          "spec": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "model_parameters": {
             "type": "object",
             "additionalProperties": {}
@@ -2414,6 +2420,33 @@
           },
           "model": {
             "type": "string"
+          },
+          "creatorProvenance": {
+            "type": "object",
+            "properties": {
+              "publicationId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "createdBy": {
+                "type": "string",
+                "minLength": 1
+              },
+              "createdAt": {
+                "type": "string",
+                "minLength": 1
+              },
+              "source": {
+                "type": "string",
+                "const": "agent_creator"
+              }
+            },
+            "required": [
+              "publicationId",
+              "createdBy",
+              "createdAt",
+              "source"
+            ]
           }
         },
         "required": [
@@ -2436,6 +2469,12 @@
           },
           "avatar": {
             "type": "null"
+          },
+          "spec": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "model_parameters": {
             "type": "object",
@@ -2899,6 +2938,12 @@
               {
                 "type": "null"
               }
+            ]
+          },
+          "spec": {
+            "type": [
+              "string",
+              "null"
             ]
           },
           "model_parameters": {
