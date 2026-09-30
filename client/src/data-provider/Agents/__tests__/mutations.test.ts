@@ -1,13 +1,23 @@
 import { createElement } from 'react';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { dataService, PermissionBits, QueryKeys } from 'librechat-data-provider';
-import type { Agent, AgentListResponse, GraphEdge } from 'librechat-data-provider';
+import { dataService, MemoryScope, PermissionBits, QueryKeys } from 'librechat-data-provider';
+import type {
+  Agent,
+  AgentCreatorSpec,
+  AgentListResponse,
+  GraphEdge,
+} from 'librechat-data-provider';
+import type * as t from 'librechat-data-provider';
 import type { ReactNode } from 'react';
 import {
+  useCancelOrchestrationRunMutation,
+  useCreateOrchestrationRunMutation,
   useDeleteAgentMutation,
   useDuplicateAgentMutation,
+  usePublishAgentCreatorMutation,
   useUpdateAgentMutation,
+  useValidateAgentCreatorMutation,
 } from '../mutations';
 
 jest.mock('librechat-data-provider', () => {
@@ -19,6 +29,10 @@ jest.mock('librechat-data-provider', () => {
       deleteAgent: jest.fn(),
       updateAgent: jest.fn(),
       duplicateAgent: jest.fn(),
+      validateAgentCreatorSpec: jest.fn(),
+      publishAgentCreatorSpec: jest.fn(),
+      createOrchestrationRun: jest.fn(),
+      cancelOrchestrationRun: jest.fn(),
     },
   };
 });
@@ -48,6 +62,142 @@ const createWrapper = (queryClient: QueryClient) =>
   function Wrapper({ children }: { children: ReactNode }) {
     return createElement(QueryClientProvider, { client: queryClient }, children);
   };
+
+const agentCreatorSpec = (): AgentCreatorSpec => ({
+  name: 'Research helper',
+  provider: 'agents',
+  model: 'test-model',
+  model_parameters: {
+    temperature: null,
+    maxContextTokens: null,
+    max_context_tokens: null,
+    max_output_tokens: null,
+    top_p: null,
+    frequency_penalty: null,
+    presence_penalty: null,
+  },
+  skills: [{ id: 'skill-1' }],
+});
+
+describe('useValidateAgentCreatorMutation', () => {
+  it('calls the Agent Creator validation endpoint', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: false,
+        },
+      },
+    });
+    const payload = agentCreatorSpec();
+    const response = {
+      valid: true,
+      issues: [],
+      preview: {
+        name: 'Research helper',
+        description: null,
+        instructions: null,
+        provider: 'agents',
+        model: 'test-model',
+        model_parameters: payload.model_parameters,
+        skills: ['skill-1'],
+        skills_enabled: true,
+        skills_scope: 'selected',
+        skill_authoring_enabled: false,
+        operationalMemory: {
+          role: 'researcher',
+          memoryScope: MemoryScope.agent,
+          artifacts: [],
+        },
+      },
+    } satisfies t.AgentCreatorValidateResponse;
+    jest.mocked(dataService.validateAgentCreatorSpec).mockResolvedValue(response);
+
+    const { result } = renderHook(() => useValidateAgentCreatorMutation(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync(payload);
+    });
+
+    expect(dataService.validateAgentCreatorSpec).toHaveBeenCalledWith(payload);
+  });
+});
+
+describe('usePublishAgentCreatorMutation', () => {
+  it('adds the published agent to agent list caches as editable', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: false,
+        },
+      },
+    });
+    const payload = agentCreatorSpec();
+    const publishedAgent = createAgent('agent_published');
+    const existingAgent = createAgent('agent_existing', [], false);
+    const viewListKey = [QueryKeys.agents, { requiredPermission: PermissionBits.VIEW }];
+    const editListKey = [QueryKeys.agents, { requiredPermission: PermissionBits.EDIT }];
+    queryClient.setQueryData(viewListKey, {
+      object: 'list',
+      data: [existingAgent],
+      first_id: existingAgent.id,
+      last_id: existingAgent.id,
+      has_more: false,
+    } satisfies AgentListResponse);
+    queryClient.setQueryData(editListKey, {
+      object: 'list',
+      data: [],
+      first_id: '',
+      last_id: '',
+      has_more: false,
+    } satisfies AgentListResponse);
+    jest.mocked(dataService.publishAgentCreatorSpec).mockResolvedValue(publishedAgent);
+
+    const { result } = renderHook(() => usePublishAgentCreatorMutation(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({ spec: payload, creatorAgentId: 'agent_creator' });
+    });
+
+    expect(dataService.publishAgentCreatorSpec).toHaveBeenCalledWith({
+      spec: payload,
+      creatorAgentId: 'agent_creator',
+    });
+    expect(queryClient.getQueryData<AgentListResponse>(viewListKey)?.data).toEqual([
+      { ...publishedAgent, isEditable: true },
+      existingAgent,
+    ]);
+    expect(queryClient.getQueryData<AgentListResponse>(editListKey)?.data).toEqual([
+      { ...publishedAgent, isEditable: true },
+    ]);
+  });
+
+  it('accepts a legacy direct Agent Creator spec payload', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: false,
+        },
+      },
+    });
+    const payload = agentCreatorSpec();
+    const publishedAgent = createAgent('agent_published');
+    jest.mocked(dataService.publishAgentCreatorSpec).mockResolvedValue(publishedAgent);
+
+    const { result } = renderHook(() => usePublishAgentCreatorMutation(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync(payload);
+    });
+
+    expect(dataService.publishAgentCreatorSpec).toHaveBeenCalledWith(payload);
+  });
+});
 
 describe('useDeleteAgentMutation', () => {
   it('refreshes only expanded agent caches with edges that reference the deleted agent', async () => {
@@ -132,6 +282,63 @@ describe('useDeleteAgentMutation', () => {
     ]);
     expect(queryClient.getQueryData([QueryKeys.agent, targetId])).toBeUndefined();
     expect(queryClient.getQueryData([QueryKeys.agent, targetId, 'expanded'])).toBeUndefined();
+  });
+});
+
+describe('useCreateOrchestrationRunMutation', () => {
+  it('caches the created run by conversation', async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const run = {
+      runId: 'run-1',
+      conversationId: 'conversation-1',
+      requestedMode: 'm2',
+      resolvedMode: 'm2',
+      scheduler: 'manual',
+      state: 'pending',
+      nodes: [{ id: 'm2', state: 'pending' }],
+    } satisfies t.CreateOrchestrationRunResponse;
+    jest.mocked(dataService.createOrchestrationRun).mockResolvedValue(run);
+
+    const { result } = renderHook(() => useCreateOrchestrationRunMutation(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({ conversationId: 'conversation-1', mode: 'm2' });
+    });
+
+    expect(dataService.createOrchestrationRun).toHaveBeenCalledWith({
+      conversationId: 'conversation-1',
+      mode: 'm2',
+    });
+    expect(queryClient.getQueryData([QueryKeys.orchestrationRun, 'conversation-1'])).toBe(run);
+  });
+});
+
+describe('useCancelOrchestrationRunMutation', () => {
+  it('caches the cancelled run by conversation', async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const run = {
+      runId: 'run-1',
+      conversationId: 'conversation-1',
+      requestedMode: 'm2',
+      resolvedMode: 'm2',
+      scheduler: 'manual',
+      state: 'cancelled',
+      nodes: [{ id: 'm2', state: 'pending' }],
+    } satisfies t.CancelOrchestrationRunResponse;
+    jest.mocked(dataService.cancelOrchestrationRun).mockResolvedValue(run);
+
+    const { result } = renderHook(() => useCancelOrchestrationRunMutation(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({ runId: 'run-1' });
+    });
+
+    expect(dataService.cancelOrchestrationRun).toHaveBeenCalledWith({ runId: 'run-1' });
+    expect(queryClient.getQueryData([QueryKeys.orchestrationRun, 'conversation-1'])).toBe(run);
   });
 });
 

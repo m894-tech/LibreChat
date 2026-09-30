@@ -2002,6 +2002,12 @@
               "source"
             ]
           },
+          "spec": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "model_parameters": {
             "type": "object",
             "additionalProperties": {}
@@ -2436,6 +2442,12 @@
           },
           "avatar": {
             "type": "null"
+          },
+          "spec": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "model_parameters": {
             "type": "object",
@@ -2899,6 +2911,12 @@
               {
                 "type": "null"
               }
+            ]
+          },
+          "spec": {
+            "type": [
+              "string",
+              "null"
             ]
           },
           "model_parameters": {

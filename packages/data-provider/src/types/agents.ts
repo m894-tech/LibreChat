@@ -5,10 +5,225 @@ import type { TTokenUsageEvent, TContextUsageEvent, TPendingSteer } from './runs
 import type { FunctionTool, ToolResources, AgentToolOptions } from './tools';
 import type { StatefulCodeEnvironment } from '../stateful-code';
 import type { SummaryContentPart } from './content';
+import type { SkillFrontmatter } from './skills';
 import type { TFile } from './files';
 import { StepTypes, ContentTypes, ToolCallTypes } from './runs';
 import { ArtifactModes } from 'src/artifacts';
 import { EToolResources } from './tools';
+
+export type AgentCreatorSkillSource = 'selected' | 'public' | 'authored';
+
+/** Untrusted public skill candidate id prefix; never attachable/executable. */
+export const AGENT_CREATOR_PUBLIC_CANDIDATE_ID_PREFIX = 'public-candidate:' as const;
+
+export type AgentCreatorSkillSpec = {
+  id: string;
+  source?: AgentCreatorSkillSource;
+};
+
+export type AgentOperationalMemoryRole = 'coder' | 'researcher' | 'analyst' | 'creator' | 'general';
+
+export type AgentOperationalMemoryArtifact = {
+  key: string;
+  title: string;
+  content: string;
+  priority: number;
+};
+
+export type AgentOperationalMemoryProfile = {
+  agentId: string;
+  createdBy: string;
+  tenantId?: string;
+  source: 'agent_creator';
+  role: AgentOperationalMemoryRole;
+  memoryScope: MemoryScope;
+  artifacts: AgentOperationalMemoryArtifact[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AgentOperationalMemoryProfileInput = {
+  agentId: string;
+  createdBy: string;
+  tenantId?: string;
+  source?: 'agent_creator';
+  role: AgentOperationalMemoryRole;
+  memoryScope: MemoryScope;
+  artifacts: AgentOperationalMemoryArtifact[];
+};
+
+export type AgentCreatorAuthoredSkillDraft = {
+  name: string;
+  displayTitle?: string;
+  description: string;
+  body: string;
+  frontmatter?: Partial<SkillFrontmatter>;
+  category?: string;
+  allowedTools?: string[];
+};
+
+export type AgentCreatorSpec = {
+  name: string;
+  description?: string | null;
+  instructions?: string | null;
+  provider: AgentProvider;
+  model: string | null;
+  spec?: string | null;
+  model_parameters: AgentModelParameters;
+  skills: AgentCreatorSkillSpec[];
+  draftedSkills?: AgentCreatorAuthoredSkillDraft[];
+  skills_scope?: SkillsScope;
+  memory_scope?: MemoryScope;
+};
+
+export type AgentCreatorValidationIssueCode =
+  | 'creator_disabled'
+  | 'missing_required_field'
+  | 'invalid_skill_source'
+  | 'skill_authoring_disabled'
+  | 'invalid_skill_draft'
+  | 'skill_count_exceeded'
+  | 'skill_not_selected'
+  | 'skill_not_found'
+  | 'skill_not_accessible'
+  | 'unsupported_skills_scope';
+
+export type AgentCreatorValidationIssue = {
+  code: AgentCreatorValidationIssueCode;
+  message: string;
+  path?: string;
+};
+
+export type AgentCreatorPreview = Pick<
+  AgentCreateParams,
+  | 'name'
+  | 'description'
+  | 'instructions'
+  | 'provider'
+  | 'model'
+  | 'spec'
+  | 'model_parameters'
+  | 'skills'
+  | 'skills_enabled'
+  | 'skills_scope'
+  | 'skill_authoring_enabled'
+  | 'memory_scope'
+> & {
+  operationalMemory: Omit<
+    AgentOperationalMemoryProfileInput,
+    'agentId' | 'createdBy' | 'tenantId' | 'source'
+  >;
+};
+
+export type AgentCreatorValidateResponse = {
+  valid: boolean;
+  issues: AgentCreatorValidationIssue[];
+  preview?: AgentCreatorPreview;
+};
+
+export type AgentCreatorPublicSkillSearchRequest = {
+  query: string;
+  limit?: number;
+};
+
+/** Normalized public skill candidate metadata. Never attachable or executable. */
+export type AgentCreatorPublicSkillCandidate = {
+  id: string;
+  name: string;
+  description?: string;
+  source: 'public';
+  trusted: false;
+  attachable: false;
+  provider?: string;
+  repository?: string;
+  path?: string;
+  url?: string;
+};
+
+export type AgentCreatorPublicSkillSearchResponse = {
+  candidates: AgentCreatorPublicSkillCandidate[];
+};
+
+/** Compact stamp stored on an Agent created through Agent Creator. */
+export type AgentCreatorProvenance = {
+  publicationId: string;
+  createdBy: string;
+  createdAt: string;
+  source: 'agent_creator';
+};
+
+/** Audit SoT row for a successful Agent Creator publish. */
+export type AgentCreatorPublication = {
+  publicationId: string;
+  agentId: string;
+  createdBy: string;
+  createdAt: string;
+  source: 'agent_creator';
+  specSnapshot: AgentCreatorSpec;
+  previewSnapshot: AgentCreatorPreview;
+  operationalMemorySnapshot?: AgentOperationalMemoryProfileInput;
+};
+
+export type AgentCreatorPublicationRecordInput = {
+  publicationId: string;
+  agentId: string;
+  createdBy: string;
+  createdAt?: string | Date;
+  source?: 'agent_creator';
+  specSnapshot: AgentCreatorSpec;
+  previewSnapshot: AgentCreatorPreview;
+  operationalMemorySnapshot?: AgentOperationalMemoryProfileInput;
+};
+
+export type AgentCreatorPreferenceMemory = {
+  defaultProvider?: AgentProvider;
+  defaultModel?: string;
+  defaultSkillsScope?: SkillsScope;
+};
+
+export type AgentCreatorChildAgentMemory = {
+  agentId: string;
+  name: string;
+  publicationId: string;
+  createdAt: string | Date;
+};
+
+export type AgentCreatorProfile = {
+  creatorAgentId: string;
+  createdBy: string;
+  preferences: AgentCreatorPreferenceMemory;
+  childAgents: AgentCreatorChildAgentMemory[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AgentCreatorProfileInput = {
+  creatorAgentId: string;
+  createdBy: string;
+  tenantId?: string;
+  preferences?: AgentCreatorPreferenceMemory;
+};
+
+export type AgentCreatorCreateRequest = {
+  provider: AgentProvider;
+  model: string;
+  spec?: string | null;
+};
+
+export type AgentCreatorCreateResponse = {
+  agent: Agent;
+  profile: AgentCreatorProfile;
+};
+
+export type AgentCreatorPublishBody = {
+  spec: AgentCreatorSpec;
+  creatorAgentId?: string;
+};
+
+export type AgentCreatorPublishRequest = AgentCreatorSpec | AgentCreatorPublishBody;
+
+export type AgentCreatorPublishResponse = Agent;
+
 export {
   STATEFUL_CODE_ENVIRONMENTS,
   resolveStatefulCodeEnvironment,
@@ -994,6 +1209,7 @@ export type Agent = {
   metadata?: Record<string, unknown>;
   provider: AgentProvider;
   model: string | null;
+  spec?: string | null;
   model_parameters: AgentModelParameters;
   conversation_starters?: string[];
   tool_resources?: AgentToolResources;
@@ -1050,6 +1266,8 @@ export type Agent = {
   subagents?: AgentSubagentsConfig;
   /** Memory partition: `agent` isolates memories per (user, agent); default shared pool */
   memory_scope?: MemoryScope;
+  /** Compact Agent Creator provenance stamp; absent for non-Creator agents. */
+  creatorProvenance?: AgentCreatorProvenance;
 };
 
 export type TAgentsMap = Record<string, Agent | undefined>;
@@ -1064,6 +1282,7 @@ export type AgentCreateParams = {
   tools?: Array<FunctionTool | string>;
   provider: AgentProvider;
   model: string | null;
+  spec?: string | null;
   model_parameters: AgentModelParameters;
 } & Pick<
   Agent,
@@ -1099,6 +1318,7 @@ export type AgentUpdateParams = {
   tool_resources?: ToolResources;
   provider?: AgentProvider;
   model?: string | null;
+  spec?: string | null;
   model_parameters?: AgentModelParameters;
 } & Pick<
   Agent,

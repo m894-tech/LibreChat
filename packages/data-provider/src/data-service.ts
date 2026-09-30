@@ -8,10 +8,13 @@ import type {
 } from './types/traces';
 import type { TInsightsAccessResponse, TInsightsParams, TInsightsResponse } from './types/insights';
 import type { TContextUsageParams, TContextUsageSnapshot } from './types/contextUsage';
+import type * as ce from './types/contextEstimate';
+import type * as cc from './types/contextCounter';
 import type { TFileConfig } from './file-config';
 import type * as tl from './types/tools';
 import type * as t from './types';
 import * as permissions from './accessPermissions';
+import * as orch from './types/orchestration';
 import * as endpoints from './api-endpoints';
 import { uploadEventStream } from './upload';
 import * as mcp from './types/mcpServers';
@@ -678,6 +681,51 @@ export const deleteAction = async ({
 
 export const createAgent = ({ ...data }: ag.AgentCreateParams): Promise<ag.Agent> => {
   return request.post(endpoints.agents({}), data);
+};
+
+export const createAgentCreator = (
+  requestBody: ag.AgentCreatorCreateRequest,
+): Promise<ag.AgentCreatorCreateResponse> => {
+  return request.post(endpoints.agentCreator(), requestBody);
+};
+
+export const validateAgentCreatorSpec = (
+  spec: ag.AgentCreatorSpec,
+): Promise<ag.AgentCreatorValidateResponse> => {
+  return request.post(endpoints.agentCreatorValidate(), spec);
+};
+
+export const publishAgentCreatorSpec = (
+  requestBody: ag.AgentCreatorPublishRequest,
+): Promise<ag.AgentCreatorPublishResponse> => {
+  const maybeBody = requestBody as Partial<ag.AgentCreatorPublishBody>;
+  const payload: ag.AgentCreatorPublishBody =
+    typeof maybeBody.spec === 'object' && maybeBody.spec != null
+      ? (maybeBody as ag.AgentCreatorPublishBody)
+      : { spec: requestBody as ag.AgentCreatorSpec };
+  return request.post(endpoints.agentCreatorPublish(), payload);
+};
+
+export const searchAgentCreatorPublicSkills = (
+  payload: ag.AgentCreatorPublicSkillSearchRequest,
+): Promise<ag.AgentCreatorPublicSkillSearchResponse> => {
+  return request.post(endpoints.agentCreatorPublicSkillSearch(), payload);
+};
+
+export const createOrchestrationRun = (
+  payload: orch.CreateOrchestrationRunRequest,
+): Promise<orch.CreateOrchestrationRunResponse> => {
+  return request.post(endpoints.orchestrationRun(), payload);
+};
+
+export const getOrchestrationRun = (conversationId: string): Promise<orch.OrchRunView> => {
+  return request.get(endpoints.orchestrationRunByConversation(conversationId));
+};
+
+export const cancelOrchestrationRun = (
+  payload: orch.CancelOrchestrationRunRequest,
+): Promise<orch.CancelOrchestrationRunResponse> => {
+  return request.patch(endpoints.cancelOrchestrationRun(payload.runId));
 };
 
 export const getAgentById = ({ agent_id }: { agent_id: string }): Promise<ag.Agent> => {
@@ -1665,4 +1713,11 @@ export interface ActiveJobsResponse {
 
 export const getActiveJobs = (): Promise<ActiveJobsResponse> => {
   return request.get(endpoints.activeJobs());
+};
+
+/* Context counter v2: server-side dry-run estimate of the next request (§6) */
+export const estimateNextRequestContext = (
+  payload: ce.TContextEstimateRequest,
+): Promise<cc.TContextNextRequestEstimate> => {
+  return request.post(endpoints.contextEstimate(), payload);
 };

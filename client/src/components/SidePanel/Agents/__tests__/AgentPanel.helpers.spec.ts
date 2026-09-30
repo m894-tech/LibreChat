@@ -10,6 +10,7 @@ import type {
 import type { FieldNamesMarkedBoolean } from 'react-hook-form';
 import type { AgentForm } from '~/common';
 import {
+  composeAgentCreatorSpec,
   composeAgentUpdatePayload,
   persistAvatarChanges,
   isAvatarUploadOnlyDirty,
@@ -56,6 +57,28 @@ const createForm = (): AgentForm => ({
   avatar_file: null,
   avatar_preview: '',
   avatar_action: null,
+});
+
+describe('composeAgentCreatorSpec', () => {
+  it('projects selected skill ids into an Agent Creator spec', () => {
+    const form = createForm();
+    form.name = 'Creator Agent';
+    form.description = 'Draft description';
+    form.instructions = 'Draft instructions';
+    form.skills = ['skill-1', 'skill-1', 'skill-2', ''];
+
+    expect(composeAgentCreatorSpec(form)).toMatchObject({
+      name: 'Creator Agent',
+      description: 'Draft description',
+      instructions: 'Draft instructions',
+      provider: 'openai',
+      model: 'gpt-4',
+      skills: [
+        { id: 'skill-1', source: 'selected' },
+        { id: 'skill-2', source: 'selected' },
+      ],
+    });
+  });
 });
 
 describe('composeAgentUpdatePayload', () => {

@@ -1,7 +1,8 @@
 import { PlaywrightTestConfig } from '@playwright/test';
 import mainConfig from './playwright.config';
 import path from 'path';
-const absolutePath = path.resolve(process.cwd(), 'api/server/index.js');
+const rootPath = path.resolve(__dirname, '..');
+const serverPath = path.resolve(rootPath, 'e2e/setup/start-server.js');
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -12,7 +13,8 @@ const config: PlaywrightTestConfig = {
   globalTeardown: require.resolve('./setup/global-teardown.local'),
   webServer: {
     ...mainConfig.webServer,
-    command: `node ${absolutePath}`,
+    command: `node ${serverPath}`,
+    cwd: rootPath,
     env: {
       ...process.env,
       SEARCH: 'false',

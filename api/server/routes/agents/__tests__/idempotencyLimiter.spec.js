@@ -36,6 +36,9 @@ jest.mock('@librechat/api', () => ({
   exemptFromUserLimiter: (...args) => mockExemptSchedule(...args),
   createMessageFilterPii: jest.fn(() => (_req, _res, next) => next()),
   createContextUsageHandler: jest.fn(() => (_req, res) => res.status(200).json({ usage: null })),
+  createManualOrchestrationRunHandler: jest.fn(() => (_req, res) => res.status(202).json({})),
+  createGetLatestOrchestrationRunHandler: jest.fn(() => (_req, res) => res.status(200).json({})),
+  createCancelOrchestrationRunHandler: jest.fn(() => (_req, res) => res.status(200).json({})),
 }));
 
 jest.mock('~/server/middleware', () => ({
@@ -67,6 +70,8 @@ jest.mock('~/server/routes/agents/management', () => {
   router.use((_req, res) => res.status(200).json({ surface: 'management' }));
   return router;
 });
+jest.mock('~/server/routes/agents/contextUsage', () => require('express').Router());
+jest.mock('~/server/routes/agents/context', () => require('express').Router());
 jest.mock('~/server/controllers/agents/steer', () => {
   const controller = (_req, _res, next) => next();
   controller.SteerDeliveryController = (_req, _res, next) => next();

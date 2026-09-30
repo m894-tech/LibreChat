@@ -144,6 +144,39 @@ describe('modelSpecs helpers', () => {
     expect(parsedBody.chatProjectId).toBe('project-1');
   });
 
+  it('should keep session promptPrefix content for enforced custom model specs', () => {
+    const modelSpec: TModelSpec = {
+      name: 'lmstudio-session',
+      label: 'LMStudio Session',
+      preset: {
+        endpoint: 'LMStudio-Mac',
+        endpointType: EModelEndpoint.custom,
+        model: 'local-model',
+        promptPrefix: 'Model spec instructions.',
+        temperature: 0.2,
+      },
+    };
+
+    const { parsedBody } = applyModelSpecPreset({
+      modelSpec,
+      parsedBody: {
+        endpoint: 'LMStudio-Mac',
+        endpointType: EModelEndpoint.custom,
+        spec: 'lmstudio-session',
+        model: 'stale-client-model',
+        promptPrefix: 'Session content from attachment.',
+      },
+      endpoint: 'LMStudio-Mac',
+      endpointType: EModelEndpoint.custom,
+      includePresetDefaults: true,
+    });
+
+    expect(parsedBody.promptPrefix).toBe(
+      'Model spec instructions.\n\nSession content from attachment.',
+    );
+    expect(parsedBody.model).toBe('local-model');
+  });
+
   it('should restore private examples when parser supplies an empty default', () => {
     const examples = [{ input: { content: 'hello' }, output: { content: 'world' } }];
     const modelSpec: TModelSpec = {

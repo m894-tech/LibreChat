@@ -11,13 +11,31 @@ import type {
   TDeleteSkillFileResponse,
   TSkillListResponse,
 } from './skills';
+import type {
+  CancelOrchestrationRunRequest,
+  CancelOrchestrationRunResponse,
+  CreateOrchestrationRunRequest,
+  CreateOrchestrationRunResponse,
+} from './orchestration';
+import {
+  Action,
+  ActionMetadata,
+  Agent,
+  AgentCreateParams,
+  AgentCreatorCreateRequest,
+  AgentCreatorCreateResponse,
+  AgentCreatorPublishRequest,
+  AgentCreatorPublishResponse,
+  AgentCreatorSpec,
+  AgentCreatorValidateResponse,
+  AgentUpdateParams,
+} from './agents';
 import {
   Assistant,
   AssistantCreateParams,
   AssistantUpdateParams,
   AssistantDocument,
 } from './assistants';
-import { Action, ActionMetadata, Agent, AgentCreateParams, AgentUpdateParams } from './agents';
 import { Tools, FunctionTool } from './tools';
 import * as p from '../permissions';
 import * as types from '../types';
@@ -130,6 +148,31 @@ export type UpdateAgentActionVariables = {
 export type UploadAgentAvatarOptions = MutationOptions<Agent, AgentAvatarVariables>;
 
 export type CreateAgentMutationOptions = MutationOptions<Agent, AgentCreateParams>;
+
+export type CreateAgentCreatorMutationOptions = MutationOptions<
+  AgentCreatorCreateResponse,
+  AgentCreatorCreateRequest
+>;
+
+export type AgentCreatorValidateMutationOptions = MutationOptions<
+  AgentCreatorValidateResponse,
+  AgentCreatorSpec
+>;
+
+export type AgentCreatorPublishMutationOptions = MutationOptions<
+  AgentCreatorPublishResponse,
+  AgentCreatorPublishRequest
+>;
+
+export type CreateOrchestrationRunMutationOptions = MutationOptions<
+  CreateOrchestrationRunResponse,
+  CreateOrchestrationRunRequest
+>;
+
+export type CancelOrchestrationRunMutationOptions = MutationOptions<
+  CancelOrchestrationRunResponse,
+  CancelOrchestrationRunRequest
+>;
 
 export type UpdateAgentVariables = {
   agent_id: string;

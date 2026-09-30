@@ -248,6 +248,20 @@ describe('agentCreateSchema with subagents', () => {
     tools: [],
   };
 
+  it('strips client-supplied creator provenance from public create payloads', () => {
+    const result = agentCreateSchema.parse({
+      ...base,
+      creatorProvenance: {
+        publicationId: 'spoofed-publication',
+        createdBy: 'attacker',
+        createdAt: '2026-09-28T12:00:00.000Z',
+        source: 'agent_creator',
+      },
+    });
+
+    expect(result).not.toHaveProperty('creatorProvenance');
+  });
+
   it('passes with subagents omitted', () => {
     const result = agentCreateSchema.safeParse(base);
     expect(result.success).toBe(true);

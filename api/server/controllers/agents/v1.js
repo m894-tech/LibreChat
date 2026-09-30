@@ -4,11 +4,11 @@ const fs = require('fs').promises;
 const { nanoid } = require('nanoid');
 const { logger } = require('@librechat/data-schemas');
 const {
+  prepareAgentCreateData,
   refreshS3Url,
   splitMCPToolKey,
   buildServerNameAliases,
   findShadowedServerNames,
-  agentCreateSchema,
   agentUpdateSchema,
   agentSubagentsSchema,
   refreshListAvatars,
@@ -773,166 +773,185 @@ const pruneToolResourceFileIdsForAgent = async ({
  * @param {ServerResponse} res - The response object.
  * @returns {Promise<Agent>} 201 - success response - application/json
  */
-const createAgentHandler = async (req, res) => {
-  try {
-    /**
-     * Hydrated resource records are a client transport shape, not a persisted
-     * Agent shape. Canonicalize them before the strict IDs-only schema strips
-     * `files`, then let the schema validate the resulting `file_ids`.
-     */
-    normalizeToolResourceFiles(req.body?.tool_resources);
-    const validatedData = agentCreateSchema.parse(req.body);
-    const { tools = [], ...agentData } = removeNullishValues(validatedData);
+/**
+ * Return-valued create core shared by POST /agents and Agent Creator publish.
+ * Responds through `res` for validation/authorization failures and returns the
+ * created agent on success so callers can continue without response interception.
+ * @param {ServerRequest} req
+ * @param {ServerResponse} res
+ * @returns {Promise<Agent|void>}
+ */
+const createAgentService = async (req, res, options = {}) => {
+  const { tools, agentData } =
+    options.preparedAgentCreateData ?? prepareAgentCreateData({ body: req.body });
 
-    if (
-      (!isCodeInterpreterCapabilityEnabled(req) || !tools.includes(Tools.execute_code)) &&
-      agentData.tool_options != null
-    ) {
-      agentData.tool_options = removeCodeExecutionCaller(agentData.tool_options);
-    }
+  if (
+    (!isCodeInterpreterCapabilityEnabled(req) || !tools.includes(Tools.execute_code)) &&
+    agentData.tool_options != null
+  ) {
+    agentData.tool_options = removeCodeExecutionCaller(agentData.tool_options);
+  }
 
-    if (
-      !validateStatefulCodeEnvironment(
-        req,
-        res,
-        agentData.stateful_code_sessions,
-        agentData.stateful_code_environment,
-        agentData.code_environment_id,
-        agentData.code_environment_id != null,
-        agentData.code_workspace_id,
-      )
-    ) {
-      return;
-    }
-
-    if (agentData.model_parameters && typeof agentData.model_parameters === 'object') {
-      agentData.model_parameters = removeNullishValues(
-        sanitizeModelParameters(agentData.model_parameters),
-        true,
-      );
-    }
-    const { id: userId, role: userRole } = req.user;
-    agentData.id = `agent_${nanoid()}`;
-    agentData.edges = replaceEdgeSourceId(agentData.edges, '', agentData.id);
-    agentData.subagents = replaceAndValidateSubagentGraphAgentId(
-      agentData.subagents,
-      '',
-      agentData.id,
-    );
-
-    if (agentData.tool_resources) {
-      await pruneToolResourceFileIdsForAgent({
-        tool_resources: agentData.tool_resources,
-        ownerIds: userId,
-        logPrefix: '[/Agents]',
-      });
-    }
-
-    if (await blockFilteredAgentContent(req, res, agentData)) {
-      return;
-    }
-
-    if (agentData.edges?.length) {
-      const { missing, unauthorized } = await validateEdgeAgentReferences(
-        agentData.edges,
-        userId,
-        userRole,
-        new Set([agentData.id]),
-      );
-      if (missing.length > 0) {
-        return res.status(400).json({
-          error: 'One or more agents referenced in edges do not exist',
-          agent_ids: missing,
-        });
-      }
-      if (unauthorized.length > 0) {
-        return res.status(403).json({
-          error: 'You do not have access to one or more agents referenced in edges',
-          agent_ids: unauthorized,
-        });
-      }
-    }
-
-    /**
-     * Only validate subagent ACL when the feature is actually enabled
-     * on BOTH the endpoint (capability flag in appConfig) AND the
-     * agent payload. Runtime (`initializeClient` + `run.ts`) checks
-     * `subagents?.enabled` as a truthy predicate — so `undefined` /
-     * `null` / missing `enabled` all disable the feature. The ACL
-     * check must match exactly: only enforce when `enabled === true`.
-     * Otherwise a payload that omits `enabled` (e.g. API clients, or
-     * legacy records that never set the field) could 403 here while
-     * runtime would happily no-op on the subagent tool. Disable-path
-     * is also untouched: toggling `enabled: false` always passes the
-     * gate, so a user who lost VIEW on a child can still save the
-     * disable edit.
-     */
-    const subagentReferenceError = await getSubagentReferenceError(
-      agentData.subagents,
+  if (
+    !validateStatefulCodeEnvironment(
       req,
+      res,
+      agentData.stateful_code_sessions,
+      agentData.stateful_code_environment,
+      agentData.code_environment_id,
+      agentData.code_environment_id != null,
+      agentData.code_workspace_id,
+    )
+  ) {
+    return;
+  }
+
+  if (agentData.model_parameters && typeof agentData.model_parameters === 'object') {
+    agentData.model_parameters = removeNullishValues(
+      sanitizeModelParameters(agentData.model_parameters),
+      true,
+    );
+  }
+  const { id: userId, role: userRole } = req.user;
+  agentData.id = `agent_${nanoid()}`;
+  agentData.edges = replaceEdgeSourceId(agentData.edges, '', agentData.id);
+  agentData.subagents = replaceAndValidateSubagentGraphAgentId(
+    agentData.subagents,
+    '',
+    agentData.id,
+  );
+
+  if (agentData.tool_resources) {
+    await pruneToolResourceFileIdsForAgent({
+      tool_resources: agentData.tool_resources,
+      ownerIds: userId,
+      logPrefix: '[/Agents]',
+    });
+  }
+
+  if (await blockFilteredAgentContent(req, res, agentData)) {
+    return;
+  }
+
+  if (agentData.edges?.length) {
+    const { missing, unauthorized } = await validateEdgeAgentReferences(
+      agentData.edges,
+      userId,
+      userRole,
       new Set([agentData.id]),
     );
-    if (subagentReferenceError) {
-      return res.status(subagentReferenceError.status).json(subagentReferenceError.body);
+    if (missing.length > 0) {
+      res.status(400).json({
+        error: 'One or more agents referenced in edges do not exist',
+        agent_ids: missing,
+      });
+      return;
     }
+    if (unauthorized.length > 0) {
+      res.status(403).json({
+        error: 'You do not have access to one or more agents referenced in edges',
+        agent_ids: unauthorized,
+      });
+      return;
+    }
+  }
 
-    agentData.author = userId;
-    agentData.tools = [];
+  /**
+   * Only validate subagent ACL when the feature is actually enabled
+   * on BOTH the endpoint (capability flag in appConfig) AND the
+   * agent payload. Runtime (`initializeClient` + `run.ts`) checks
+   * `subagents?.enabled` as a truthy predicate — so `undefined` /
+   * `null` / missing `enabled` all disable the feature. The ACL
+   * check must match exactly: only enforce when `enabled === true`.
+   * Otherwise a payload that omits `enabled` (e.g. API clients, or
+   * legacy records that never set the field) could 403 here while
+   * runtime would happily no-op on the subagent tool. Disable-path
+   * is also untouched: toggling `enabled: false` always passes the
+   * gate, so a user who lost VIEW on a child can still save the
+   * disable edit.
+   */
+  const subagentReferenceError = await getSubagentReferenceError(
+    agentData.subagents,
+    req,
+    new Set([agentData.id]),
+  );
+  if (subagentReferenceError) {
+    res.status(subagentReferenceError.status).json(subagentReferenceError.body);
+    return;
+  }
 
-    const hasMCPTools = tools.some((t) => t?.includes(Constants.mcp_delimiter));
-    const [availableTools, configServers] = await Promise.all([
-      getCachedTools().then((t) => t ?? {}),
-      hasMCPTools ? resolveConfigServers(req) : Promise.resolve(undefined),
+  agentData.author = userId;
+  agentData.tools = [];
+
+  const hasMCPTools = tools.some((t) => t?.includes(Constants.mcp_delimiter));
+  const [availableTools, configServers] = await Promise.all([
+    getCachedTools().then((t) => t ?? {}),
+    hasMCPTools ? resolveConfigServers(req) : Promise.resolve(undefined),
+  ]);
+  const mcpPermissionContext = createMCPPermissionContext(req);
+  /** Resolved during authorization, so persistence indexes the real server rather
+   *  than a suffix guess - see the note on `filterAuthorizedTools`. */
+  const resolvedServerNames = new Set();
+  agentData.tools = await filterAuthorizedTools({
+    tools,
+    userId,
+    role: req.user.role,
+    user: req.user,
+    mcpPermissionContext,
+    availableTools,
+    configServers,
+    resolvedServerNames,
+  });
+  if (hasMCPTools) {
+    agentData.mcpServerNames = Array.from(resolvedServerNames);
+  }
+
+  const agent = await db.createAgent(agentData);
+
+  try {
+    await Promise.all([
+      grantPermission({
+        principalType: PrincipalType.USER,
+        principalId: userId,
+        resourceType: ResourceType.AGENT,
+        resourceId: agent._id,
+        accessRoleId: AccessRoleIds.AGENT_OWNER,
+        grantedBy: userId,
+      }),
+      grantPermission({
+        principalType: PrincipalType.USER,
+        principalId: userId,
+        resourceType: ResourceType.REMOTE_AGENT,
+        resourceId: agent._id,
+        accessRoleId: AccessRoleIds.REMOTE_AGENT_OWNER,
+        grantedBy: userId,
+      }),
     ]);
-    const mcpPermissionContext = createMCPPermissionContext(req);
-    /** Resolved during authorization, so persistence indexes the real server rather
-     *  than a suffix guess - see the note on `filterAuthorizedTools`. */
-    const resolvedServerNames = new Set();
-    agentData.tools = await filterAuthorizedTools({
-      tools,
-      userId,
-      role: req.user.role,
-      user: req.user,
-      mcpPermissionContext,
-      availableTools,
-      configServers,
-      resolvedServerNames,
-    });
-    if (hasMCPTools) {
-      agentData.mcpServerNames = Array.from(resolvedServerNames);
+    logger.debug(`[createAgent] Granted owner permissions to user ${userId} for agent ${agent.id}`);
+  } catch (permissionError) {
+    logger.error(
+      `[createAgent] Failed to grant owner permissions for agent ${agent.id}:`,
+      permissionError,
+    );
+  }
+
+  return agent;
+};
+
+/**
+ * Creates an Agent.
+ * @route POST /Agents
+ * @param {ServerRequest} req - The request object.
+ * @param {AgentCreateParams} req.body - The request body.
+ * @param {ServerResponse} res - The response object.
+ * @returns {Promise<Agent>} 201 - success response - application/json
+ */
+const createAgentHandler = async (req, res) => {
+  try {
+    const agent = await createAgentService(req, res);
+    if (agent == null) {
+      return;
     }
-
-    const agent = await db.createAgent(agentData);
-
-    try {
-      await Promise.all([
-        grantPermission({
-          principalType: PrincipalType.USER,
-          principalId: userId,
-          resourceType: ResourceType.AGENT,
-          resourceId: agent._id,
-          accessRoleId: AccessRoleIds.AGENT_OWNER,
-          grantedBy: userId,
-        }),
-        grantPermission({
-          principalType: PrincipalType.USER,
-          principalId: userId,
-          resourceType: ResourceType.REMOTE_AGENT,
-          resourceId: agent._id,
-          accessRoleId: AccessRoleIds.REMOTE_AGENT_OWNER,
-          grantedBy: userId,
-        }),
-      ]);
-      logger.debug(
-        `[createAgent] Granted owner permissions to user ${userId} for agent ${agent.id}`,
-      );
-    } catch (permissionError) {
-      logger.error(
-        `[createAgent] Failed to grant owner permissions for agent ${agent.id}:`,
-        permissionError,
-      );
-    }
-
     res.status(201).json(agent);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -2265,6 +2284,7 @@ const getAgentCategories = async (_req, res) => {
 };
 module.exports = {
   createAgent: createAgentHandler,
+  createAgentService,
   getAgent: getAgentHandler,
   getAgentVersions: getAgentVersionsHandler,
   updateAgent: updateAgentHandler,

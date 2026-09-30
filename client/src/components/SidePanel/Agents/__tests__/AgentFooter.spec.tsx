@@ -1,6 +1,6 @@
 import React from 'react';
 import { SystemRoles } from 'librechat-data-provider';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import type { UseMutationResult } from '@tanstack/react-query';
 import '@testing-library/jest-dom/extend-expect';
 import type { Agent, AgentCreateParams, TUser, ResourceType } from 'librechat-data-provider';
@@ -72,6 +72,8 @@ jest.mock('~/hooks', () => ({
     const translations = {
       com_ui_save: 'Save',
       com_ui_create: 'Create',
+      com_agents_creator_publish: 'Preview with Creator',
+      com_agents_creator_create: 'Create dedicated Agent Creator',
     };
     return translations[key] || key;
   },
@@ -232,6 +234,8 @@ describe('AgentFooter', () => {
     setActivePanel: mockSetActivePanel,
     setCurrentAgentId: mockSetCurrentAgentId,
     isAvatarUploading: false,
+    showAgentCreatorPublish: false,
+    onPublishWithCreator: jest.fn(),
   };
 
   beforeEach(() => {
@@ -314,6 +318,22 @@ describe('AgentFooter', () => {
       const submitButton = buttons.find((button) => button.getAttribute('type') === 'submit');
       expect(submitButton).toBeDisabled();
       expect(submitButton).toHaveAttribute('aria-busy', 'true');
+    });
+
+    test('renders and invokes Agent Creator publish entry point when enabled', () => {
+      const onPublishWithCreator = jest.fn();
+      render(
+        <AgentFooter
+          {...defaultProps}
+          showAgentCreatorPublish={true}
+          onPublishWithCreator={onPublishWithCreator}
+        />,
+      );
+
+      const button = screen.getByRole('button', { name: 'Preview with Creator' });
+      expect(button).toBeInTheDocument();
+      fireEvent.click(button);
+      expect(onPublishWithCreator).toHaveBeenCalledTimes(1);
     });
   });
 
