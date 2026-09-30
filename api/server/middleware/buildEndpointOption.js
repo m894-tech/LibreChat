@@ -87,6 +87,7 @@ async function buildEndpointOption(req, res, next) {
 
   const appConfig = req.config;
   let appliedModelSpecPrivateFields = new Set();
+  let pendingRequiredSpecFallback = false;
   if (appConfig.modelSpecs?.list?.length && appConfig.modelSpecs?.enforce) {
     /** @type {{ list: TModelSpec[] }}*/
     const { list } = appConfig.modelSpecs;
@@ -100,38 +101,44 @@ async function buildEndpointOption(req, res, next) {
         : parsedBody;
 
     if (!spec) {
-      return handleError(res, { text: 'No model spec selected' });
+      if (isAgents && typeof req.body.agent_id === 'string' && req.body.agent_id.length > 0) {
+        pendingRequiredSpecFallback = true;
+      } else {
+        return handleError(res, { text: 'No model spec selected' });
+      }
     }
 
-    const modelSpecResolution = resolveModelSpecForEndpoint({
-      modelSpecs: { list },
-      spec,
-      endpoint,
-    });
-    if ('error' in modelSpecResolution) {
-      return handleError(res, {
-        text:
-          modelSpecResolution.error === 'invalid-model-spec'
-            ? 'Invalid model spec'
-            : 'Model spec mismatch',
-      });
-    }
-    const { modelSpec: currentModelSpec } = modelSpecResolution;
-
-    try {
-      const result = applyModelSpecPreset({
-        modelSpec: currentModelSpec,
-        parsedBody: parsedBodyForModelSpec,
+    if (!pendingRequiredSpecFallback) {
+      const modelSpecResolution = resolveModelSpecForEndpoint({
+        modelSpecs: { list },
+        spec,
         endpoint,
-        endpointType,
-        defaultParamsEndpoint,
-        includePresetDefaults: true,
       });
-      parsedBody = result.parsedBody;
-      appliedModelSpecPrivateFields = result.appliedPrivateFields;
-    } catch (error) {
-      logger.error('Error parsing model spec', error);
-      return handleError(res, { text: 'Error parsing model spec' });
+      if ('error' in modelSpecResolution) {
+        return handleError(res, {
+          text:
+            modelSpecResolution.error === 'invalid-model-spec'
+              ? 'Invalid model spec'
+              : 'Model spec mismatch',
+        });
+      }
+      const { modelSpec: currentModelSpec } = modelSpecResolution;
+
+      try {
+        const result = applyModelSpecPreset({
+          modelSpec: currentModelSpec,
+          parsedBody: parsedBodyForModelSpec,
+          endpoint,
+          endpointType,
+          defaultParamsEndpoint,
+          includePresetDefaults: true,
+        });
+        parsedBody = result.parsedBody;
+        appliedModelSpecPrivateFields = result.appliedPrivateFields;
+      } catch (error) {
+        logger.error('Error parsing model spec', error);
+        return handleError(res, { text: 'Error parsing model spec' });
+      }
     }
   } else if (parsedBody.spec && appConfig.modelSpecs?.list) {
     const modelSpecResolution = resolveModelSpecForEndpoint({
@@ -182,6 +189,28 @@ async function buildEndpointOption(req, res, next) {
     // TODO: use object params
     req.body = req.body || {}; // Express 5: ensure req.body exists
     req.body.endpointOption = await builder(endpoint, parsedBody, endpointType);
+    if (pendingRequiredSpecFallback) {
+      const agent = await req.body.endpointOption.agent;
+      const fallbackSpec = agent?.spec;
+      if (!fallbackSpec) {
+        return handleError(res, { text: 'No model spec selected' });
+      }
+      const modelSpecResolution = resolveModelSpecForEndpoint({
+        modelSpecs: { list: appConfig.modelSpecs.list },
+        spec: fallbackSpec,
+        endpoint: agent?.provider ?? endpoint,
+      });
+      if ('error' in modelSpecResolution) {
+        return handleError(res, {
+          text:
+            modelSpecResolution.error === 'invalid-model-spec'
+              ? 'Invalid model spec'
+              : 'Model spec mismatch',
+        });
+      }
+      req.body.spec = fallbackSpec;
+      req.body.endpointOption.spec = fallbackSpec;
+    }
 
     if (req.body.files && !isAgents) {
       req.body.endpointOption.attachments = updateFilesUsage(req.body.files, undefined, {

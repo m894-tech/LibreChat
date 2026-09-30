@@ -53,6 +53,7 @@ export interface LoadAgentParams {
     body?: {
       promptPrefix?: string;
       ephemeralAgent?: TEphemeralAgent;
+      spec?: string;
     };
   };
   spec?: string;
@@ -240,6 +241,10 @@ export async function loadAgent(
 
   if (!agent) {
     return null;
+  }
+
+  if (agent.spec && !spec) {
+    req.body = { ...(req.body ?? {}), spec: agent.spec };
   }
 
   // Set version count from versions array length

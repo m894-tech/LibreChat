@@ -31,9 +31,11 @@ const mockBuildOptions = jest.fn((_endpoint, parsedBody) => ({
   ...parsedBody,
   endpoint: _endpoint,
 }));
+const mockAgent = jest.fn(() => Promise.resolve(undefined));
 const mockAgentBuildOptions = jest.fn((_req, endpoint, parsedBody) => ({
   ...parsedBody,
   endpoint,
+  agent: mockAgent(),
 }));
 
 jest.mock('~/server/services/Endpoints/azureAssistants', () => ({
@@ -77,6 +79,7 @@ const createRes = () => ({
 describe('buildEndpointOption - defaultParamsEndpoint parsing', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockAgent.mockReturnValue(Promise.resolve(undefined));
   });
 
   it('uses the agents builder for an ephemeral context estimate', async () => {
@@ -717,6 +720,48 @@ describe('buildEndpointOption - defaultParamsEndpoint parsing', () => {
       tenantId: undefined,
     });
     expect(req.body.endpointOption.attachments).toBe(attachments);
+  });
+
+  it('uses the persisted manual agent spec when an enforced request omits spec', async () => {
+    mockGetEndpointsConfig.mockResolvedValue({});
+    mockAgent.mockReturnValue(
+      Promise.resolve({ id: 'agent-manual', provider: EModelEndpoint.openAI, spec: 'openai-mini' }),
+    );
+
+    const req = createReq(
+      {
+        endpoint: EModelEndpoint.agents,
+        agent_id: 'agent-manual',
+      },
+      {
+        modelSpecs: {
+          enforce: true,
+          list: [
+            {
+              name: 'openai-mini',
+              preset: {
+                endpoint: EModelEndpoint.openAI,
+                model: 'gpt-4o-mini',
+              },
+            },
+          ],
+        },
+      },
+    );
+    req.baseUrl = '/api/agents/chat';
+    const res = createRes();
+    const next = jest.fn();
+    const { handleError } = require('@librechat/api');
+
+    await buildEndpointOption(req, res, next);
+
+    expect(handleError).not.toHaveBeenCalledWith(
+      res,
+      expect.objectContaining({ text: 'No model spec selected' }),
+    );
+    expect(req.body.spec).toBe('openai-mini');
+    expect(req.body.endpointOption.spec).toBe('openai-mini');
+    expect(next).toHaveBeenCalledTimes(1);
   });
 
   it('should not enter the enforce branch when modelSpecs.list is empty', async () => {
