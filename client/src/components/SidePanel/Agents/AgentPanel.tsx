@@ -247,6 +247,7 @@ export function composeAgentCreatorSpec(
     model_parameters: payload.model_parameters ?? data.model_parameters,
     skills: skillIds.map((id) => ({ id, source: 'selected' as const })),
     ...(payload.skills_scope != null ? { skills_scope: payload.skills_scope } : {}),
+    memory_scope: payload.memory_scope ?? MemoryScope.agent,
   };
 }
 
@@ -1073,7 +1074,37 @@ export default function AgentPanel() {
                 <dd>{pendingCreatorPublish.preview.spec ?? localize('com_agents_creator_preview_no_spec')}</dd>
                 <dt className="text-text-secondary">{localize('com_agents_creator_preview_skills')}</dt>
                 <dd>{pendingCreatorPublish.preview.skills?.length ?? 0}</dd>
+                <dt className="text-text-secondary">{localize('com_agents_creator_preview_memory_scope')}</dt>
+                <dd>
+                  {localize(
+                    pendingCreatorPublish.preview.memory_scope === MemoryScope.agent
+                      ? 'com_agents_creator_preview_memory_scope_agent'
+                      : 'com_agents_creator_preview_memory_scope_user',
+                  )}
+                </dd>
               </dl>
+              {pendingCreatorPublish.preview.operationalMemory != null && (
+                <div className="space-y-2 rounded-theme-surface border border-border-light bg-surface-primary p-2">
+                  <div>
+                    <p className="font-medium">
+                      {localize('com_agents_creator_preview_operational_memory')}
+                    </p>
+                    <p className="text-text-secondary">
+                      {localize('com_agents_creator_preview_operational_memory_description')}
+                    </p>
+                  </div>
+                  <ul className="list-disc space-y-1 pl-5 text-text-secondary">
+                    {pendingCreatorPublish.preview.operationalMemory.artifacts
+                      .slice(0, 4)
+                      .map((artifact) => (
+                        <li key={artifact.key}>
+                          <span className="font-medium text-text-primary">{artifact.title}</span>
+                          {`: ${artifact.content}`}
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              )}
               {pendingCreatorPublish.preview.instructions != null && (
                 <p className="max-h-32 overflow-y-auto whitespace-pre-wrap text-text-secondary">
                   {pendingCreatorPublish.preview.instructions}

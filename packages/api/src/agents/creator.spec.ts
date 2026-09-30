@@ -1,4 +1,10 @@
-import { EModelEndpoint, PermissionTypes, Permissions, SkillsScope } from 'librechat-data-provider';
+import {
+  EModelEndpoint,
+  MemoryScope,
+  PermissionTypes,
+  Permissions,
+  SkillsScope,
+} from 'librechat-data-provider';
 import type { AgentCreatorSpec } from 'librechat-data-provider';
 import type { NextFunction, Response } from 'express';
 import type { ServerRequest } from '~/types/http';
@@ -73,6 +79,57 @@ describe('validateAgentCreatorSpec', () => {
         skills_enabled: true,
         skills_scope: SkillsScope.selected,
         skill_authoring_enabled: false,
+        memory_scope: MemoryScope.agent,
+        operationalMemory: expect.objectContaining({
+          role: 'researcher',
+          memoryScope: MemoryScope.agent,
+          artifacts: expect.arrayContaining([
+            expect.objectContaining({ key: 'operating-contract' }),
+            expect.objectContaining({ key: 'safety-boundaries' }),
+            expect.objectContaining({ key: 'verification-rules' }),
+          ]),
+        }),
+      },
+    });
+  });
+
+  it('derives coder operational memory from role-like specs', async () => {
+    const result = await validateAgentCreatorSpec({
+      config: { enabled: true, maxDraftSkills: 10 },
+      spec: spec({
+        name: 'Repo coder',
+        description: 'Developer agent for TypeScript repo debugging',
+        instructions: 'Work in code, capture mistakes and verification rules.',
+      }),
+      lookupSkills: async () => [{ id: 'skill-1', accessible: true }],
+    });
+
+    expect(result).toMatchObject({
+      valid: true,
+      preview: {
+        operationalMemory: {
+          role: 'coder',
+          artifacts: expect.arrayContaining([
+            expect.objectContaining({ key: 'coder-workflow' }),
+            expect.objectContaining({ key: 'coder-mistake-loop' }),
+          ]),
+        },
+      },
+    });
+  });
+
+  it('preserves explicit user memory scope in preview operational memory', async () => {
+    const result = await validateAgentCreatorSpec({
+      config: { enabled: true, maxDraftSkills: 10 },
+      spec: spec({ memory_scope: MemoryScope.user }),
+      lookupSkills: async () => [{ id: 'skill-1', accessible: true }],
+    });
+
+    expect(result).toMatchObject({
+      valid: true,
+      preview: {
+        memory_scope: MemoryScope.user,
+        operationalMemory: { memoryScope: MemoryScope.user },
       },
     });
   });
@@ -426,6 +483,8 @@ function createPublishHandler(
     hasSkillCreatePermission?: jest.Mock;
     lookupCreatorAgent?: jest.Mock;
     rememberChild?: jest.Mock;
+    initializeOperationalMemory?: jest.Mock;
+    deleteOperationalMemory?: jest.Mock;
   } = {},
 ) {
   const createSkill =
@@ -439,6 +498,10 @@ function createPublishHandler(
     skillDeps.lookupCreatorAgent ??
     jest.fn(async (_req: ServerRequest, id: string) => ({ id, accessible: true }));
   const rememberChild = skillDeps.rememberChild;
+  const initializeOperationalMemory =
+    skillDeps.initializeOperationalMemory ?? jest.fn(async () => undefined);
+  const deleteOperationalMemory =
+    skillDeps.deleteOperationalMemory ?? jest.fn(async () => ({ deleted: true }));
   return {
     handler: createAgentCreatorPublishHandler({
       createAgent,
@@ -455,6 +518,8 @@ function createPublishHandler(
         getSkillById: async (id) => (id === 'skill-1' ? { id } : null),
       }),
       rememberChild,
+      initializeOperationalMemory,
+      deleteOperationalMemory,
     }),
     createSkill,
     deleteAgent,
@@ -463,6 +528,8 @@ function createPublishHandler(
     hasSkillCreatePermission,
     lookupCreatorAgent,
     rememberChild,
+    initializeOperationalMemory,
+    deleteOperationalMemory,
     recordPublication,
   };
 }
@@ -733,7 +800,7 @@ describe('createAgentCreatorPublishHandler', () => {
       createOptions = options;
       return Promise.resolve({ id: 'agent_created', ...request.body });
     });
-    const { handler, recordPublication } = createPublishHandler(createAgent);
+    const { handler, recordPublication, initializeOperationalMemory } = createPublishHandler(createAgent);
     const req = createPublishRequest(spec({ name: '  Research helper  ' }));
     const res = createMockResponse();
     const next = jest.fn() as NextFunction;
@@ -747,6 +814,7 @@ describe('createAgentCreatorPublishHandler', () => {
       skills_enabled: true,
       skills_scope: SkillsScope.selected,
       skill_authoring_enabled: false,
+      memory_scope: MemoryScope.agent,
       creatorProvenance: {
         createdBy: 'user-1',
         source: 'agent_creator',
@@ -755,6 +823,16 @@ describe('createAgentCreatorPublishHandler', () => {
     expect(createOptions).toMatchObject({
       preparedAgentCreateData: { agentData: createBody },
     });
+    expect(initializeOperationalMemory).toHaveBeenCalledWith(
+      expect.objectContaining({
+        agentId: 'agent_created',
+        createdBy: 'user-1',
+        source: 'agent_creator',
+        role: 'researcher',
+        memoryScope: MemoryScope.agent,
+        artifacts: expect.arrayContaining([expect.objectContaining({ key: 'verification-rules' })]),
+      }),
+    );
     expect(recordPublication).toHaveBeenCalledWith(
       expect.objectContaining({
         publicationId: expect.any(String),
@@ -764,7 +842,11 @@ describe('createAgentCreatorPublishHandler', () => {
         specSnapshot: expect.objectContaining({ name: '  Research helper  ' }),
         previewSnapshot: expect.objectContaining({
           name: 'Research helper',
-          creatorProvenance: expect.objectContaining({ source: 'agent_creator' }),
+          operationalMemory: expect.objectContaining({ role: 'researcher' }),
+        }),
+        operationalMemorySnapshot: expect.objectContaining({
+          agentId: 'agent_created',
+          role: 'researcher',
         }),
       }),
     );
@@ -1096,10 +1178,12 @@ describe('createAgentCreatorPublishHandler', () => {
       skill: { _id: { toString: () => 'created-skill-1' } },
     }));
     const deleteSkill = jest.fn(async () => ({ deleted: true }));
+    const deleteOperationalMemory = jest.fn(async () => ({ deleted: true }));
     const { handler } = createPublishHandler(createAgent, recordPublication, {
       createSkill,
       deleteAgent,
       deleteSkill,
+      deleteOperationalMemory,
     });
     const originalBody = spec({
       draftedSkills: [
@@ -1122,8 +1206,48 @@ describe('createAgentCreatorPublishHandler', () => {
     expect(recordPublication).toHaveBeenCalledTimes(1);
     expect(deleteAgent).toHaveBeenCalledWith({ id: 'agent_created', tenantId: 'tenant-1' });
     expect(deleteSkill).toHaveBeenCalledWith('created-skill-1');
+    expect(deleteOperationalMemory).toHaveBeenCalledWith({
+      agentId: 'agent_created',
+      createdBy: 'user-1',
+      tenantId: 'tenant-1',
+    });
     expect(res.status).not.toHaveBeenCalledWith(201);
     expect(req.body).toBe(originalBody);
+    expect(next).toHaveBeenCalledWith(error);
+  });
+
+  it('rolls back the created agent when operational memory initialization fails', async () => {
+    const error = new Error('memory init failed');
+    const createAgent = jest.fn((request: ServerRequest) =>
+      Promise.resolve({ id: 'agent_created', ...request.body }),
+    );
+    const initializeOperationalMemory = jest.fn(async () => {
+      throw error;
+    });
+    const deleteAgent = jest.fn(async () => ({ deleted: true }));
+    const deleteOperationalMemory = jest.fn(async () => ({ deleted: true }));
+    const { handler, recordPublication } = createPublishHandler(createAgent, jest.fn(), {
+      initializeOperationalMemory,
+      deleteAgent,
+      deleteOperationalMemory,
+    });
+    const req = createPublishRequest(spec());
+    req.user = { ...req.user, tenantId: 'tenant-1' } as ServerRequest['user'];
+    const res = createMockResponse();
+    const next = jest.fn() as NextFunction;
+
+    await handler(req, res as Response, next);
+
+    expect(initializeOperationalMemory).toHaveBeenCalledWith(
+      expect.objectContaining({ agentId: 'agent_created', memoryScope: MemoryScope.agent }),
+    );
+    expect(recordPublication).not.toHaveBeenCalled();
+    expect(deleteAgent).toHaveBeenCalledWith({ id: 'agent_created', tenantId: 'tenant-1' });
+    expect(deleteOperationalMemory).toHaveBeenCalledWith({
+      agentId: 'agent_created',
+      createdBy: 'user-1',
+      tenantId: 'tenant-1',
+    });
     expect(next).toHaveBeenCalledWith(error);
   });
 

@@ -26,6 +26,8 @@ const {
   recordAgentCreatorPublication,
   rememberAgentCreatorChild,
   upsertAgentCreatorProfile,
+  upsertAgentOperationalMemoryProfile,
+  deleteAgentOperationalMemoryProfile,
 } = db;
 const actions = require('./actions');
 const tools = require('./tools');
@@ -79,6 +81,8 @@ const agentCreatorPublishHandler = createAgentCreatorPublishHandler({
   lookupCreatorAgent: agentCreatorAgentLookup,
   recordPublication: recordAgentCreatorPublication,
   rememberChild: rememberAgentCreatorChild,
+  initializeOperationalMemory: upsertAgentOperationalMemoryProfile,
+  deleteOperationalMemory: deleteAgentOperationalMemoryProfile,
 });
 const agentCreatorPublicSkillSearchHandler = createAgentCreatorPublicSkillSearchHandler({
   searchPublicSkills: noopAgentCreatorPublicSkillSearchProvider,

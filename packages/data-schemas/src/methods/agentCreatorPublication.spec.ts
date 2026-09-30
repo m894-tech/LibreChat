@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { EModelEndpoint, SkillsScope } from 'librechat-data-provider';
+import { EModelEndpoint, MemoryScope, SkillsScope } from 'librechat-data-provider';
 import type { IAgentCreatorPublication } from '..';
 import { createAgentCreatorPublicationMethods } from './agentCreatorPublication';
 import { createModels } from '../models';
@@ -76,6 +76,11 @@ describe('recordAgentCreatorPublication', () => {
         skills_enabled: true,
         skills_scope: SkillsScope.selected,
         skill_authoring_enabled: false,
+        operationalMemory: {
+          role: 'researcher',
+          memoryScope: MemoryScope.agent,
+          artifacts: [],
+        },
       },
     });
 
