@@ -1,6 +1,7 @@
 import { EModelEndpoint, parseEphemeralAgentId } from 'librechat-data-provider';
+import type { Agent } from 'librechat-data-provider';
 import type { LoadAgentDeps } from './load';
-import { loadEphemeralAgent } from './load';
+import { loadAgent, loadEphemeralAgent } from './load';
 import { resolveSender } from './sender';
 
 const deps: LoadAgentDeps = {
@@ -50,6 +51,38 @@ describe('loadEphemeralAgent ephemeral id stability (#14253 Bug 2)', () => {
     const a = await idFor({ model: 'claude-opus-4', modelLabel: 'My Opus' });
     const b = await idFor({ model: 'claude-opus-4', modelLabel: 'My Opus' });
     expect(a).toEqual(b);
+  });
+});
+
+describe('loadAgent persisted agent model spec fallback', () => {
+  test('copies a stored agent spec onto the request body when the chat request omitted it', async () => {
+    const req = { body: {} } as Parameters<typeof loadEphemeralAgent>[0]['req'];
+    const agent: Agent = {
+      id: 'agent_manual',
+      name: 'Manual Agent',
+      description: null,
+      created_at: Date.now(),
+      avatar: null,
+      provider: EModelEndpoint.openAI,
+      model: 'gpt-4o-mini',
+      spec: 'openai-mini',
+      model_parameters: {} as Agent['model_parameters'],
+    };
+    const loaded = await loadAgent(
+      {
+        req,
+        agent_id: agent.id,
+        endpoint: EModelEndpoint.agents,
+        model_parameters: {} as Agent['model_parameters'],
+      },
+      {
+        ...deps,
+        getAgent: async () => agent,
+      },
+    );
+
+    expect(loaded).toBe(agent);
+    expect(req.body?.spec).toBe('openai-mini');
   });
 });
 

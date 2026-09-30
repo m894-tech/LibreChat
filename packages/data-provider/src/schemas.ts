@@ -395,6 +395,8 @@ export const defaultAgentFormValues = {
     name: '',
     email: '',
   },
+  /** Persisted model spec used by enforced deployments and hidden from generic form keys. */
+  spec: undefined as string | null | undefined,
   /** Optional allowlist. Only applies when `skills_enabled === true`.
    *  Empty/undefined + enabled = full catalog; non-empty + enabled = narrow to ids. */
   skills: undefined as string[] | undefined,

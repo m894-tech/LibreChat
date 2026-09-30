@@ -79,6 +79,24 @@ describe('composeAgentCreatorSpec', () => {
       ],
     });
   });
+  it('persists the selected model spec for manual agent saves', () => {
+    const form = createForm();
+    form.spec = 'openai-mini';
+
+    const { payload } = composeAgentUpdatePayload(form, 'agent_123');
+
+    expect(payload.spec).toBe('openai-mini');
+  });
+
+  it('projects the selected model spec into an Agent Creator spec', () => {
+    const form = createForm();
+    form.spec = 'openai-mini';
+
+    expect(composeAgentCreatorSpec(form)).toMatchObject({
+      model: 'gpt-4',
+      spec: 'openai-mini',
+    });
+  });
 });
 
 describe('composeAgentUpdatePayload', () => {
