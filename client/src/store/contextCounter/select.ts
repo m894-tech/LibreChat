@@ -160,13 +160,22 @@ export type CurrentConfiguration = {
   inputLimit: number | null;
 };
 
+/**
+ * Model + agent identity, then provider when both sides know it. The raw
+ * endpoint (`agents`) and the resolved provider (`anthropic`) describe the
+ * same call, so the endpoint only counts when neither side has a provider.
+ */
 function sameConfiguration(a: TContextConfiguration, b: TContextConfiguration): boolean {
-  return (
-    (a.endpoint ?? null) === (b.endpoint ?? null) &&
-    (a.model ?? null) === (b.model ?? null) &&
-    (a.agentId ?? null) === (b.agentId ?? null) &&
-    ((a.provider ?? null) === (b.provider ?? null) || a.provider == null || b.provider == null)
-  );
+  if ((a.model ?? null) !== (b.model ?? null) || (a.agentId ?? null) !== (b.agentId ?? null)) {
+    return false;
+  }
+  if (a.provider != null && b.provider != null) {
+    return a.provider.toLowerCase() === b.provider.toLowerCase();
+  }
+  if (a.provider == null && b.provider == null) {
+    return (a.endpoint ?? null) === (b.endpoint ?? null);
+  }
+  return true;
 }
 
 function limitsMismatch(measured: TContextBudget, current: CurrentConfiguration): boolean {
