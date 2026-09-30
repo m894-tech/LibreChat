@@ -174,7 +174,20 @@ export type TPayload = Partial<TMessage> &
       profile?: string;
       createContract?: string;
       executePolicy?: string;
+      orchMode?: string;
+      orchParallel?: boolean;
+      orchCompare?: unknown;
+      orchParentModel?: string;
+      orchParentSpec?: string;
+      orchParentEndpoint?: string;
     } | null;
+    orchMode?: 'off' | 'auto' | 'team' | 'm2' | 'm3' | 'compare';
+    orchParallel?: boolean;
+    orchCompare?: {
+      brief?: string;
+      candidates?: Array<{ id: string; providerId: string; model?: string }>;
+      judge?: { id: string; providerId: string };
+    };
     /** Ready ContextSource ids the user wants injected this turn. */
     contextSourceIds?: string[];
     /** Conversation-scoped preference for code tool approval behavior. */

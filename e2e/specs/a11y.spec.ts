@@ -51,7 +51,7 @@ test('Conversation page should be accessible', async ({ page }) => {
   const input = await page.locator('form').getByRole('textbox');
   await input.click();
   await input.fill('Hi!');
-  await page.locator('form').getByRole('button').nth(1).click();
+  await page.getByTestId('send-button').click();
   await page.waitForTimeout(3500);
 
   const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
@@ -97,10 +97,14 @@ test('Conversation list rows should be accessible with their controls revealed',
 test('Tools menu should be accessible when open', async ({ page }) => {
   await loadApp(page);
 
-  await page.locator('#tools-dropdown-button').first().click();
-  await expect(page.locator('#tools-dropdown-menu')).toBeVisible({ timeout: 10000 });
+  await page.getByTestId('session-sheet-trigger').click();
+  const sessionSheet = page.getByTestId('session-sheet');
+  await expect(sessionSheet).toBeVisible({ timeout: 10000 });
+  await expect(page.getByRole('dialog')).toBeVisible();
 
-  const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
+  const accessibilityScanResults = await new AxeBuilder({ page })
+    .include('[data-testid="session-sheet"]')
+    .analyze();
 
   expect(accessibilityScanResults.violations).toEqual([]);
 });

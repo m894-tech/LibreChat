@@ -5,6 +5,7 @@ import type {
   UseQueryOptions,
   UseInfiniteQueryOptions,
 } from '@tanstack/react-query';
+import type { OrchRunView } from 'librechat-data-provider';
 import type t from 'librechat-data-provider';
 import { isEphemeralAgent } from '~/common';
 
@@ -89,6 +90,31 @@ export const useListAgentsQuery = <TData = t.AgentListResponse>(
       retry: false,
       ...config,
       enabled: config?.enabled !== undefined ? config.enabled && enabled : enabled,
+    },
+  );
+};
+
+/**
+ * Hook for retrieving the latest manual orchestration run for a conversation.
+ */
+export const useGetOrchestrationRunQuery = (
+  conversationId: string | null | undefined,
+  config?: UseQueryOptions<OrchRunView | null>,
+): QueryObserverResult<OrchRunView | null> => {
+  const enabled = !!conversationId;
+  return useQuery<OrchRunView | null>(
+    [QueryKeys.orchestrationRun, conversationId],
+    async () => {
+      try {
+        return await dataService.getOrchestrationRun(conversationId as string);
+      } catch {
+        return null;
+      }
+    },
+    {
+      retry: false,
+      ...config,
+      enabled: enabled && (config?.enabled ?? true),
     },
   );
 };

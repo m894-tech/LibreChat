@@ -1,4 +1,7 @@
 export * from './app';
+export * from './agents/creator';
+export * from './agents/candidates';
+export * from './agents/orchestration';
 export * from './acl/accessControlService';
 export * from './acl/insightsPermissions';
 export * from './acl/middleware';

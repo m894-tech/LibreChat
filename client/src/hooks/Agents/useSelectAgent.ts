@@ -52,6 +52,7 @@ export default function useSelectAgent() {
       });
       const currentConvo = {
         ...resolvedConvo,
+        spec: template.spec ?? resolvedConvo.spec,
         codeEnvironmentMode: switchesAgent ? undefined : conversation?.codeEnvironmentMode,
         codeWorkspaces: switchesAgent ? undefined : conversation?.codeWorkspaces,
       };
@@ -78,6 +79,7 @@ export default function useSelectAgent() {
         codeEnvironmentMode: undefined,
         codeWorkspaces: undefined,
         ...specDisplayFieldReset,
+        spec: agent.spec ?? specDisplayFieldReset.spec,
       };
 
       await updateConversation({ id: agent.id }, template);
@@ -89,7 +91,15 @@ export default function useSelectAgent() {
           }),
         );
         if (fullAgent) {
-          await updateConversation(fullAgent, { ...template, agent_id: fullAgent.id }, true);
+          await updateConversation(
+            fullAgent,
+            {
+              ...template,
+              agent_id: fullAgent.id,
+              spec: fullAgent.spec ?? specDisplayFieldReset.spec,
+            },
+            true,
+          );
         }
       } catch (error) {
         if ((error as { silent: boolean } | undefined)?.silent) {

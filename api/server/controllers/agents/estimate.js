@@ -1,5 +1,7 @@
 const { estimateNextRequest, getSafeErrorMetadata } = require('@librechat/api');
 const { logger } = require('@librechat/data-schemas');
+const { disposeClient } = require('~/server/cleanup');
+const { cleanupMCPRequestContextForReq } = require('~/server/services/MCPRequestContext');
 
 /**
  * POST /api/agents/context/estimate — wiring only. Builds the same AgentClient
@@ -15,15 +17,16 @@ const { logger } = require('@librechat/data-schemas');
 const ContextEstimateController = async (req, res, next, initializeClient) => {
   const abortController = new AbortController();
   const onClose = () => abortController.abort();
+  let client;
   res.once('close', onClose);
   try {
     const { endpointOption, ...body } = req.body ?? {};
-    const { client } = await initializeClient({
+    ({ client } = await initializeClient({
       req,
       res,
       signal: abortController.signal,
       endpointOption,
-    });
+    }));
     const estimate = await estimateNextRequest({
       req,
       body,
@@ -40,7 +43,14 @@ const ContextEstimateController = async (req, res, next, initializeClient) => {
       res.status(500).json({ error: 'Failed to estimate context' });
     }
   } finally {
-    res.off('close', onClose);
+    try {
+      await cleanupMCPRequestContextForReq(req);
+    } finally {
+      if (client) {
+        disposeClient(client);
+      }
+      res.off('close', onClose);
+    }
   }
 };
 

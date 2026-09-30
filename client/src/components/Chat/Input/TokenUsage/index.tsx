@@ -2,10 +2,15 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import * as Ariakit from '@ariakit/react';
 import { Spinner } from '@librechat/client';
 import { Constants } from 'librechat-data-provider';
-import type { TConversation } from 'librechat-data-provider';
+import type {
+  TConversation,
+  CodeEnvironmentMode,
+  CodeWorkspaceSelection,
+} from 'librechat-data-provider';
 import type { CurrencyConfig } from '~/utils';
 import useCompactConversation, { supportsCompaction } from '~/hooks/Chat/useCompactConversation';
 import { useGetLangfuseSessionLinkQuery, useGetStartupConfig } from '~/data-provider';
+import { ContextCounterIndicator, useContextCounterModel } from '../ContextCounter';
 import useTokenUsage from '~/hooks/Chat/useTokenUsage';
 import CompactAction from './CompactAction';
 import { formatTokens, cn } from '~/utils';
@@ -16,6 +21,9 @@ import Gauge from './Gauge';
 interface TokenUsageProps {
   index: number;
   conversation: TConversation | null;
+  addedConvo?: TConversation | null;
+  codeEnvironmentMode?: CodeEnvironmentMode;
+  codeWorkspaces?: CodeWorkspaceSelection[];
   isSubmitting: boolean;
 }
 
@@ -264,6 +272,39 @@ function TokenUsageIndicator({
   );
 }
 
+/** Context counter v2 (`interface.contextCounterV2`): the single-menu redesign
+ *  over the conversation-owned stores, wired through one adapter. */
+function ContextCounterHost({
+  index,
+  conversation,
+  addedConvo,
+  codeEnvironmentMode,
+  codeWorkspaces,
+  isSubmitting,
+  compactionEnabled,
+}: TokenUsageProps & { compactionEnabled: boolean }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const { vm, actions, mode, setMode } = useContextCounterModel({
+    index,
+    conversation,
+    addedConvo: addedConvo ?? null,
+    codeEnvironmentMode,
+    codeWorkspaces,
+    isSubmitting,
+    menuOpen,
+    compactionEnabled,
+  });
+  return (
+    <ContextCounterIndicator
+      vm={vm}
+      actions={actions}
+      mode={mode}
+      onModeChange={setMode}
+      onOpenChange={setMenuOpen}
+    />
+  );
+}
+
 /** Config gate kept outside the indicator so disabled deployments mount nothing */
 const TokenUsage = memo(function TokenUsage(props: TokenUsageProps) {
   const { data: startupConfig } = useGetStartupConfig();
@@ -272,6 +313,11 @@ const TokenUsage = memo(function TokenUsage(props: TokenUsageProps) {
    *  indicator and fire the token-config query on first load */
   if (startupConfig == null || startupConfig.interface?.contextUsage === false) {
     return null;
+  }
+  if (startupConfig.interface?.contextCounterV2 === true) {
+    return (
+      <ContextCounterHost {...props} compactionEnabled={startupConfig.compactionEnabled === true} />
+    );
   }
   return (
     <TokenUsageIndicator

@@ -44,4 +44,6 @@ module.exports = {
     ],
   },
   transformIgnorePatterns: [`/node_modules/(?!(${esModules})/).*/`],
+  // AutomationsCron suites are node:test runners (*.test.cjs), not Jest.
+  testPathIgnorePatterns: ['/node_modules/', '\\.test\\.cjs$'],
 };

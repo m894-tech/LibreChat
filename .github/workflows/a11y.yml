@@ -1,9 +1,13 @@
-name: Lint for accessibility issues
+name: Accessibility checks
 
 on:
   pull_request:
     paths:
       - 'client/src/**'
+      - 'e2e/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/a11y.yml'
       - '!**.md'
   workflow_dispatch:
     inputs:
@@ -14,22 +18,68 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  NODE_OPTIONS: '--max-old-space-size=${{ secrets.NODE_MAX_OLD_SPACE_SIZE || 6144 }}'
+
 jobs:
-  axe-linter:
+  playwright-a11y:
+    name: Playwright axe accessibility
     runs-on: ubuntu-latest
     if: >
       (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.run_workflow == 'true')
-    
+
     steps:
       - uses: actions/checkout@v5
-      - uses: dequelabs/axe-linter-action@v2
+
+      - name: Use Node.js 24.16.0
+        uses: actions/setup-node@v5
         with:
-          api_key: ${{ secrets.AXE_LINTER_API_KEY }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          node-version: '24.16.0'
+
+      - name: Restore node_modules cache
+        id: cache-node-modules
+        uses: actions/cache@v5
+        with:
+          path: |
+            node_modules
+            client/node_modules
+            packages/client/node_modules
+            packages/data-provider/node_modules
+            packages/data-schemas/node_modules
+            packages/api/node_modules
+            api/node_modules
+          key: node-modules-a11y-${{ runner.os }}-24.16.0-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build app for a11y scan
+        run: npm run e2e:prepare
+
+      - name: Run Playwright axe checks
+        run: npx playwright test --config=e2e/playwright.config.a11y.ts
+        env:
+          CI: 'true'
+          PLAYWRIGHT_HTML_OPEN: 'never'
+          PLAYWRIGHT_HTML_OUTPUT_DIR: e2e/playwright-report-a11y
+
+      - name: Upload Playwright accessibility report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-a11y-report
+          path: |
+            e2e/playwright-report-a11y/**
+            e2e/specs/.test-results/**
+          retention-days: 7
+          if-no-files-found: ignore
