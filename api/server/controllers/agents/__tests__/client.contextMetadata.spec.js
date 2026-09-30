@@ -219,3 +219,81 @@ describe('AgentClient.buildResponseMetadata — snapshot persistence + summary m
     );
   });
 });
+
+describe('AgentClient.buildResponseMetadata — context counter v2 last-call measurement', () => {
+  function buildMetaWithFlag({ enabled, usageEvents, snap = snapshot(0) }) {
+    const self = {
+      collectedThoughtSignatures: null,
+      usageEmitSink: usageEvents,
+      conversationId: 'convo-1',
+      responseMessageId: 'resp-1',
+      getEncoding: () => 'o200k_base',
+      options: {
+        endpoint: 'agents',
+        agent: { id: 'agent-1', endpoint: 'anthropic' },
+        req: {
+          config: {
+            interfaceConfig: { contextCounterV2: enabled },
+            endpoints: { agents: { maxRetainedToolCountChars: 0 } },
+          },
+        },
+      },
+      contextUsageSink: { latest: snap, count: 1, latestUsageIndex: 0 },
+    };
+    return AgentClient.prototype.buildResponseMetadata.call(self);
+  }
+
+  it('freezes the final primary call on metadata.lastCall when the flag is on', () => {
+    const meta = buildMetaWithFlag({
+      enabled: true,
+      usageEvents: [
+        { ...primaryFor('run-1', 5), seq: 1 },
+        {
+          input_tokens: 700,
+          output_tokens: 40,
+          total_tokens: 740,
+          input_token_details: { cache_read: 300 },
+          provider: 'anthropic',
+          model: 'claude',
+          runId: 'run-1',
+          seq: 2,
+        },
+      ],
+    });
+    expect(meta.lastCall).toMatchObject({
+      version: 1,
+      conversationId: 'convo-1',
+      branchLeafId: 'resp-1',
+      responseMessageId: 'resp-1',
+      callId: 'run-1:2',
+      source: 'provider',
+      input: 700,
+      output: 40,
+      cacheRead: 300,
+      cacheWrite: 0,
+      budget: { window: 1000, reserve: 0, budget: 1000 },
+      configuration: {
+        endpoint: 'anthropic',
+        provider: 'anthropic',
+        model: 'claude',
+        agentId: 'agent-1',
+      },
+    });
+    /** The rollup still carries the totals the live gauge folds, plus the call count. */
+    expect(meta.usage).toMatchObject({ input: 410, output: 45, cacheRead: 300, calls: 2 });
+  });
+
+  it('writes nothing new while the flag is off', () => {
+    const meta = buildMetaWithFlag({ enabled: false, usageEvents: [primaryFor('run-1', 5)] });
+    expect(meta.lastCall).toBeUndefined();
+    expect(meta.usage).toBeDefined();
+  });
+
+  it('leaves the previous measurement standing when no primary call reported usage', () => {
+    const meta = buildMetaWithFlag({
+      enabled: true,
+      usageEvents: [{ ...primaryFor('run-1', 5), usage_type: 'subagent' }],
+    });
+    expect(meta.lastCall).toBeUndefined();
+  });
+});

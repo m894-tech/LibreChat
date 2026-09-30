@@ -37,6 +37,7 @@ import {
   getRouteChatProjectId,
   stripStreamedIndexStamps,
 } from '~/utils';
+import { ensureSessionProfile, sessionProfileInstruction } from '~/utils/sessionProfiles';
 import useFocusRegeneratedResponse from '~/hooks/Chat/useFocusRegeneratedResponse';
 import useGetConversation from '~/hooks/Conversations/useGetConversation';
 import store, { useGetEphemeralAgent, contextSourcesAtom } from '~/store';
@@ -397,6 +398,28 @@ export default function useChatFunctions({
       console.error('cannot send any message under search view!');
       return false;
     }
+
+    const sessionProfile = ensureSessionProfile(conversationId);
+    const sessionProfilePayload = {
+      profile: sessionProfile.profile,
+      createContract: sessionProfile.createContract,
+      executePolicy: sessionProfile.executePolicy,
+      orchMode: sessionProfile.orchMode,
+      orchParallel: sessionProfile.orchParallel,
+      ...(sessionProfile.orchCompare ? { orchCompare: sessionProfile.orchCompare } : {}),
+      ...(sessionProfile.orchParentModel
+        ? { orchParentModel: sessionProfile.orchParentModel }
+        : {}),
+      ...(sessionProfile.orchParentSpec ? { orchParentSpec: sessionProfile.orchParentSpec } : {}),
+      ...(sessionProfile.orchParentEndpoint
+        ? { orchParentEndpoint: sessionProfile.orchParentEndpoint }
+        : {}),
+    };
+    const sessionProfileOrchPayload = {
+      orchMode: sessionProfile.orchMode,
+      orchParallel: sessionProfile.orchParallel,
+      ...(sessionProfile.orchCompare ? { orchCompare: sessionProfile.orchCompare } : {}),
+    };
 
     const cachedMessages = getMessages(conversationId);
     const isExistingConversation = conversationId != null && conversationId !== Constants.NEW_CONVO;
@@ -807,6 +830,9 @@ export default function useChatFunctions({
       manualSkills: manualSkills.length > 0 ? manualSkills : undefined,
       nativeKnobs: getNativeKnobs(conversationId),
       responseFormat: getResponseFormat(conversationId),
+      sessionProfileInstruction: sessionProfileInstruction(sessionProfile),
+      sessionProfile: sessionProfilePayload,
+      ...sessionProfileOrchPayload,
       contextSourceIds: getReadyContextSourceIds(),
       codeApprovalMode,
       codeEnvironmentMode,

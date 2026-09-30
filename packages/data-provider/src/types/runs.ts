@@ -320,6 +320,31 @@ export type TResponseUsage = {
   cacheRead: number;
   /** Authoritative USD cost; present only when `interface.contextCost` was on at save */
   cost?: number;
+  /** Distinct model calls folded into this rollup (idempotent on `runId:seq`). Absent on older rollups. */
+  calls?: number;
+  /**
+   * Subset of the totals produced by non-primary calls (subagents, hidden
+   * sequential agents, activity/reasoning labels) — shown as «в том числе»
+   * under the session spend. Absent when none or on older rollups.
+   */
+  auxiliary?: TResponseUsageBucket;
+  /** Subset of the totals produced by summarization / compaction calls — their own spend line. */
+  compress?: TResponseUsageBucket;
+  /**
+   * `false` when at least one folded call arrived without a provider and with
+   * cache figures whose relation to `input` could not be proven, so the cache
+   * split is a heuristic. Absent means the split is trustworthy.
+   */
+  cacheSplittable?: false;
+};
+
+/** One kind bucket of a response usage rollup; the same display units as the totals. */
+export type TResponseUsageBucket = {
+  input: number;
+  output: number;
+  cacheWrite: number;
+  cacheRead: number;
+  calls: number;
 };
 
 /** Provider-reported usage for a single completed model call. */

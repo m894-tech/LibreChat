@@ -26,6 +26,7 @@ const buildFunction = {
   [EModelEndpoint.assistants]: assistants.buildOptions,
   [EModelEndpoint.azureAssistants]: azureAssistants.buildOptions,
 };
+const agentsRouteBase = EndpointURLs[EModelEndpoint.agents].replace(/\/chat$/, '');
 
 /**
  * Inspects only the user-authored value substituted for `{{current_user}}`.
@@ -58,7 +59,9 @@ function inspectResolvedCurrentUser(req, promptPrefixTemplate) {
 async function buildEndpointOption(req, res, next) {
   const { endpoint, endpointType } = req.body;
   const isAgents =
-    isAgentsEndpoint(endpoint) || req.baseUrl.startsWith(EndpointURLs[EModelEndpoint.agents]);
+    isAgentsEndpoint(endpoint) ||
+    req.baseUrl === agentsRouteBase ||
+    req.baseUrl.startsWith(`${agentsRouteBase}/`);
 
   let endpointsConfig;
   try {

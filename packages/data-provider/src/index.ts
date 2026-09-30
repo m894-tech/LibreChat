@@ -28,6 +28,7 @@ export * from './roles';
 /* types (exports schemas from `./types` as they contain needed in other defs) */
 export * from './types';
 export * from './types/agents';
+export * from './types/orchestration';
 export * from './types/assistants';
 export * from './types/content';
 export * from './types/tools';
@@ -46,6 +47,8 @@ export * from './types/traces';
 export * from './types/subagents';
 export * from './types/queuedTurns';
 export * from './types/contextCounter';
+export * from './types/contextEstimate';
+export * from './types/contextUsage';
 /* context counter v2 formulas (§5), rounding (§5.1), usage normalization, RU plurals */
 export * from './counter';
 /* access permissions */

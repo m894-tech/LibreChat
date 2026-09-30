@@ -81,6 +81,24 @@ function pickEnforcedModelSpecRequestFields(parsedBody: ModelSpecParsedBody): Mo
   return requestFields;
 }
 
+function mergePromptPrefix(
+  presetPromptPrefix: unknown,
+  requestPromptPrefix: unknown,
+): string | null | undefined {
+  if (typeof requestPromptPrefix !== 'string' || requestPromptPrefix.trim() === '') {
+    if (typeof presetPromptPrefix === 'string' || presetPromptPrefix === null) {
+      return presetPromptPrefix;
+    }
+    return undefined;
+  }
+
+  if (typeof presetPromptPrefix !== 'string' || presetPromptPrefix.trim() === '') {
+    return requestPromptPrefix;
+  }
+
+  return `${presetPromptPrefix}\n\n${requestPromptPrefix}`;
+}
+
 function mergeModelSpecPreset(
   modelSpec: TModelSpec,
   parsedBody: ModelSpecParsedBody,
@@ -96,6 +114,10 @@ function mergeModelSpecPreset(
     spec: modelSpec.name,
   } as ModelSpecParsedBody;
   const appliedPrivateFields = new Set<PrivateModelSpecPresetField>();
+
+  if (includePresetDefaults) {
+    merged.promptPrefix = mergePromptPrefix(preset.promptPrefix, parsedBody.promptPrefix);
+  }
 
   for (const field of PRIVATE_MODEL_SPEC_PRESET_FIELDS) {
     if (!Object.prototype.hasOwnProperty.call(preset, field)) {

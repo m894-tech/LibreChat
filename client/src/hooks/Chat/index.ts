@@ -15,3 +15,4 @@ export { default as useQueuedTurnReveal } from './useQueuedTurnReveal';
 export { default as useSteering } from './useSteering';
 export { default as useSteerCancel, useSteerReclaim } from './useSteerCancel';
 export { default as useSteerConvert } from './useSteerConvert';
+export * from './contextCounter';

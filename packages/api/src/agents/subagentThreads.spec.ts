@@ -1631,7 +1631,15 @@ describe('SubagentThreadTaskStore', () => {
       output: 20,
       cacheWrite: 0,
       cacheRead: 0,
+      calls: 1,
       cost: 0.25,
+      auxiliary: {
+        input: 100,
+        output: 20,
+        cacheWrite: 0,
+        cacheRead: 0,
+        calls: 1,
+      },
     });
   });
 

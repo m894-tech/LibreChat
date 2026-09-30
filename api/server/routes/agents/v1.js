@@ -1,9 +1,34 @@
 const express = require('express');
-const { generateCheckAccess } = require('@librechat/api');
+const {
+  generateCheckAccess,
+  createAgentCreatorCreateHandler,
+  createAgentCreatorPublishHandler,
+  createAgentCreatorAgentLookup,
+  checkAccessWithRequestCache,
+  createAgentCreatorValidateHandler,
+  createAgentCreatorPublicSkillSearchHandler,
+  noopAgentCreatorPublicSkillSearchProvider,
+} = require('@librechat/api');
 const { PermissionTypes, Permissions, PermissionBits } = require('librechat-data-provider');
 const { configMiddleware, canAccessAgentResource } = require('~/server/middleware');
+const { findAccessibleResources, grantPermission } = require('~/server/services/PermissionService');
+const {
+  getSkillDbMethods,
+  withDeploymentSkillIds,
+} = require('~/server/services/Endpoints/agents/skillDeps');
 const v1 = require('~/server/controllers/agents/v1');
-const { getRoleByName } = require('~/models');
+const db = require('~/models');
+const {
+  getRoleByName,
+  createSkill,
+  deleteAgent,
+  deleteSkill,
+  recordAgentCreatorPublication,
+  rememberAgentCreatorChild,
+  upsertAgentCreatorProfile,
+  upsertAgentOperationalMemoryProfile,
+  deleteAgentOperationalMemoryProfile,
+} = db;
 const actions = require('./actions');
 const tools = require('./tools');
 
@@ -19,6 +44,48 @@ const checkAgentCreate = generateCheckAccess({
   permissionType: PermissionTypes.AGENTS,
   permissions: [Permissions.USE, Permissions.CREATE],
   getRoleByName,
+});
+
+const agentCreatorCreateHandler = createAgentCreatorCreateHandler({
+  createAgent: v1.createAgentService,
+  upsertProfile: upsertAgentCreatorProfile,
+});
+const agentCreatorValidateHandler = createAgentCreatorValidateHandler({
+  findAccessibleResources,
+  withDeploymentSkillIds,
+  getSkillDbMethods,
+});
+const agentCreatorAgentLookup = createAgentCreatorAgentLookup({
+  findAccessibleResources,
+  withDeploymentSkillIds,
+  getSkillDbMethods,
+  getAgent: db.getAgent,
+});
+const agentCreatorPublishHandler = createAgentCreatorPublishHandler({
+  findAccessibleResources,
+  withDeploymentSkillIds,
+  getSkillDbMethods,
+  createAgent: v1.createAgentService,
+  createSkill,
+  deleteAgent,
+  deleteSkill,
+  grantPermission,
+  hasSkillCreatePermission: ({ req, permissionType, permissions }) =>
+    checkAccessWithRequestCache({
+      req,
+      user: req.user,
+      permissionType,
+      permissions,
+      getRoleByName,
+    }),
+  lookupCreatorAgent: agentCreatorAgentLookup,
+  recordPublication: recordAgentCreatorPublication,
+  rememberChild: rememberAgentCreatorChild,
+  initializeOperationalMemory: upsertAgentOperationalMemoryProfile,
+  deleteOperationalMemory: deleteAgentOperationalMemoryProfile,
+});
+const agentCreatorPublicSkillSearchHandler = createAgentCreatorPublicSkillSearchHandler({
+  searchPublicSkills: noopAgentCreatorPublicSkillSearchProvider,
 });
 
 /**
@@ -45,6 +112,16 @@ router.get('/categories', v1.getAgentCategories);
  * @returns {Agent} 201 - Success response - application/json
  */
 router.post('/', checkAgentCreate, configMiddleware, v1.createAgent);
+
+router.post('/creator', checkAgentCreate, configMiddleware, agentCreatorCreateHandler);
+router.post('/creator/validate', checkAgentCreate, configMiddleware, agentCreatorValidateHandler);
+router.post('/creator/publish', checkAgentCreate, configMiddleware, agentCreatorPublishHandler);
+router.post(
+  '/creator/skills/public-search',
+  checkAgentCreate,
+  configMiddleware,
+  agentCreatorPublicSkillSearchHandler,
+);
 
 /**
  * Retrieves basic agent information (VIEW permission required).
