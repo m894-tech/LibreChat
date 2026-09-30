@@ -21,6 +21,37 @@ export type AgentCreatorSkillSpec = {
   source?: AgentCreatorSkillSource;
 };
 
+export type AgentOperationalMemoryRole = 'coder' | 'researcher' | 'analyst' | 'creator' | 'general';
+
+export type AgentOperationalMemoryArtifact = {
+  key: string;
+  title: string;
+  content: string;
+  priority: number;
+};
+
+export type AgentOperationalMemoryProfile = {
+  agentId: string;
+  createdBy: string;
+  tenantId?: string;
+  source: 'agent_creator';
+  role: AgentOperationalMemoryRole;
+  memoryScope: MemoryScope;
+  artifacts: AgentOperationalMemoryArtifact[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AgentOperationalMemoryProfileInput = {
+  agentId: string;
+  createdBy: string;
+  tenantId?: string;
+  source?: 'agent_creator';
+  role: AgentOperationalMemoryRole;
+  memoryScope: MemoryScope;
+  artifacts: AgentOperationalMemoryArtifact[];
+};
+
 export type AgentCreatorAuthoredSkillDraft = {
   name: string;
   displayTitle?: string;
@@ -37,10 +68,12 @@ export type AgentCreatorSpec = {
   instructions?: string | null;
   provider: AgentProvider;
   model: string | null;
+  spec?: string | null;
   model_parameters: AgentModelParameters;
   skills: AgentCreatorSkillSpec[];
   draftedSkills?: AgentCreatorAuthoredSkillDraft[];
   skills_scope?: SkillsScope;
+  memory_scope?: MemoryScope;
 };
 
 export type AgentCreatorValidationIssueCode =
@@ -68,12 +101,19 @@ export type AgentCreatorPreview = Pick<
   | 'instructions'
   | 'provider'
   | 'model'
+  | 'spec'
   | 'model_parameters'
   | 'skills'
   | 'skills_enabled'
   | 'skills_scope'
   | 'skill_authoring_enabled'
->;
+  | 'memory_scope'
+> & {
+  operationalMemory: Omit<
+    AgentOperationalMemoryProfileInput,
+    'agentId' | 'createdBy' | 'tenantId' | 'source'
+  >;
+};
 
 export type AgentCreatorValidateResponse = {
   valid: boolean;
@@ -121,6 +161,7 @@ export type AgentCreatorPublication = {
   source: 'agent_creator';
   specSnapshot: AgentCreatorSpec;
   previewSnapshot: AgentCreatorPreview;
+  operationalMemorySnapshot?: AgentOperationalMemoryProfileInput;
 };
 
 export type AgentCreatorPublicationRecordInput = {
@@ -131,6 +172,7 @@ export type AgentCreatorPublicationRecordInput = {
   source?: 'agent_creator';
   specSnapshot: AgentCreatorSpec;
   previewSnapshot: AgentCreatorPreview;
+  operationalMemorySnapshot?: AgentOperationalMemoryProfileInput;
 };
 
 export type AgentCreatorPreferenceMemory = {
@@ -165,6 +207,7 @@ export type AgentCreatorProfileInput = {
 export type AgentCreatorCreateRequest = {
   provider: AgentProvider;
   model: string;
+  spec?: string | null;
 };
 
 export type AgentCreatorCreateResponse = {
@@ -1166,6 +1209,7 @@ export type Agent = {
   metadata?: Record<string, unknown>;
   provider: AgentProvider;
   model: string | null;
+  spec?: string | null;
   model_parameters: AgentModelParameters;
   conversation_starters?: string[];
   tool_resources?: AgentToolResources;
@@ -1238,6 +1282,7 @@ export type AgentCreateParams = {
   tools?: Array<FunctionTool | string>;
   provider: AgentProvider;
   model: string | null;
+  spec?: string | null;
   model_parameters: AgentModelParameters;
 } & Pick<
   Agent,
@@ -1273,6 +1318,7 @@ export type AgentUpdateParams = {
   tool_resources?: ToolResources;
   provider?: AgentProvider;
   model?: string | null;
+  spec?: string | null;
   model_parameters?: AgentModelParameters;
 } & Pick<
   Agent,

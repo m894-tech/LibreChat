@@ -83,7 +83,31 @@ jest.mock('librechat-data-provider', () => {
 });
 
 jest.mock('@librechat/client', () => ({
-  Button: ({ children, onClick, ...props }: any) => (
+  AlertDialog: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogAction: ({ children, onClick, ...props }: React.ComponentProps<'button'>) => (
+    <button onClick={onClick} {...props}>
+      {children}
+    </button>
+  ),
+  AlertDialogCancel: ({ children, ...props }: React.ComponentProps<'button'>) => (
+    <button {...props}>{children}</button>
+  ),
+  AlertDialogContent: ({ children, ...props }: React.ComponentProps<'div'>) => (
+    <div {...props}>{children}</div>
+  ),
+  AlertDialogDescription: ({ children, ...props }: React.ComponentProps<'p'>) => (
+    <p {...props}>{children}</p>
+  ),
+  AlertDialogFooter: ({ children, ...props }: React.ComponentProps<'div'>) => (
+    <div {...props}>{children}</div>
+  ),
+  AlertDialogHeader: ({ children, ...props }: React.ComponentProps<'div'>) => (
+    <div {...props}>{children}</div>
+  ),
+  AlertDialogTitle: ({ children, ...props }: React.ComponentProps<'h2'>) => (
+    <h2 {...props}>{children}</h2>
+  ),
+  Button: ({ children, onClick, ...props }: React.ComponentProps<'button'>) => (
     <button onClick={onClick} {...props}>
       {children}
     </button>

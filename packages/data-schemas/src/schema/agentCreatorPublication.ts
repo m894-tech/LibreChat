@@ -36,6 +36,10 @@ const agentCreatorPublicationSchema: Schema<IAgentCreatorPublication> = new Sche
       type: Schema.Types.Mixed,
       required: true,
     },
+    operationalMemorySnapshot: {
+      type: Schema.Types.Mixed,
+      default: undefined,
+    },
     tenantId: {
       type: String,
       index: true,

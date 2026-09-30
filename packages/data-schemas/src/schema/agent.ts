@@ -29,6 +29,10 @@ const agentSchema: Schema<IAgent> = new Schema<IAgent>(
       type: String,
       required: true,
     },
+    spec: {
+      type: String,
+      default: undefined,
+    },
     model_parameters: {
       type: Object,
     },

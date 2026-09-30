@@ -72,7 +72,8 @@ jest.mock('~/hooks', () => ({
     const translations = {
       com_ui_save: 'Save',
       com_ui_create: 'Create',
-      com_agents_creator_publish: 'Publish with Creator',
+      com_agents_creator_publish: 'Preview with Creator',
+      com_agents_creator_create: 'Create dedicated Agent Creator',
     };
     return translations[key] || key;
   },
@@ -329,7 +330,7 @@ describe('AgentFooter', () => {
         />,
       );
 
-      const button = screen.getByRole('button', { name: 'Publish with Creator' });
+      const button = screen.getByRole('button', { name: 'Preview with Creator' });
       expect(button).toBeInTheDocument();
       fireEvent.click(button);
       expect(onPublishWithCreator).toHaveBeenCalledTimes(1);

@@ -1,7 +1,7 @@
 import { createElement } from 'react';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { dataService, PermissionBits, QueryKeys } from 'librechat-data-provider';
+import { dataService, MemoryScope, PermissionBits, QueryKeys } from 'librechat-data-provider';
 import type {
   Agent,
   AgentCreatorSpec,
@@ -103,6 +103,11 @@ describe('useValidateAgentCreatorMutation', () => {
         skills_enabled: true,
         skills_scope: 'selected',
         skill_authoring_enabled: false,
+        operationalMemory: {
+          role: 'researcher',
+          memoryScope: MemoryScope.agent,
+          artifacts: [],
+        },
       },
     } satisfies t.AgentCreatorValidateResponse;
     jest.mocked(dataService.validateAgentCreatorSpec).mockResolvedValue(response);

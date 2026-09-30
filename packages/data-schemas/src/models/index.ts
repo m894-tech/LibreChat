@@ -1,4 +1,5 @@
 import { createAgentQueuedTurnModel, createAgentQueuedTurnSequenceModel } from './queuedTurn';
+import { createAgentOperationalMemoryProfileModel } from './agentOperationalMemoryProfile';
 import { createAgentCreatorPublicationModel } from './agentCreatorPublication';
 import { createAgentTriggerLaneSequenceModel } from './triggerLaneSequence';
 import { createScheduleModel, createScheduleRunModel } from './schedule';
@@ -64,6 +65,7 @@ export function createModels(mongoose: typeof import('mongoose')): {
   AgentApiKey: ReturnType<typeof createAgentApiKeyModel>;
   AgentCategory: ReturnType<typeof createAgentCategoryModel>;
   AgentCreatorPublication: ReturnType<typeof createAgentCreatorPublicationModel>;
+  AgentOperationalMemoryProfile: ReturnType<typeof createAgentOperationalMemoryProfileModel>;
   AgentCreatorProfile: ReturnType<typeof createAgentCreatorProfileModel>;
   OrchestrationRun: ReturnType<typeof createOrchestrationRunModel>;
   MCPServer: ReturnType<typeof createMCPServerModel>;
@@ -116,6 +118,7 @@ export function createModels(mongoose: typeof import('mongoose')): {
     AgentApiKey: createAgentApiKeyModel(mongoose),
     AgentCategory: createAgentCategoryModel(mongoose),
     AgentCreatorPublication: createAgentCreatorPublicationModel(mongoose),
+    AgentOperationalMemoryProfile: createAgentOperationalMemoryProfileModel(mongoose),
     AgentCreatorProfile: createAgentCreatorProfileModel(mongoose),
     OrchestrationRun: createOrchestrationRunModel(mongoose),
     MCPServer: createMCPServerModel(mongoose),

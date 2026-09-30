@@ -1,10 +1,18 @@
-import { EModelEndpoint, PermissionTypes, Permissions, SkillsScope } from 'librechat-data-provider';
+import {
+  EModelEndpoint,
+  MemoryScope,
+  PermissionTypes,
+  Permissions,
+  SkillsScope,
+} from 'librechat-data-provider';
 import type { AgentCreatorSpec } from 'librechat-data-provider';
 import type { NextFunction, Response } from 'express';
 import type { ServerRequest } from '~/types/http';
 import {
   createAgentCreatorAgentLookup,
+  createAgentCreatorCreateHandler,
   createAgentCreatorPublishHandler,
+  createCanonicalAgentCreatorInstructions,
   validateAgentCreatorSpec,
 } from './creator';
 
@@ -41,6 +49,20 @@ describe('validateAgentCreatorSpec', () => {
     );
   });
 
+  it('defines canonical Agent Creator instructions for safe publish workflow', () => {
+    const instructions = createCanonicalAgentCreatorInstructions();
+
+    expect(instructions).toContain('Do not behave like a generic blank agent');
+    expect(instructions).toContain('clarifying questions');
+    expect(instructions).toContain('draft agent spec');
+    expect(instructions).toContain('Show a readable preview');
+    expect(instructions).toContain('Require explicit user confirmation before publishing');
+    expect(instructions).toContain("remember the user's creator preferences");
+    expect(instructions).toContain('child agents');
+    expect(instructions).toContain('Recommend tools, skills, and models');
+    expect(instructions).toContain('Publish safely');
+  });
+
   it('projects valid selected skills to an agent create preview', async () => {
     const result = await validateAgentCreatorSpec({
       config: { enabled: true, maxDraftSkills: 10 },
@@ -57,6 +79,72 @@ describe('validateAgentCreatorSpec', () => {
         skills_enabled: true,
         skills_scope: SkillsScope.selected,
         skill_authoring_enabled: false,
+        memory_scope: MemoryScope.agent,
+        operationalMemory: expect.objectContaining({
+          role: 'researcher',
+          memoryScope: MemoryScope.agent,
+          artifacts: expect.arrayContaining([
+            expect.objectContaining({ key: 'operating-contract' }),
+            expect.objectContaining({ key: 'safety-boundaries' }),
+            expect.objectContaining({ key: 'verification-rules' }),
+          ]),
+        }),
+      },
+    });
+  });
+
+  it('derives coder operational memory from role-like specs', async () => {
+    const result = await validateAgentCreatorSpec({
+      config: { enabled: true, maxDraftSkills: 10 },
+      spec: spec({
+        name: 'Repo coder',
+        description: 'Developer agent for TypeScript repo debugging',
+        instructions: 'Work in code, capture mistakes and verification rules.',
+      }),
+      lookupSkills: async () => [{ id: 'skill-1', accessible: true }],
+    });
+
+    expect(result).toMatchObject({
+      valid: true,
+      preview: {
+        operationalMemory: {
+          role: 'coder',
+          artifacts: expect.arrayContaining([
+            expect.objectContaining({ key: 'coder-workflow' }),
+            expect.objectContaining({ key: 'coder-mistake-loop' }),
+          ]),
+        },
+      },
+    });
+  });
+
+  it('preserves explicit user memory scope in preview operational memory', async () => {
+    const result = await validateAgentCreatorSpec({
+      config: { enabled: true, maxDraftSkills: 10 },
+      spec: spec({ memory_scope: MemoryScope.user }),
+      lookupSkills: async () => [{ id: 'skill-1', accessible: true }],
+    });
+
+    expect(result).toMatchObject({
+      valid: true,
+      preview: {
+        memory_scope: MemoryScope.user,
+        operationalMemory: { memoryScope: MemoryScope.user },
+      },
+    });
+  });
+
+  it('carries spec into the validation preview', async () => {
+    const result = await validateAgentCreatorSpec({
+      config: { enabled: true, maxDraftSkills: 10 },
+      spec: spec({ spec: 'openai-mini' }),
+      lookupSkills: async () => [{ id: 'skill-1', accessible: true }],
+    });
+
+    expect(result).toMatchObject({
+      valid: true,
+      preview: {
+        spec: 'openai-mini',
       },
     });
   });
@@ -339,21 +427,53 @@ function createMockResponse(): Response {
 function createPublishRequest(body: AgentCreatorSpec): ServerRequest {
   return {
     body,
-    config: {
-      endpoints: {
-        agents: {
-          creator: {
-            enabled: true,
-            allowPublicSkillSearch: false,
-            allowSkillAuthoring: false,
-            maxDraftSkills: 10,
-            defaultSkillsScope: SkillsScope.selected,
-          },
+    config: createCreatorConfig(),
+    user: { id: 'user-1', role: 'USER' },
+  } as unknown as ServerRequest;
+}
+
+function createCreatorConfig(): ServerRequest['config'] {
+  return {
+    endpoints: {
+      agents: {
+        creator: {
+          enabled: true,
+          allowPublicSkillSearch: false,
+          allowSkillAuthoring: false,
+          maxDraftSkills: 10,
+          defaultSkillsScope: SkillsScope.selected,
         },
       },
     },
-    user: { id: 'user-1', role: 'USER' },
+  } as ServerRequest['config'];
+}
+
+function createAgentCreatorRequest(body: {
+  provider?: unknown;
+  model?: unknown;
+  spec?: unknown;
+}): ServerRequest {
+  return {
+    body,
+    config: createCreatorConfig(),
+    user: { id: 'user-1', role: 'USER', tenantId: 'tenant-1' },
   } as unknown as ServerRequest;
+}
+
+function createAgentCreatorCreateHandlerTestDeps(createAgent: jest.Mock) {
+  const upsertProfile = jest.fn(async () => ({
+    creatorAgentId: 'agent_creator',
+    createdBy: 'user-1',
+    preferences: {},
+    childAgents: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }));
+
+  return {
+    handler: createAgentCreatorCreateHandler({ createAgent, upsertProfile }),
+    upsertProfile,
+  };
 }
 
 function createPublishHandler(
@@ -367,6 +487,8 @@ function createPublishHandler(
     hasSkillCreatePermission?: jest.Mock;
     lookupCreatorAgent?: jest.Mock;
     rememberChild?: jest.Mock;
+    initializeOperationalMemory?: jest.Mock;
+    deleteOperationalMemory?: jest.Mock;
   } = {},
 ) {
   const createSkill =
@@ -380,6 +502,10 @@ function createPublishHandler(
     skillDeps.lookupCreatorAgent ??
     jest.fn(async (_req: ServerRequest, id: string) => ({ id, accessible: true }));
   const rememberChild = skillDeps.rememberChild;
+  const initializeOperationalMemory =
+    skillDeps.initializeOperationalMemory ?? jest.fn(async () => undefined);
+  const deleteOperationalMemory =
+    skillDeps.deleteOperationalMemory ?? jest.fn(async () => ({ deleted: true }));
   return {
     handler: createAgentCreatorPublishHandler({
       createAgent,
@@ -396,6 +522,8 @@ function createPublishHandler(
         getSkillById: async (id) => (id === 'skill-1' ? { id } : null),
       }),
       rememberChild,
+      initializeOperationalMemory,
+      deleteOperationalMemory,
     }),
     createSkill,
     deleteAgent,
@@ -404,9 +532,157 @@ function createPublishHandler(
     hasSkillCreatePermission,
     lookupCreatorAgent,
     rememberChild,
+    initializeOperationalMemory,
+    deleteOperationalMemory,
     recordPublication,
   };
 }
+
+describe('createAgentCreatorCreateHandler', () => {
+  it('creates a dedicated creator with canonical server-generated instructions', async () => {
+    let createBody: unknown;
+    const createAgent = jest.fn(async (request: ServerRequest) => {
+      createBody = request.body;
+      return { id: 'agent_creator', ...request.body };
+    });
+    const { handler, upsertProfile } = createAgentCreatorCreateHandlerTestDeps(createAgent);
+    const req = createAgentCreatorRequest({ provider: 'openAI', model: 'gpt-4o-mini' });
+    const res = createMockResponse();
+    const next = jest.fn() as NextFunction;
+
+    await handler(req, res as Response, next);
+
+    expect(createBody).toMatchObject({
+      name: 'Agent Creator',
+      description:
+        'Dedicated Agent Creator that helps design, preview, validate, and safely publish reusable agents.',
+      instructions: createCanonicalAgentCreatorInstructions(),
+      provider: 'openAI',
+      model: 'gpt-4o-mini',
+      skills: [],
+      skills_enabled: false,
+      memory_scope: 'agent',
+    });
+    expect(upsertProfile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        creatorAgentId: 'agent_creator',
+        createdBy: 'user-1',
+        tenantId: 'tenant-1',
+        preferences: expect.objectContaining({
+          defaultProvider: 'openAI',
+          defaultModel: 'gpt-4o-mini',
+          defaultSkillsScope: SkillsScope.selected,
+        }),
+      }),
+    );
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('rejects creation when enforced model specs have no selected compatible spec', async () => {
+    const createAgent = jest.fn();
+    const { handler } = createAgentCreatorCreateHandlerTestDeps(createAgent);
+    const req = createAgentCreatorRequest({ provider: 'openAI', model: 'gpt-4o-mini' });
+    req.config = {
+      ...req.config,
+      modelSpecs: {
+        enforce: true,
+        list: [
+          {
+            name: 'claude-spec',
+            label: 'Claude Spec',
+            preset: { endpoint: 'anthropic', model: 'claude-sonnet-5' },
+          },
+        ],
+      },
+    } as ServerRequest['config'];
+    const res = createMockResponse();
+    const next = jest.fn() as NextFunction;
+
+    await handler(req, res as Response, next);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error: 'Agent Creator requires a matching model spec for the selected provider and model',
+      }),
+    );
+    expect(createAgent).not.toHaveBeenCalled();
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('rejects creation when the selected model spec is incompatible under enforcement', async () => {
+    const createAgent = jest.fn();
+    const { handler } = createAgentCreatorCreateHandlerTestDeps(createAgent);
+    const req = createAgentCreatorRequest({
+      provider: 'openAI',
+      model: 'gpt-4o-mini',
+      spec: 'claude-spec',
+    });
+    req.config = {
+      ...req.config,
+      modelSpecs: {
+        enforce: true,
+        list: [
+          {
+            name: 'claude-spec',
+            label: 'Claude Spec',
+            preset: { endpoint: 'anthropic', model: 'claude-sonnet-5' },
+          },
+        ],
+      },
+    } as ServerRequest['config'];
+    const res = createMockResponse();
+    const next = jest.fn() as NextFunction;
+
+    await handler(req, res as Response, next);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error: 'Agent Creator selected model spec does not match the selected provider and model',
+      }),
+    );
+    expect(createAgent).not.toHaveBeenCalled();
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('normalizes a compatible model spec into the created persistent Agent Creator', async () => {
+    let createBody: unknown;
+    const createAgent = jest.fn(async (request: ServerRequest) => {
+      createBody = request.body;
+      return { id: 'agent_creator', ...request.body };
+    });
+    const { handler } = createAgentCreatorCreateHandlerTestDeps(createAgent);
+    const req = createAgentCreatorRequest({ provider: 'openAI', model: 'gpt-4o-mini' });
+    req.config = {
+      ...req.config,
+      modelSpecs: {
+        enforce: true,
+        list: [
+          {
+            name: 'openai-mini',
+            label: 'OpenAI Mini',
+            preset: { endpoint: 'openAI', model: 'gpt-4o-mini' },
+          },
+        ],
+      },
+    } as ServerRequest['config'];
+    const res = createMockResponse();
+    const next = jest.fn() as NextFunction;
+
+    await handler(req, res as Response, next);
+
+    expect(createBody).toMatchObject({
+      provider: 'openAI',
+      model: 'gpt-4o-mini',
+      spec: 'openai-mini',
+      instructions: createCanonicalAgentCreatorInstructions(),
+    });
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(next).not.toHaveBeenCalled();
+  });
+});
 
 describe('createAgentCreatorAgentLookup', () => {
   it('requires an existing agent and view access before profile writes', async () => {
@@ -528,7 +804,8 @@ describe('createAgentCreatorPublishHandler', () => {
       createOptions = options;
       return Promise.resolve({ id: 'agent_created', ...request.body });
     });
-    const { handler, recordPublication } = createPublishHandler(createAgent);
+    const { handler, recordPublication, initializeOperationalMemory } =
+      createPublishHandler(createAgent);
     const req = createPublishRequest(spec({ name: '  Research helper  ' }));
     const res = createMockResponse();
     const next = jest.fn() as NextFunction;
@@ -542,6 +819,7 @@ describe('createAgentCreatorPublishHandler', () => {
       skills_enabled: true,
       skills_scope: SkillsScope.selected,
       skill_authoring_enabled: false,
+      memory_scope: MemoryScope.agent,
       creatorProvenance: {
         createdBy: 'user-1',
         source: 'agent_creator',
@@ -550,6 +828,16 @@ describe('createAgentCreatorPublishHandler', () => {
     expect(createOptions).toMatchObject({
       preparedAgentCreateData: { agentData: createBody },
     });
+    expect(initializeOperationalMemory).toHaveBeenCalledWith(
+      expect.objectContaining({
+        agentId: 'agent_created',
+        createdBy: 'user-1',
+        source: 'agent_creator',
+        role: 'researcher',
+        memoryScope: MemoryScope.agent,
+        artifacts: expect.arrayContaining([expect.objectContaining({ key: 'verification-rules' })]),
+      }),
+    );
     expect(recordPublication).toHaveBeenCalledWith(
       expect.objectContaining({
         publicationId: expect.any(String),
@@ -559,7 +847,11 @@ describe('createAgentCreatorPublishHandler', () => {
         specSnapshot: expect.objectContaining({ name: '  Research helper  ' }),
         previewSnapshot: expect.objectContaining({
           name: 'Research helper',
-          creatorProvenance: expect.objectContaining({ source: 'agent_creator' }),
+          operationalMemory: expect.objectContaining({ role: 'researcher' }),
+        }),
+        operationalMemorySnapshot: expect.objectContaining({
+          agentId: 'agent_created',
+          role: 'researcher',
         }),
       }),
     );
@@ -570,6 +862,75 @@ describe('createAgentCreatorPublishHandler', () => {
         creatorProvenance: expect.objectContaining({ source: 'agent_creator' }),
       }),
     );
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('persists the compatible model spec when publishing a child agent', async () => {
+    let createBody: unknown;
+    const createAgent = jest.fn((request: ServerRequest) => {
+      createBody = request.body;
+      return Promise.resolve({ id: 'agent_created', ...request.body });
+    });
+    const { handler } = createPublishHandler(createAgent);
+    const req = createPublishRequest(spec({ spec: 'openai-mini' }));
+    req.config = {
+      ...req.config,
+      modelSpecs: {
+        enforce: true,
+        list: [
+          {
+            name: 'openai-mini',
+            label: 'OpenAI Mini',
+            preset: { endpoint: 'openAI', model: 'gpt-4o-mini' },
+          },
+        ],
+      },
+    } as ServerRequest['config'];
+    const res = createMockResponse();
+    const next = jest.fn() as NextFunction;
+
+    await handler(req, res as Response, next);
+
+    expect(createBody).toMatchObject({
+      provider: 'openAI',
+      model: 'gpt-4o-mini',
+      spec: 'openai-mini',
+    });
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('rejects publish when enforced model specs have no compatible spec', async () => {
+    const createAgent = jest.fn();
+    const { handler, recordPublication } = createPublishHandler(createAgent);
+    const req = createPublishRequest(spec());
+    req.config = {
+      ...req.config,
+      modelSpecs: {
+        enforce: true,
+        list: [
+          {
+            name: 'claude-spec',
+            label: 'Claude Spec',
+            preset: { endpoint: 'anthropic', model: 'claude-sonnet-5' },
+          },
+        ],
+      },
+    } as ServerRequest['config'];
+    const res = createMockResponse();
+    const next = jest.fn() as NextFunction;
+
+    await handler(req, res as Response, next);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        valid: false,
+        issues: expect.arrayContaining([expect.objectContaining({ path: 'spec' })]),
+      }),
+    );
+    expect(createAgent).not.toHaveBeenCalled();
+    expect(recordPublication).not.toHaveBeenCalled();
     expect(next).not.toHaveBeenCalled();
   });
 
@@ -822,10 +1183,12 @@ describe('createAgentCreatorPublishHandler', () => {
       skill: { _id: { toString: () => 'created-skill-1' } },
     }));
     const deleteSkill = jest.fn(async () => ({ deleted: true }));
+    const deleteOperationalMemory = jest.fn(async () => ({ deleted: true }));
     const { handler } = createPublishHandler(createAgent, recordPublication, {
       createSkill,
       deleteAgent,
       deleteSkill,
+      deleteOperationalMemory,
     });
     const originalBody = spec({
       draftedSkills: [
@@ -848,8 +1211,48 @@ describe('createAgentCreatorPublishHandler', () => {
     expect(recordPublication).toHaveBeenCalledTimes(1);
     expect(deleteAgent).toHaveBeenCalledWith({ id: 'agent_created', tenantId: 'tenant-1' });
     expect(deleteSkill).toHaveBeenCalledWith('created-skill-1');
+    expect(deleteOperationalMemory).toHaveBeenCalledWith({
+      agentId: 'agent_created',
+      createdBy: 'user-1',
+      tenantId: 'tenant-1',
+    });
     expect(res.status).not.toHaveBeenCalledWith(201);
     expect(req.body).toBe(originalBody);
+    expect(next).toHaveBeenCalledWith(error);
+  });
+
+  it('rolls back the created agent when operational memory initialization fails', async () => {
+    const error = new Error('memory init failed');
+    const createAgent = jest.fn((request: ServerRequest) =>
+      Promise.resolve({ id: 'agent_created', ...request.body }),
+    );
+    const initializeOperationalMemory = jest.fn(async () => {
+      throw error;
+    });
+    const deleteAgent = jest.fn(async () => ({ deleted: true }));
+    const deleteOperationalMemory = jest.fn(async () => ({ deleted: true }));
+    const { handler, recordPublication } = createPublishHandler(createAgent, jest.fn(), {
+      initializeOperationalMemory,
+      deleteAgent,
+      deleteOperationalMemory,
+    });
+    const req = createPublishRequest(spec());
+    req.user = { ...req.user, tenantId: 'tenant-1' } as ServerRequest['user'];
+    const res = createMockResponse();
+    const next = jest.fn() as NextFunction;
+
+    await handler(req, res as Response, next);
+
+    expect(initializeOperationalMemory).toHaveBeenCalledWith(
+      expect.objectContaining({ agentId: 'agent_created', memoryScope: MemoryScope.agent }),
+    );
+    expect(recordPublication).not.toHaveBeenCalled();
+    expect(deleteAgent).toHaveBeenCalledWith({ id: 'agent_created', tenantId: 'tenant-1' });
+    expect(deleteOperationalMemory).toHaveBeenCalledWith({
+      agentId: 'agent_created',
+      createdBy: 'user-1',
+      tenantId: 'tenant-1',
+    });
     expect(next).toHaveBeenCalledWith(error);
   });
 
